@@ -7,10 +7,19 @@ from ...prompts.monitor_error_resolution import get_error_resolution_prompt
 from ..query.file_operations import get_files_to_modify
 from ...utils.file_utils import get_file_content
 from ...utils.input import confirm_with_user
+import logging
+import time
 
 
 def monitoring_handle_error_with_dravid(error, line, monitor):
+    time.sleep(2)
+    input = confirm_with_user("Allow Dravid to handle the current error?")
+    if not input:
+        return True
+
     print_error(f"Error detected: {error}")
+    logger = logging.getLogger(__name__)
+    logger.info(f"Starting error handling for: {error}")
 
     error_message = str(error)
     error_type = type(error).__name__
@@ -72,18 +81,20 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
 
     print_success("Fix applied.")
 
-    if requires_restart:
-        print_info("The applied fix requires a server restart.")
-        restart_input = confirm_with_user(
-            "Do you want to restart the server now? [y/N]: "
-        )
-        if restart_input:
-            print_info("Requesting server restart...")
-            monitor.request_restart()
-        else:
-            print_info(
-                "Server restart postponed. You may need to restart manually if issues persist.")
-    else:
-        print_info("The applied fix does not require a server restart.")
+    logger.info(f"User response to restart: ")
+    # if requires_restart:
+    # print_info("The applied fix requires a server restart.")
+    # restart_input = confirm_with_user(
+    #     "Do you want to restart the server now? [y/N]: "
+    # )
+    # if restart_input:
+    print_info("Requesting server restart...")
+    monitor.request_restart()
+    # else:
+    #     print_info(
+    #         "Server restart postponed. You may need to restart manually if issues persist.")
+    # else:
+    #     print_info("The applied fix does not require a server restart.")
 
+    logger.info("Error handling completed")
     return True

@@ -10,7 +10,12 @@ def get_files_to_modify(query, project_context):
     file_query = get_files_to_modify_prompt(query, project_context)
     response = call_dravid_api_with_pagination(
         file_query, include_context=True)
-    return parse_file_list_response(response)
+    print(response, "response from files thing")
+    try:
+        return parse_file_list_response(response)
+
+    finally:
+        return []
 
 
 def find_file_with_dravid(filename, project_context, max_retries=2, current_retry=0):

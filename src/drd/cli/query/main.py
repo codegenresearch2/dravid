@@ -10,6 +10,10 @@ from ...utils.parser import parse_dravid_response
 
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None, reference_files=None):
+    query_len = len(query)
+    if query_len < 3:
+        print("query is", query_len)
+        return
     print_header("Starting Dravid AI ...")
 
     if warn:

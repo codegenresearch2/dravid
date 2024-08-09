@@ -1,3 +1,4 @@
+import logging
 import click
 import sys
 import ast
@@ -13,6 +14,10 @@ from ..utils.utils import print_error
 from .ask_handler import handle_ask_command
 
 VERSION = "0.13.9"  # Update this as you release new versions
+
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 def parse_multiline_input(input_string):

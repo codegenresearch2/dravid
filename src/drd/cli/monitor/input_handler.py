@@ -5,16 +5,20 @@ from ...utils import print_info, print_error
 from ...prompts.instructions import get_instruction_prompt
 from .input_parser import InputParser
 from ..query.main import execute_dravid_command
+import logging
 
 
 class InputHandler:
     def __init__(self, monitor):
         self.monitor = monitor
+        self.logger = logging.getLogger(__name__)
 
     def handle_input(self):
+        self.logger.info("InputHandler triggered to handle input")
         print_info("\nNo more tasks to auto-process. What can I do next?")
         self._show_options()
         user_input = input("> ")
+        self.logger.info(f"Received user input: {user_input}")
         self._process_input(user_input)
 
     def _show_options(self):
