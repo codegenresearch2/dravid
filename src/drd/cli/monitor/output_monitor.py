@@ -1,4 +1,5 @@
 import logging
+import sys
 import select
 import time
 import threading
@@ -52,6 +53,7 @@ class OutputMonitor:
                     if line:
                         line = line.strip()
                         print(line, flush=True)
+                        sys.stdout.flush()
                         output_buffer.append(line)
 
                         self.last_output_time = time.time()

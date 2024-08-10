@@ -1,15 +1,12 @@
 # File: prompts/error_resolution_prompt.py
 
-def get_error_resolution_prompt(error_type, error_message, error_trace, line, project_context, file_context=None):
+def get_error_resolution_prompt(error_trace, project_context, file_context=None):
     return f"""
     # Error Context
     An error occurred while running the server:
-    Error type: {error_type}
-    Error message: {error_message}
     Error trace:
     {error_trace}
-    Relevant output line:
-    {line}
+   
     Project context:
     {project_context}
 

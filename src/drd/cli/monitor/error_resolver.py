@@ -6,28 +6,30 @@ from ...utils.loader import run_with_loader
 from ...prompts.monitor_error_resolution import get_error_resolution_prompt
 from ..query.file_operations import get_files_to_modify
 from ...utils.file_utils import get_file_content
-from ...utils.input import confirm_with_user
+from ...utils.input import get_user_confirmation
 import logging
 
 
-def monitoring_handle_error_with_dravid(error, line, monitor):
-    input = confirm_with_user("Allow Dravid to handle the current error?")
-    if not input:
+def monitoring_handle_error_with_dravid(error, error_trace, monitor):
+    if not get_user_confirmation("Do you want to proceed with the fix from Dravid?"):
         return True
 
     print_error(f"Error detected: {error}")
     logger = logging.getLogger(__name__)
     logger.info(f"Starting error handling for: {error}")
 
-    error_message = str(error)
-    error_type = type(error).__name__
-    error_trace = ''.join(traceback.format_exception(
-        type(error), error, error.__traceback__))
+    # error_message = str(error)
+    # error_type = type(error).__name__
+    # error_trace = ''.join(traceback.format_exception(
+    #     type(error), error, error.__traceback__))
 
     project_context = monitor.metadata_manager.get_project_context()
 
     print_info("Identifying relevant files for error context...")
-    error_details = f"error_msg: {error_message}, error_type: {error_type}, error_trace: {error_trace}"
+    error_details = """
+        There is an error in the project. Strictly suggest only the files needed to fix the error.
+        error_trace: {error_trace}
+    """
 
     files_to_check = run_with_loader(
         lambda: get_files_to_modify(error_details, project_context),
@@ -49,7 +51,7 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
     )
 
     error_query = get_error_resolution_prompt(
-        error_type, error_message, error_trace, line, project_context, file_context
+        error_trace, project_context, file_context
     )
 
     print_info("🔍 Sending error information to Dravid for analysis...")

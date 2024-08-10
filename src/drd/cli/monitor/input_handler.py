@@ -1,3 +1,4 @@
+import sys
 import click
 import glob
 import os
@@ -30,6 +31,7 @@ class InputHandler:
 
     def _process_input(self, user_input):
         self.monitor.processing_input.set()
+        print("processing your input")
         try:
             if user_input.lower() == 'exit':
                 confirm_exit = input(

@@ -1,3 +1,5 @@
+import sys
+import time
 import re
 import threading
 import subprocess
@@ -129,7 +131,10 @@ class DevServerMonitor:
         self.error_handling_in_progress.set()
         self.output_monitor.idle_detected.clear()
 
-        print_warning("An error has been detected. Here's the context:")
+        # print_warning("An error has been detected. Here's the context:")
+        sys.stdout.flush()  # Ensure immediate flushing
+        # Wait a short time to ensure all output is flushed
+        time.sleep(0.1)
 
         try:
             for pattern, handler in self.error_handlers.items():
