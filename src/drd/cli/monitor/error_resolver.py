@@ -12,7 +12,6 @@ import time
 
 
 def monitoring_handle_error_with_dravid(error, line, monitor):
-    time.sleep(2)
     input = confirm_with_user("Allow Dravid to handle the current error?")
     if not input:
         return True
@@ -30,6 +29,7 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
 
     print_info("Identifying relevant files for error context...")
     error_details = f"error_msg: {error_message}, error_type: {error_type}, error_trace: {error_trace}"
+
     files_to_check = run_with_loader(
         lambda: get_files_to_modify(error_details, project_context),
         "Analyzing project files"
@@ -89,7 +89,7 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
     # )
     # if restart_input:
     print_info("Requesting server restart...")
-    monitor.request_restart()
+    monitor.perform_restart()
     # else:
     #     print_info(
     #         "Server restart postponed. You may need to restart manually if issues persist.")

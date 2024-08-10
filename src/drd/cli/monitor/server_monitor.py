@@ -20,10 +20,8 @@ class DevServerMonitor:
         self.error_handlers = error_handlers
         self.command = command
         self.process = None
-        self.output_queue = Queue()
         self.should_stop = threading.Event()
         self.restart_requested = threading.Event()
-        self.user_input_queue = Queue()
         self.processing_input = threading.Event()
         self.input_handler = InputHandler(self)
         self.output_monitor = OutputMonitor(self)
@@ -71,18 +69,9 @@ class DevServerMonitor:
                 logger.warning("Process did not terminate, forcing...")
                 self.process.kill()
 
-        self.output_monitor.stop()
-
         try:
             logger.info(f"Starting new process with command: {self.command}")
-            self.process = self.start_process()
-            self.retry_count = 0
-            self.restart_requested.clear()
-            self.recent_fixes.clear()
-
-            self.output_monitor = OutputMonitor(self)
-            self.output_monitor.start()
-
+            self.start()
             logger.info("Server restart completed.")
             print("Server restarted successfully. Waiting for output...")
         except Exception as e:
