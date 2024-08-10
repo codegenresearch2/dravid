@@ -16,8 +16,12 @@ from .ask_handler import handle_ask_command
 VERSION = "0.13.9"  # Update this as you release new versions
 
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    filename='dravid_monitor.log',
+                    filemode='a')
+
+# Also log to console
 
 
 def parse_multiline_input(input_string):

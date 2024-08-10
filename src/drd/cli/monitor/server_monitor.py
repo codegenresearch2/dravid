@@ -4,7 +4,7 @@ import subprocess
 from queue import Queue
 from .input_handler import InputHandler
 from .output_monitor import OutputMonitor
-from ...utils import print_info, print_success, print_error, print_header, print_prompt
+from ...utils import print_info, print_success, print_error, print_header, print_prompt, print_warning
 from ...metadata.project_metadata import ProjectMetadataManager
 
 import logging
@@ -30,7 +30,11 @@ class DevServerMonitor:
         self.error_handling_in_progress = threading.Event()
         self.error_handlers = {
             str(pattern): handler for pattern, handler in error_handlers.items()
+
         }
+        self.error_handlers['default'] = self.default_error_handler
+        logger.info(
+            f"Initialized error handlers: {list(self.error_handlers.keys())}")
 
     def start(self):
         self.should_stop.clear()
@@ -120,16 +124,40 @@ class DevServerMonitor:
         finally:
             self.stop()
 
-    def handle_error(self, error_msg):
+    def handle_error(self, error_context):
+        logger.info("Entering handle_error method")
         self.error_handling_in_progress.set()
         self.output_monitor.idle_detected.clear()
+
+        print_warning("An error has been detected. Here's the context:")
+
         try:
             for pattern, handler in self.error_handlers.items():
-                if re.search(pattern, error_msg, re.IGNORECASE):
-                    handler(error_msg, self)
+                logger.info(f"Checking error pattern: {pattern}")
+                if re.search(pattern, error_context, re.IGNORECASE):
+                    logger.info(f"Matched error pattern: {pattern}")
+                    handler(error_context, self)
                     break
-        finally:
-            self.error_handling_in_progress.clear()
+            else:
+                logger.warning(
+                    "No specific handler found for this error. Using default error handler.")
+                print_warning(
+                    "No specific handler found for this error. Using default error handler.")
+                self.error_handlers['default'](error_context, self)
+        except Exception as e:
+            logger.error(f"Error during error handling: {str(e)}")
+            print_error(f"Failed to handle the error: {str(e)}")
+
+        self.error_handling_in_progress.clear()
+        logger.info("Exiting handle_error method")
+
+    def default_error_handler(self, error_context, monitor):
+        logger.warning(
+            "Default error handler invoked. No specific fix available.")
+        print_warning(
+            "Default error handler invoked. No specific fix available.")
+        print_info(
+            "Please review the error and make necessary code changes manually.")
 
     def request_restart(self):
         self.restart_requested.set()

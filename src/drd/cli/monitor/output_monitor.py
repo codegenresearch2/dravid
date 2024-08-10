@@ -2,6 +2,7 @@ import logging
 import select
 import time
 import threading
+from collections import deque
 import re
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,9 @@ class OutputMonitor:
         self.last_output_time = None
         self.idle_detected = threading.Event()
         self.stop_event = threading.Event()
+        self.buffer_size = 50  # Number of lines to keep in buffer
+        self.error_timeout = 2
+        logger.info("OutputMonitor initialized")
 
     def start(self):
         self.stop_event.clear()
@@ -27,9 +31,12 @@ class OutputMonitor:
             self.thread.join(timeout=5)
 
     def _monitor_output(self):
-        error_buffer = []
+        output_buffer = deque(maxlen=self.buffer_size)
         self.last_output_time = time.time()
+        error_detected = False
+        error_start_time = None
 
+        logger.info("Starting output monitoring")
         while not self.stop_event.is_set():
             if self.monitor.process is None or self.monitor.process.poll() is not None:
                 logger.info(
@@ -45,32 +52,46 @@ class OutputMonitor:
                     if line:
                         line = line.strip()
                         print(line, flush=True)
-                        logger.debug(f"Server output: {line}")
-                        error_buffer.append(line)
-                        if len(error_buffer) > 10:
-                            error_buffer.pop(0)
+                        output_buffer.append(line)
+
                         self.last_output_time = time.time()
                         self.monitor.retry_count = 0
-                        if not self.monitor.processing_input.is_set():
-                            self._check_for_errors(line, error_buffer)
+
+                        if not error_detected:
+                            error_detected = self._check_for_errors(line)
+                            if error_detected:
+                                error_start_time = time.time()
+                        elif time.time() - error_start_time > self.error_timeout:
+                            self._handle_error(list(output_buffer))
+                            error_detected = False
+                            output_buffer.clear()
                     else:
                         self._check_idle_state()
                 else:
                     self._check_idle_state()
+
+                if error_detected and time.time() - error_start_time > self.error_timeout:
+                    self._handle_error(list(output_buffer))
+                    error_detected = False
+                    output_buffer.clear()
+
             except Exception as e:
                 logger.error(f"Error in output monitoring: {str(e)}")
                 time.sleep(1)  # Prevent rapid error logging
 
         logger.info("Output monitoring stopped.")
 
-    def _check_for_errors(self, line, error_buffer):
+    def _check_for_errors(self, line):
+        logger.info(f"Checking for errors in line: {line}")
         for error_pattern in self.monitor.error_handlers.keys():
             if re.search(error_pattern, line, re.IGNORECASE):
-                full_error = '\n'.join(error_buffer)
-                logger.error(f"Error detected: {full_error}")
-                self.monitor.handle_error(full_error)
-                error_buffer.clear()
-                break
+                return True
+        return False
+
+    def _handle_error(self, error_context):
+        full_error = '\n'.join(error_context)
+        logger.error(f"Full error context:\n{full_error}")
+        self.monitor.handle_error(full_error)
 
     def _check_idle_state(self):
         current_time = time.time()
@@ -78,3 +99,4 @@ class OutputMonitor:
                 not self.monitor.error_handling_in_progress.is_set() and
                 not self.monitor.processing_input.is_set()):
             self.idle_detected.set()
+            logger.info("Idle state detected")
