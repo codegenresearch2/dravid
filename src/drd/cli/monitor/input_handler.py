@@ -1,4 +1,5 @@
 import sys
+import select
 import click
 import glob
 import os
@@ -24,9 +25,16 @@ class InputHandler:
         self.logger.info("InputHandler triggered to handle input")
         print_info("\nNo more tasks to auto-process. What can I do next?")
         self._show_options()
-        user_input = input("")
+        user_input = self._get_input()
         self.logger.info(f"Received user input: {user_input}")
-        self._process_input(user_input)
+        if user_input:
+            self._process_input(user_input)
+
+    def _get_input(self):
+        while self.monitor.get_state() == ServerState.NORMAL:
+            if sys.stdin in select.select([sys.stdin], [], [], 0.1)[0]:
+                return input("> ")
+        return None
 
     def _show_options(self):
         print_info("\nAvailable actions:")
