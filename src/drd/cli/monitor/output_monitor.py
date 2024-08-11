@@ -4,6 +4,7 @@ import select
 import time
 import threading
 from collections import deque
+from .state import ServerState
 import re
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,9 @@ class OutputMonitor:
 
         logger.info("Starting output monitoring")
         while not self.stop_event.is_set():
+            if self.monitor.get_state() != ServerState.NORMAL:
+                time.sleep(0.1)  # Small sleep when not in normal state
+                continue
             if self.monitor.process is None or self.monitor.process.poll() is not None:
                 logger.info(
                     "Server process ended or not started. Waiting for restart...")
@@ -91,8 +95,8 @@ class OutputMonitor:
         return False
 
     def _handle_error(self, error_context):
+        self.monitor.set_state(ServerState.ERROR_DETECTED)
         full_error = '\n'.join(error_context)
-        logger.error(f"Full error context:\n{full_error}")
         self.monitor.handle_error(full_error)
 
     def _check_idle_state(self):

@@ -7,6 +7,9 @@ from ...utils.parser import parse_file_list_response,  parse_find_file_response
 
 
 def get_files_to_modify(query, project_context):
+    print("The query")
+    print(query)
+    print("======")
     file_query = get_files_to_modify_prompt(query, project_context)
     response = call_dravid_api_with_pagination(
         file_query, include_context=True)

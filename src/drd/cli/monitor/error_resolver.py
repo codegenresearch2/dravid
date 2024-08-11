@@ -6,15 +6,11 @@ from ...utils.loader import run_with_loader
 from ...prompts.monitor_error_resolution import get_error_resolution_prompt
 from ..query.file_operations import get_files_to_modify
 from ...utils.file_utils import get_file_content
-from ...utils.input import get_user_confirmation
 import logging
 
 
 def monitoring_handle_error_with_dravid(error, error_trace, monitor):
-    if not get_user_confirmation("Do you want to proceed with the fix from Dravid?"):
-        return True
 
-    print_error(f"Error detected: {error}")
     logger = logging.getLogger(__name__)
     logger.info(f"Starting error handling for: {error}")
 
@@ -22,14 +18,19 @@ def monitoring_handle_error_with_dravid(error, error_trace, monitor):
     # error_type = type(error).__name__
     # error_trace = ''.join(traceback.format_exception(
     #     type(error), error, error.__traceback__))
-
+    print("the type is *******")
+    print(error)
+    print("++++000-----")
     project_context = monitor.metadata_manager.get_project_context()
 
     print_info("Identifying relevant files for error context...")
-    error_details = """
-        There is an error in the project. Strictly suggest only the files needed to fix the error.
-        error_trace: {error_trace}
+    error_details = f"""
+        There is an error in the project. Identify ony the files related to it
+        error_trace: {error}
     """
+    input("testing >")
+    input("testing1 >")
+    return True
 
     files_to_check = run_with_loader(
         lambda: get_files_to_modify(error_details, project_context),
@@ -85,10 +86,10 @@ def monitoring_handle_error_with_dravid(error, error_trace, monitor):
     logger.info(f"User response to restart: ")
     if requires_restart:
         print_info("The applied fix requires a server restart.")
-        restart_input = confirm_with_user(
+        restart_input = input(
             "Do you want to restart the server now? [y/N]: "
         )
-        if restart_input:
+        if restart_input.lower() == 'y':
             print_info("Requesting server restart...")
             monitor.perform_restart()
         else:

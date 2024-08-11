@@ -22,6 +22,11 @@ logging.basicConfig(level=logging.DEBUG,
                     filemode='a')
 
 # Also log to console
+# console = logging.StreamHandler()
+# console.setLevel(logging.INFO)
+# formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+# console.setFormatter(formatter)
+# logging.getLogger('').addHandler(console)
 
 
 def parse_multiline_input(input_string):

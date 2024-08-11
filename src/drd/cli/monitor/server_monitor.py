@@ -2,12 +2,15 @@ import sys
 import time
 import re
 import threading
+from threading import Lock
 import subprocess
 from queue import Queue
 from .input_handler import InputHandler
 from .output_monitor import OutputMonitor
 from ...utils import print_info, print_success, print_error, print_header, print_prompt, print_warning
 from ...metadata.project_metadata import ProjectMetadataManager
+from ...utils.input import get_user_confirmation
+from .state import ServerState
 
 import logging
 
@@ -21,10 +24,13 @@ class DevServerMonitor:
         self.MAX_RETRIES = 3
         self.error_handlers = error_handlers
         self.command = command
+        self.error_context = ""
+        self.error_handler = None
         self.process = None
         self.should_stop = threading.Event()
         self.restart_requested = threading.Event()
         self.processing_input = threading.Event()
+        self.skip_input = False
         self.input_handler = InputHandler(self)
         self.output_monitor = OutputMonitor(self)
         self.retry_count = 0
@@ -35,6 +41,8 @@ class DevServerMonitor:
 
         }
         self.error_handlers['default'] = self.default_error_handler
+        self.state = ServerState.NORMAL
+        self.state_lock = Lock()
         logger.info(
             f"Initialized error handlers: {list(self.error_handlers.keys())}")
 
@@ -112,23 +120,45 @@ class DevServerMonitor:
     def _main_loop(self):
         try:
             while not self.should_stop.is_set():
-                if self.error_handling_in_progress.is_set():
+                current_state = self.get_state()
+                if current_state == ServerState.NORMAL:
+                    if self.output_monitor.idle_detected.is_set():
+                        self.input_handler.handle_input()
+                        self.output_monitor.idle_detected.clear()
+                elif current_state == ServerState.ERROR_DETECTED:
+                    pass
+                elif current_state == ServerState.ERROR_HANDLING:
                     # Wait for error handling to complete
-                    self.error_handling_in_progress.wait()
-                elif self.output_monitor.idle_detected.is_set():
-                    self.input_handler.handle_input()
-                    self.output_monitor.idle_detected.clear()
-                else:
-                    # Small sleep to prevent busy waiting
-                    self.should_stop.wait(timeout=0.1)
+                    pass
+                elif current_state == ServerState.FIX_APPLYING:
+                    # Wait for fix to be applied
+                    pass
+
+                # Small sleep to prevent busy waiting
+                self.should_stop.wait(timeout=0.1)
         except KeyboardInterrupt:
-            print_info("Stopping server...")
+            logger.info("Stopping server...")
         finally:
             self.stop()
 
+    def resume_error_handling(self, user_input, skip=False):
+        print("user_input", user_input, self.get_state())
+        if user_input.lower() == 'y' and self.get_state() == ServerState.ERROR_HANDLING:
+            self.set_state(ServerState.FIX_APPLYING)
+            self.error_handler(self.error_context, self)
+            logger.info("CLEANING UP....")
+            self.clean_handlers()
+        self.skip_input = skip
+
+    def clean_handlers(self):
+        if not self.skip_input:
+            self.error_context = ""
+            self.error_handler = None
+            self.set_state(ServerState.NORMAL)
+
     def handle_error(self, error_context):
         logger.info("Entering handle_error method")
-        self.error_handling_in_progress.set()
+        self.set_state(ServerState.ERROR_HANDLING)
         self.output_monitor.idle_detected.clear()
 
         # print_warning("An error has been detected. Here's the context:")
@@ -141,7 +171,14 @@ class DevServerMonitor:
                 logger.info(f"Checking error pattern: {pattern}")
                 if re.search(pattern, error_context, re.IGNORECASE):
                     logger.info(f"Matched error pattern: {pattern}")
-                    handler(error_context, self)
+                    self.error_context = error_context
+                    self.error_handler = handler
+                    if not get_user_confirmation("Do you want to proceed with the fix from Dravid?"):
+                        print("inside the confirmation...", self.get_state())
+                        self.clean_handlers()
+                        return True
+
+                    self.resume_error_handling('y')
                     break
             else:
                 logger.warning(
@@ -153,7 +190,7 @@ class DevServerMonitor:
             logger.error(f"Error during error handling: {str(e)}")
             print_error(f"Failed to handle the error: {str(e)}")
 
-        self.error_handling_in_progress.clear()
+        self.clean_handlers()
         logger.info("Exiting handle_error method")
 
     def default_error_handler(self, error_context, monitor):
@@ -166,3 +203,12 @@ class DevServerMonitor:
 
     def request_restart(self):
         self.restart_requested.set()
+
+    def set_state(self, new_state: ServerState):
+        with self.state_lock:
+            self.state = new_state
+            logger.info(f"Server state changed to: {self.state.name}")
+
+    def get_state(self) -> ServerState:
+        with self.state_lock:
+            return self.state

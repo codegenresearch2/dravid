@@ -5,8 +5,10 @@ import os
 from ...utils import print_info, print_error
 from ...prompts.instructions import get_instruction_prompt
 from .input_parser import InputParser
+from ...utils.input import get_input_with_timeout
 from ..query.main import execute_dravid_command
 import logging
+from .state import ServerState
 
 
 class InputHandler:
@@ -15,10 +17,14 @@ class InputHandler:
         self.logger = logging.getLogger(__name__)
 
     def handle_input(self):
+        if self.monitor.get_state() != ServerState.NORMAL:
+            self.logger.info(
+                "Input handling skipped: Server not in NORMAL state")
+            return
         self.logger.info("InputHandler triggered to handle input")
         print_info("\nNo more tasks to auto-process. What can I do next?")
         self._show_options()
-        user_input = input("> ")
+        user_input = input("")
         self.logger.info(f"Received user input: {user_input}")
         self._process_input(user_input)
 
@@ -30,8 +36,13 @@ class InputHandler:
         print_info("\nType your choice or command:")
 
     def _process_input(self, user_input):
+        state = self.monitor.get_state()
+        if state == ServerState.ERROR_HANDLING:
+            print("state from error handling interfering", state)
+            self.monitor.resume_error_handling(user_input, skip=True)
+            print("\n")
+            return True
         self.monitor.processing_input.set()
-        print("processing your input")
         try:
             if user_input.lower() == 'exit':
                 confirm_exit = input(
