@@ -9,7 +9,7 @@ def run_dev_server_with_monitoring(command: str):
     error_handlers = {
         r"(?:Cannot find module|Module not found|ImportError|No module named)": handle_module_not_found,
         r"(?:SyntaxError|Expected|Unexpected token)": handle_syntax_error,
-        r"(?:Error:|Failed to compile)": handle_general_error,
+        r"(?:Error:|Failed to compile|Internal error:)": handle_general_error
     }
     current_dir = os.getcwd()
     monitor = DevServerMonitor(current_dir, error_handlers, command)
