@@ -1,4 +1,5 @@
 import os
+import asyncio
 import json
 from datetime import datetime
 import fnmatch
@@ -282,3 +283,6 @@ class ProjectMetadataManager:
                 print(f"Error: Invalid JSON content in {self.metadata_file}")
                 return False
         return False
+
+    def analyze_file_sync(self, file_path):
+        return asyncio.run(self.analyze_file(file_path))

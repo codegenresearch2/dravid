@@ -97,7 +97,7 @@ def handle_metadata_operation(cmd, metadata_manager):
 
 
 def update_file_metadata(cmd, metadata_manager, executor):
-    file_info = metadata_manager.analyze_file(cmd['filename'])
+    file_info = metadata_manager.analyze_file_sync(cmd['filename'])
     if file_info:
         metadata_manager.update_file_metadata(
             file_info['path'],

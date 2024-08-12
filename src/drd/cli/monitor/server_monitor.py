@@ -11,6 +11,7 @@ from ...utils import print_info, print_success, print_error, print_header, print
 from ...metadata.project_metadata import ProjectMetadataManager
 from ...utils.input import get_user_confirmation
 from .state import ServerState
+from .history_tracker import HistoryTracker, EventType
 
 import logging
 
@@ -42,6 +43,7 @@ class DevServerMonitor:
         }
         self.error_handlers['default'] = self.default_error_handler
         self.state = ServerState.NORMAL
+        self.history_tracker = HistoryTracker(max_entries=5)
         self.state_lock = Lock()
         logger.info(
             f"Initialized error handlers: {list(self.error_handlers.keys())}")
@@ -147,14 +149,14 @@ class DevServerMonitor:
             self.set_state(ServerState.FIX_APPLYING)
             self.error_handler(self.error_context, self)
             logger.info("CLEANING UP....")
+            error_message = f"Error detected: {self.error_context[:300]}... Fix it"
+            self.history_tracker.add_event(EventType.USER, error_message)
             self.clean_handlers()
-        self.skip_input = skip
 
     def clean_handlers(self):
-        if not self.skip_input:
-            self.error_context = ""
-            self.error_handler = None
-            self.set_state(ServerState.NORMAL)
+        self.error_context = ""
+        self.error_handler = None
+        self.set_state(ServerState.NORMAL)
 
     def handle_error(self, error_context):
         logger.info("Entering handle_error method")
@@ -174,7 +176,6 @@ class DevServerMonitor:
                     self.error_context = error_context
                     self.error_handler = handler
                     if not get_user_confirmation("Do you want to proceed with the fix from Dravid?"):
-                        print("inside the confirmation...", self.get_state())
                         self.clean_handlers()
                         return True
 

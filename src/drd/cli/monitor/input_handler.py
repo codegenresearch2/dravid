@@ -9,6 +9,7 @@ from .input_parser import InputParser
 from ...utils.input import get_input_with_timeout
 from ..query.main import execute_dravid_command
 import logging
+from .history_tracker import EventType
 from .state import ServerState
 
 
@@ -64,6 +65,8 @@ class InputHandler:
                 self._handle_vision_input()
             elif user_input:
                 self._handle_general_input(user_input)
+                self.monitor.history_tracker.add_event(
+                    EventType.USER, user_input)
         finally:
             self.monitor.processing_input.clear()
 
@@ -106,7 +109,10 @@ class InputHandler:
                 debug=False,
                 instruction_prompt=instruction_prompt,
                 warn=False,
-                reference_files=reference_files
+                reference_files=reference_files,
+                history_tracker=self.monitor.history_tracker,
+                EventType=EventType
+
             )
         except Exception as e:
             print_error(f"Error executing Dravid command: {str(e)}")

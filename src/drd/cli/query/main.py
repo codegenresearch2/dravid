@@ -9,7 +9,9 @@ from .file_operations import get_files_to_modify
 from ...utils.parser import parse_dravid_response
 
 
-def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None, reference_files=None):
+def execute_dravid_command(query, image_path, debug,
+                           instruction_prompt, warn=None,
+                           reference_files=None, history_tracker=None, EventType=None):
     query_len = len(query)
     if query_len < 3:
         print("query is", query_len)
@@ -56,6 +58,12 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
         full_query = construct_full_query(
             query, executor, project_context, files_info, reference_files)
 
+        if history_tracker:
+            chat_history = history_tracker.get_history_as_chat()
+            full_query += "\n\nRecent chat history:\n"
+            for message in chat_history:
+                full_query += f"{message['role'].capitalize()}: {message['content']}\n"
+
         print_info("💡 Preparing to send query to LLM...", indent=2)
         if image_path:
             print_info(f"Processing image: {image_path}", indent=4)
@@ -79,6 +87,12 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
                 "Failed to parse LLM's response or no commands to execute.")
             print_debug("Actual result: " + str(xml_result))
             return
+
+        if history_tracker:
+            explanation = next((cmd['content'] for cmd in commands if cmd['type']
+                               == 'explanation'), "No explanation provided.")
+            history_tracker.add_event(
+                EventType.ASSISTANT, f"Explanation: {explanation}")
 
         success, step_completed, error_message, all_outputs = execute_commands(
             commands, executor, metadata_manager, debug=debug)
