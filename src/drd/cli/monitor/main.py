@@ -12,7 +12,8 @@ def run_dev_server_with_monitoring(command: str):
         r"(?:Error:|Failed to compile|Internal error:)": handle_general_error
     }
     current_dir = os.getcwd()
-    monitor = DevServerMonitor(current_dir, error_handlers, command)
+    monitor = DevServerMonitor(
+        current_dir, error_handlers, command, default_handler=handle_general_error)
     try:
         monitor.start()
         print_info("👓 server monitor started. Press Ctrl+C to stop.")

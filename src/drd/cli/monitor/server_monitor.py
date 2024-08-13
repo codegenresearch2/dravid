@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class DevServerMonitor:
-    def __init__(self, project_dir: str, error_handlers: dict, command: str):
+    def __init__(self, project_dir: str, error_handlers: dict, command: str, default_handler: any):
         self.project_dir = project_dir
         self.MAX_RETRIES = 3
         self.error_handlers = error_handlers
@@ -41,7 +41,7 @@ class DevServerMonitor:
             str(pattern): handler for pattern, handler in error_handlers.items()
 
         }
-        self.error_handlers['default'] = self.default_error_handler
+        self.error_handlers['default'] = default_handler
         self.state = ServerState.NORMAL
         self.history_tracker = HistoryTracker(max_entries=5)
         self.state_lock = Lock()
@@ -193,14 +193,6 @@ class DevServerMonitor:
 
         self.clean_handlers()
         logger.info("Exiting handle_error method")
-
-    def default_error_handler(self, error_context, monitor):
-        logger.warning(
-            "Default error handler invoked. No specific fix available.")
-        print_warning(
-            "Default error handler invoked. No specific fix available.")
-        print_info(
-            "Please review the error and make necessary code changes manually.")
 
     def request_restart(self):
         self.restart_requested.set()
