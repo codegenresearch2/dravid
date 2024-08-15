@@ -3,22 +3,31 @@ from ...api import call_dravid_api_with_pagination
 from ...utils import print_error, print_info
 from ...metadata.project_metadata import ProjectMetadataManager
 from ...prompts.file_operations import get_files_to_modify_prompt, find_file_prompt
-from ...utils.parser import parse_file_list_response,  parse_find_file_response
+from ...prompts.error_related_files_prompt import get_error_related_files
+from ...utils.parser import parse_file_list_response,  parse_find_file_response, parse_file_list_with_exp_response
 
 
 def get_files_to_modify(query, project_context):
-    print("The query")
-    print(query)
-    print("======")
     file_query = get_files_to_modify_prompt(query, project_context)
     response = call_dravid_api_with_pagination(
         file_query, include_context=True)
-    print(response, "response from files thing")
     try:
         return parse_file_list_response(response)
 
     finally:
         return []
+
+
+def get_error_files_to_modify(query, project_context):
+    file_query = get_error_related_files(query, project_context)
+    response = call_dravid_api_with_pagination(
+        file_query, include_context=True)
+    try:
+        resp = parse_file_list_with_exp_response(response)
+        return resp
+    except Exception as e:
+        print_error(f"Error in get_error_files_to_modify: {str(e)}")
+        return ("Error occurred while processing", [])
 
 
 def find_file_with_dravid(filename, project_context, max_retries=2, current_retry=0):

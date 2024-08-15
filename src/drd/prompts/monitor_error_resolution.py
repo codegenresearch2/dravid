@@ -4,7 +4,8 @@ def get_error_resolution_prompt(error_trace, project_context, file_context=None)
     return f"""
     # Error Context
     An error occurred while running the server:
-    Error trace:
+
+    Error summary:
     {error_trace}
    
     Project context:
@@ -12,9 +13,11 @@ def get_error_resolution_prompt(error_trace, project_context, file_context=None)
 
     File context: {file_context}
     # Instructions for dravid: Error Resolution Assistant
-    Analyze the error above and provide steps to fix it.
+    Analyze the file contents and also the error above and provide steps to fix it.
+    Note: The error summary is just an overview. 
+    Evaluate the actual file for any syntax error as well apart from trying to fix the actual error.
+
     This is being run in a monitoring thread, so don't suggest server starting commands like npm run dev.
-    Make sure you dont try for drastic changes, just the needed and precise fix. 
     Your response should be in strictly XML format with no other extra messages. Use the following format:
     <response>
     <explanation>A brief explanation of the steps, if necessary</explanation>

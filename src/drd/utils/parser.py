@@ -80,6 +80,17 @@ def parse_file_list_response(response: str):
         return None
 
 
+def parse_file_list_with_exp_response(response: str):
+    try:
+        root = extract_and_parse_xml(response)
+        exp = root.find('explanation').text.strip()
+        files = root.findall('.//file')
+        return exp, [file.text.strip() for file in files if file.text]
+    except Exception as e:
+        print_error(f"Error parsing file list response: {e}")
+        return None
+
+
 def parse_find_file_response(response: str):
     try:
         root = extract_and_parse_xml(response)

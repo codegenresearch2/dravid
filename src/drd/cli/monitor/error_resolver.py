@@ -4,7 +4,7 @@ from ...utils.step_executor import Executor
 from ...utils.utils import print_error, print_success, print_info, print_prompt
 from ...utils.loader import run_with_loader
 from ...prompts.monitor_error_resolution import get_error_resolution_prompt
-from ..query.file_operations import get_files_to_modify
+from ..query.file_operations import get_error_files_to_modify
 from ...utils.file_utils import get_file_content
 import logging
 
@@ -21,17 +21,12 @@ def monitoring_handle_error_with_dravid(error, error_trace, monitor):
     project_context = monitor.metadata_manager.get_project_context()
 
     print_info("Identifying relevant files for error context...")
-    error_details = f"""
-        There is an error in the project. Identify ony the files related to it
-        error_trace: {error}
-    """
 
-    files_to_check = run_with_loader(
-        lambda: get_files_to_modify(error_details, project_context),
+    explanation, files_to_check = run_with_loader(
+        lambda: get_error_files_to_modify(error_trace, project_context),
         "Analyzing project files"
     )
-
-    print_info(f"Found {len(files_to_check)} potentially relevant files.")
+    print_info(explanation)
 
     file_contents = {}
     for file in files_to_check:
@@ -46,7 +41,7 @@ def monitoring_handle_error_with_dravid(error, error_trace, monitor):
     )
 
     error_query = get_error_resolution_prompt(
-        error_trace, project_context, file_context
+        explanation, project_context, file_context
     )
 
     print_info("🔍 Sending error information to Dravid for analysis...")
