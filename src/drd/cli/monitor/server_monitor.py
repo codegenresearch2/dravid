@@ -144,7 +144,6 @@ class DevServerMonitor:
             self.stop()
 
     def resume_error_handling(self, user_input, skip=False):
-        print("user_input", user_input, self.get_state())
         if user_input.lower() == 'y' and self.get_state() == ServerState.ERROR_HANDLING:
             self.set_state(ServerState.FIX_APPLYING)
             self.error_handler(self.error_context, self)

@@ -223,6 +223,10 @@ class ProjectMetadataManager:
     def get_project_context(self):
         return json.dumps(self.metadata, indent=2)
 
+    def get_project_framework(self):
+        framework = self.metadata["environment"]["primary_framework"]
+        return framework.lower().replace(".", "").replace("_", "")
+
     def add_external_dependency(self, dependency):
         if dependency not in self.metadata['external_dependencies']:
             self.metadata['external_dependencies'].append(dependency)

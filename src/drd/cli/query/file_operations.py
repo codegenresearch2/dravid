@@ -18,8 +18,8 @@ def get_files_to_modify(query, project_context):
         return []
 
 
-def get_error_files_to_modify(query, project_context):
-    file_query = get_error_related_files(query, project_context)
+def get_error_files_to_modify(query, project_context, framework):
+    file_query = get_error_related_files(query, project_context, framework)
     response = call_dravid_api_with_pagination(
         file_query, include_context=True)
     try:
@@ -27,7 +27,7 @@ def get_error_files_to_modify(query, project_context):
         return resp
     except Exception as e:
         print_error(f"Error in get_error_files_to_modify: {str(e)}")
-        return ("Error occurred while processing", [])
+        return ("Error occurred while processing", "", [])
 
 
 def find_file_with_dravid(filename, project_context, max_retries=2, current_retry=0):

@@ -1,8 +1,10 @@
-def get_error_related_files(error_trace, project_context):
+def get_error_related_files(error_trace, project_context, framework):
     return f"""
 Project Context: {project_context}
+
 Erro Trace: {error_trace}
 
+The given framework is {framework}
 You're an error context identifier assistant. Your response will be sent to a final error
 resolution assistant to give the code fix.
 You are given a project detail and the 
@@ -18,7 +20,7 @@ to the next assistant so it can give proper code fix.
     as well.
 
     Note: Strictly only include files that is relevant to the error. Only the exact files. 
-  
+
 Please respond with a list of filenames in the following XML format:
 <response>
     <explanation>
