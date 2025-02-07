@@ -66,7 +66,7 @@ class OutputMonitor:
                         error_buffer.pop(0)
                     self.last_output_time = time.time()
                     self.idle_prompt_shown = False
-                    self.retry_count = 0
+                    self.retry_count = 0  # Reset retry count after successful output
 
                     if not self.monitor.processing_input.is_set():
                         self._check_for_errors(line, error_buffer)
