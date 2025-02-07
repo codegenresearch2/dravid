@@ -271,4 +271,13 @@ class Executor:
                 # Handle export command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('
+                self.env[key.strip()] = value.strip().strip('"')
+            elif command.startswith('set '):
+                # Handle set command
+                _, var_assignment = command.split(None, 1)
+                key, value = var_assignment.split('=', 1)
+                self.env[key.strip()] = value.strip().strip('"')
+            else:
+                # Handle simple assignment
+                key, value = command.split('=', 1)
+                self.env[key.strip()] = value.strip().strip('"')
