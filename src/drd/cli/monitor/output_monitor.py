@@ -55,8 +55,7 @@ class OutputMonitor:
 
             ready, _, _ = select.select([
                 self.monitor.process.stdout
-            ], [],
-             [], 0.1)
+            ], [], [], 0.1)
 
             if self.monitor.process.stdout in ready:
                 line = self.monitor.process.stdout.readline()
