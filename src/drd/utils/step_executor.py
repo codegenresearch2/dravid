@@ -161,7 +161,7 @@ class Executor:
         ignore_patterns, _ = get_ignore_patterns(self.current_dir)
         return get_folder_structure(self.current_dir, ignore_patterns)
 
-    def execute_shell_command(self, command, timeout=300):  # 5 minutes timeout
+    def execute_shell_command(self, command, timeout=300):
         if not self.is_safe_command(command):
             print_warning(f'Please verify the command once: {command}')
 
@@ -271,4 +271,13 @@ class Executor:
                 # Handle export command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('
+                self.env[key.strip()] = value.strip().strip('"')
+            elif command.startswith('set '):
+                # Handle set command
+                _, var_assignment = command.split(None, 1)
+                key, value = var_assignment.split('=', 1)
+                self.env[key.strip()] = value.strip().strip('"')
+            else:
+                # Handle simple assignment
+                key, value = command.split('=', 1)
+                self.env[key.strip()] = value.strip().strip('"')
