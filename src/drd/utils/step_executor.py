@@ -281,3 +281,21 @@ class Executor:
                 # Handle simple assignment
                 key, value = command.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"')
+
+    def _handle_cd_command(self, command):
+        _, path = command.split(None, 1)
+        new_dir = os.path.abspath(os.path.join(self.current_dir, path))
+        if self.is_safe_path(new_dir):
+            os.chdir(new_dir)
+            self.current_dir = new_dir
+            print_info(f'Changed directory to: {self.current_dir}')
+            return f'Changed directory to: {self.current_dir}'
+        else:
+            print_error(f'Cannot change to directory: {new_dir}')
+            return f'Failed to change directory to: {new_dir}'
+
+    def reset_directory(self):
+        os.chdir(self.initial_dir)
+        project_dir = self.current_dir
+        self.current_dir = self.initial_dir
+        print_info(f'Resetting directory to: {self.current_dir} from project dir:{project_dir}')
