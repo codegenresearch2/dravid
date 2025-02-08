@@ -82,9 +82,11 @@ class OutputMonitor:
     def _check_idle_state(self):
         current_time = time.time()
         time_since_last_output = current_time - self.last_output_time
-        if (time_since_last_output > 5 and
+        if (
+            time_since_last_output > 5 and
             not self.idle_prompt_shown and
-                not self.monitor.processing_input.is_set()):
+                not self.monitor.processing_input.is_set()
+        ):
             print_prompt("\nNo more tasks to auto-process. What can I do next?")
             self._show_options()
             self.idle_prompt_shown = True
