@@ -116,7 +116,7 @@ class TestExecutor(unittest.TestCase):
         self.executor._update_env_from_command('export EXPORT_QUOTE="exported quoted value"')
         self.assertEqual(self.executor.env['EXPORT_QUOTE'], 'exported quoted value')
 
-    @patch('os.path.exists')    
+    @patch('os.path.exists')
     @patch('builtins.open', new_callable=mock_open, read_data="original content")
     @patch('click.confirm')
     def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
@@ -128,7 +128,7 @@ class TestExecutor(unittest.TestCase):
         mock_file().write.assert_called_with('content')
         mock_confirm.assert_called_once()
 
-    @patch('os.path.exists')    
+    @patch('os.path.exists')
     @patch('builtins.open', new_callable=mock_open, read_data="original content")
     @patch('click.confirm')
     @patch('drd.utils.step_executor.preview_file_changes')
@@ -153,8 +153,8 @@ class TestExecutor(unittest.TestCase):
         mock_file().write.assert_called_once_with(expected_updated_content)
         mock_confirm.assert_called_once()
 
-    @patch('os.path.exists')    
-    @patch('os.path.isfile')    
+    @patch('os.path.exists')
+    @patch('os.path.isfile')
     @patch('os.remove')
     @patch('click.confirm')
     def test_perform_file_operation_delete(self, mock_confirm, mock_remove, mock_isfile, mock_exists):
