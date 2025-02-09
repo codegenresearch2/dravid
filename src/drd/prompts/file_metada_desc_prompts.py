@@ -32,8 +32,9 @@ def get_file_metadata_prompt(filename, content, project_context, folder_structur
     response = f"""
 <response>
   <metadata>
+    <path>{filename}</path>
     <type>{file_type}</type>
-    <description>Description based on the file's contents, project context, and folder structure</description>
+    <description>Summary based on the file's contents, project context, and folder structure</description>
     <file_category>{file_type}</file_category>
     <exports>{','.join(exports_info) if exports_info else 'None'}</exports>
     <imports>{','.join(imports_info) if imports_info else 'None'}</imports>
