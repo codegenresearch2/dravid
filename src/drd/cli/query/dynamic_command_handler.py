@@ -67,14 +67,18 @@ def handle_file_operation(cmd, executor, metadata_manager):
         raise Exception(f"File operation failed: {cmd['operation']} on {cmd['filename']}")
 
 def handle_metadata_operation(cmd, metadata_manager):
-    if cmd['operation'] == 'UPDATE_FILE':
-        if metadata_manager.update_metadata_from_file(cmd['filename']):
-            print_success(f"Updated metadata for file: {cmd['filename']}")
-            return f"Updated metadata for {cmd['filename']}"
+    try:
+        if cmd['operation'] == 'UPDATE_FILE':
+            if metadata_manager.update_metadata_from_file(cmd['filename']):
+                print_success(f"Updated metadata for file: {cmd['filename']}")
+                return f"Updated metadata for {cmd['filename']}"
+            else:
+                raise Exception(f"Failed to update metadata for file: {cmd['filename']}")
         else:
-            raise Exception(f"Failed to update metadata for file: {cmd['filename']}")
-    else:
-        raise Exception(f"Unknown operation: {cmd['operation']}")
+            raise Exception(f"Unknown operation: {cmd['operation']}")
+    except Exception as e:
+        print_error(f"Error in handle_metadata_operation: {str(e)}")
+        raise
 
 def update_file_metadata(cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
