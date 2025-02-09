@@ -49,7 +49,8 @@ class TestDynamicCommandHandler(unittest.TestCase):
          patch('drd.cli.query.dynamic_command_handler.print_success') as mock_print_success,
          patch('drd.cli.query.dynamic_command_handler.click.echo') as mock_echo:
 
-        def test_handle_shell_command(self, mock_echo, mock_print_success, mock_print_info):
+        @patch('drd.cli.query.dynamic_command_handler.handle_shell_command')  # Correctly formatted @patch decorator
+        def test_handle_shell_command(self, mock_handle_shell, mock_echo, mock_print_success, mock_print_info):
             cmd = {'command': 'echo "Hello"'}
             self.executor.execute_shell_command.return_value = 'Hello'
 
@@ -65,7 +66,8 @@ Hello')
          patch('drd.cli.query.dynamic_command_handler.print_success') as mock_print_success,
          patch('drd.cli.query.dynamic_command_handler.update_file_metadata') as mock_update_metadata:
 
-        def test_handle_file_operation(self, mock_update_metadata, mock_print_success, mock_print_info):
+        @patch('drd.cli.query.dynamic_command_handler.handle_file_operation')  # Correctly formatted @patch decorator
+        def test_handle_file_operation(self, mock_update_metadata, mock_handle_file, mock_print_success, mock_print_info):
             cmd = {'operation': 'CREATE', 'filename': 'test.txt', 'content': 'Test content'}
             self.executor.perform_file_operation.return_value = True
 
@@ -95,6 +97,7 @@ Hello')
          patch('drd.cli.query.dynamic_command_handler.execute_commands') as mock_execute_commands,
          patch('drd.cli.query.dynamic_command_handler.click.echo') as mock_echo:
 
+        @patch('drd.cli.query.dynamic_command_handler.handle_error_with_dravid')  # Correctly formatted @patch decorator
         def test_handle_error_with_dravid(self, mock_echo, mock_execute_commands, mock_call_api, mock_print_success, mock_print_info, mock_print_error):
             error = Exception('Test error')
             cmd = {'type': 'shell', 'command': 'echo "Hello"'}
