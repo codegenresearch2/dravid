@@ -14,7 +14,7 @@ from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
-        self.allowed_directories = [self.current_dir, '/fake/path']
+        self.allowed_directories = [self.current_dir]
         self.disallowed_commands = [
             'rmdir', 'del', 'format', 'mkfs',
             'dd', 'fsck', 'mkswap', 'mount', 'umount',
@@ -25,7 +25,7 @@ class Executor:
 
     def is_safe_path(self, path):
         full_path = os.path.abspath(os.path.join(self.current_dir, path))
-        return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories) or full_path == self.current_dir
+        return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories)
 
     def is_safe_rm_command(self, command):
         parts = command.split()
@@ -263,22 +263,21 @@ class Executor:
             raise Exception(error_message)
 
     def _update_env_from_command(self, command):
-        if '=' in command:
-            if command.startswith('export '):
-                parts = command.split('=', 1)
-                if len(parts) == 2:
-                    key, value = parts
-                    self.env[key.strip()] = value.strip().strip('"\'')
-            elif command.startswith('set '):
-                parts = command.split('=', 1)
-                if len(parts) == 2:
-                    key, value = parts
-                    self.env[key.strip()] = value.strip().strip('"\'')
-            else:
-                parts = command.split('=', 1)
-                if len(parts) == 2:
-                    key, value = parts
-                    self.env[key.strip()] = value.strip().strip('"\'')
+        if command.startswith('export '):
+            parts = command.split('=', 1)
+            if len(parts) == 2:
+                key, value = parts
+                self.env[key.strip()] = value.strip().strip('"\'')
+        elif command.startswith('set '):
+            parts = command.split('=', 1)
+            if len(parts) == 2:
+                key, value = parts
+                self.env[key.strip()] = value.strip().strip('"\'')
+        else:
+            parts = command.split('=', 1)
+            if len(parts) == 2:
+                key, value = parts
+                self.env[key.strip()] = value.strip().strip('"\'')
 
     def _handle_cd_command(self, command):
         new_dir = command.split(None, 1)[1]
