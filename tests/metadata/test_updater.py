@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 import xml.etree.ElementTree as ET
-import asyncio
 
 from drd.metadata.updater import update_metadata_with_dravid
 
@@ -24,7 +23,7 @@ class TestMetadataUpdater(unittest.TestCase):
             'package.json': 'file'
         }
 
-    async def mock_analyze_file(self, filename):
+    def mock_analyze_file(self, filename):
         # Simulate file analysis
         return {
             'path': filename,
@@ -102,10 +101,13 @@ class TestMetadataUpdater(unittest.TestCase):
             '/fake/project/dir/src/main.py', '/fake/project/dir/package.json']
 
         # Mock file analysis
-        mock_metadata_manager.return_value.analyze_file.side_effect = [await self.mock_analyze_file('/fake/project/dir/src/main.py'), await self.mock_analyze_file('/fake/project/dir/package.json')]
+        mock_metadata_manager.return_value.analyze_file.side_effect = [
+            self.mock_analyze_file('/fake/project/dir/src/main.py'),
+            self.mock_analyze_file('/fake/project/dir/package.json')
+        ]
 
         # Call the function
-        await update_metadata_with_dravid(self.meta_description, self.current_dir)
+        update_metadata_with_dravid(self.meta_description, self.current_dir)
 
         # Assertions
         mock_metadata_manager.assert_called_once_with(self.current_dir)
