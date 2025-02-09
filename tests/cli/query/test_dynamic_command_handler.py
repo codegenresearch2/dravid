@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 
 from drd.cli.query.dynamic_command_handler import (
     execute_commands,
