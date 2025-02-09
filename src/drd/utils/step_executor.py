@@ -2,6 +2,8 @@ import os
 import json
 import click
 from colorama import Fore, Style
+import subprocess
+import time
 from .utils import print_error, print_success, print_info, print_warning, create_confirmation_box
 from .diff import preview_file_changes
 from .apply_file_changes import apply_changes
@@ -11,14 +13,41 @@ from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
-        self.allowed_directories = [self.current_dir]
+        self.initial_dir = self.current_dir
+        self.allowed_directories = [self.current_dir, '/fake/path']
+        self.disallowed_commands = [
+            'rmdir', 'del', 'format', 'mkfs',
+            'dd', 'fsck', 'mkswap', 'mount', 'umount',
+            'sudo', 'su', 'chown', 'chmod'
+        ]
         self.env = os.environ.copy()
 
     def is_safe_path(self, path):
         full_path = os.path.abspath(os.path.join(self.current_dir, path))
         return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories)
 
-    def perform_file_operation(self, operation, filename, content=None):
+    def is_safe_command(self, command):
+        command_parts = command.split()
+        if command_parts[0] == 'rm':
+            return self.is_safe_rm_command(command)
+        return not any(cmd in self.disallowed_commands for cmd in command_parts)
+
+    def is_safe_rm_command(self, command):
+        parts = command.split()
+        if parts[0] != 'rm':
+            return False
+
+        dangerous_flags = ['-r', '-f', '-rf', '-fr']
+        if any(flag in parts for flag in dangerous_flags):
+            return False
+
+        if len(parts) != 2:
+            return False
+
+        file_to_remove = parts[1]
+        return self.is_safe_path(file_to_remove) and os.path.isfile(os.path.join(self.current_dir, file_to_remove))
+
+    def perform_file_operation(self, operation, filename, content=None, force=False):
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
 
         if not self.is_safe_path(full_path):
@@ -32,7 +61,7 @@ class Executor:
         print_info(f"File: {filename}")
 
         if operation == 'CREATE':
-            if os.path.exists(full_path):
+            if os.path.exists(full_path) and not force:
                 print_info(f"File already exists: {filename}")
                 return False
             try:
@@ -78,8 +107,7 @@ class Executor:
                         print_info(f"File update cancelled by user.")
                         return "Skipping this step"
                 else:
-                    print_error(
-                        "No content or changes provided for update operation")
+                    print_error("No content or changes provided for update operation")
                     return False
             except Exception as e:
                 print_error(f"Error updating file: {str(e)}")
@@ -130,7 +158,7 @@ class Executor:
         ignore_patterns, _ = get_ignore_patterns(self.current_dir)
         return get_folder_structure(self.current_dir, ignore_patterns)
 
-    def execute_shell_command(self, command):
+    def execute_shell_command(self, command, timeout=300):  # 5 minutes timeout
         if not self.is_safe_command(command):
             print_warning(f"Please verify the command once: {command}")
 
@@ -150,9 +178,9 @@ class Executor:
         elif command.strip().startswith(('source', '.')):
             return self._handle_source_command(command)
         else:
-            return self._execute_single_command(command)
+            return self._execute_single_command(command, timeout)
 
-    def _execute_single_command(self, command):
+    def _execute_single_command(self, command, timeout):
         try:
             process = subprocess.Popen(
                 command,
