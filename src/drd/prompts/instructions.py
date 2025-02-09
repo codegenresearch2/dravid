@@ -20,6 +20,11 @@ def get_instruction_prompt():
           </content>
         </step>
         <step>
+          <type>file</type>
+          <operation>DELETE</operation>
+          <filename>README.md</filename>
+        </step>
+        <step>
           <type>metadata</type>
           <operation>UPDATE_FILE</operation>
           <filename>drd.json</filename>
