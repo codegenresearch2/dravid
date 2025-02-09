@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call, mock_open
+from unittest.mock import patch, MagicMock, call
 import xml.etree.ElementTree as ET
 
 from drd.cli.query.dynamic_command_handler import (
@@ -17,7 +17,6 @@ class TestDynamicCommandHandler(unittest.TestCase):
     def setUp(self):
         self.executor = MagicMock()
         self.metadata_manager = MagicMock()
-        self.executor.initial_dir = '/initial/dir'  # Added initial directory variable
 
     @patch('drd.cli.query.dynamic_command_handler.print_step')
     @patch('drd.cli.query.dynamic_command_handler.print_info')
@@ -43,7 +42,10 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertIn("Shell command - echo \"Hello\"", output)
         self.assertIn("File command - CREATE - test.txt", output)
         mock_print_debug.assert_has_calls([
+            call("Completed step 1/3"),
+            call("Completed step 2/3"),
             call("Completed step 3/3")]
+        )
 
     @patch('drd.cli.query.dynamic_command_handler.print_info')
     @patch('drd.cli.query.dynamic_command_handler.print_success')
@@ -183,6 +185,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertTrue(result)
         mock_file.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
         mock_file().write.assert_called_with('content')
+        mock_confirm.assert_called_once()
 
     @patch('os.chdir')
     def test_reset_directory(self, mock_chdir):
