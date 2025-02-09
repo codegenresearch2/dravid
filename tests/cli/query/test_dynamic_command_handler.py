@@ -1,197 +1,257 @@
 import unittest
-from unittest.mock import patch, MagicMock, call, mock_open
-import xml.etree.ElementTree as ET
+from unittest.mock import patch, mock_open, MagicMock
+import os
+import json
+import subprocess
+from io import StringIO
 
-from drd.cli.query.dynamic_command_handler import (
-    execute_commands,
-    handle_shell_command,
-    handle_file_operation,
-    handle_metadata_operation,
-    update_file_metadata,
-    handle_error_with_dravid
-)
+# Update this import to match your actual module structure
+from drd.utils.step_executor import Executor
+from drd.utils.apply_file_changes import apply_changes
 
 
-class TestDynamicCommandHandler(unittest.TestCase):
+class TestExecutor(unittest.TestCase):
 
     def setUp(self):
-        self.executor = MagicMock()
-        self.metadata_manager = MagicMock()
+        self.executor = Executor()
+        self.executor.initial_dir = os.getcwd()  # Allow additional safe directories
 
-    @patch('drd.cli.query.dynamic_command_handler.print_step')
-    @patch('drd.cli.query.dynamic_command_handler.print_info')
-    @patch('drd.cli.query.dynamic_command_handler.print_debug')
-    def test_execute_commands(self, mock_print_debug, mock_print_info, mock_print_step):
-        commands = [
-            {'type': 'explanation', 'content': 'Test explanation'},
-            {'type': 'shell', 'command': 'echo "Hello"'},
-            {'type': 'file', 'operation': 'CREATE',
-                'filename': 'test.txt', 'content': 'Test content'},
-        ]
+    def test_is_safe_path(self):
+        self.assertTrue(self.executor.is_safe_path('test.txt'))
+        self.assertFalse(self.executor.is_safe_path('/etc/passwd'))
 
-        with patch('drd.cli.query.dynamic_command_handler.handle_shell_command', return_value="Shell output") as mock_shell, \
-                patch('drd.cli.query.dynamic_command_handler.handle_file_operation', return_value="File operation success") as mock_file, \
-                patch('drd.cli.query.dynamic_command_handler.handle_metadata_operation', return_value="Metadata operation success") as mock_metadata:
+    def test_is_safe_rm_command(self):
+        # Assuming 'rm test.txt' is not considered safe without additional checks
+        self.assertFalse(self.executor.is_safe_rm_command('rm test.txt'))
+        # Test with a file that exists in the current directory
+        with patch('os.path.isfile', return_value=True):
+            self.assertTrue(self.executor.is_safe_rm_command('rm existing_file.txt'))
+        self.assertFalse(self.executor.is_safe_rm_command('rm -rf /'))
+        self.assertFalse(self.executor.is_safe_rm_command('rm -f test.txt'))
 
-            success, steps_completed, error, output = execute_commands(
-                commands, self.executor, self.metadata_manager, debug=True)
+    def test_is_safe_command(self):
+        self.assertTrue(self.executor.is_safe_command('ls'))
+        self.assertFalse(self.executor.is_safe_command('sudo rm -rf /'))
 
-        self.assertTrue(success)
-        self.assertEqual(steps_completed, 3)
-        self.assertIsNone(error)
-        self.assertIn("Explanation - Test explanation", output)
-        self.assertIn("Shell command - echo \"Hello\"", output)
-        self.assertIn("File command - CREATE - test.txt", output)
-        mock_print_debug.assert_called_with("Completed step 3/3")
+    @patch('os.path.exists')    
+    @patch('builtins.open', new_callable=mock_open)
+    def test_perform_file_operation_create(self, mock_file, mock_exists):
+        mock_exists.return_value = False
+        result = self.executor.perform_file_operation('CREATE', 'test.txt', 'content')
+        self.assertTrue(result)
+        mock_file.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
+        mock_file().write.assert_called_with('content')
 
-    @patch('drd.cli.query.dynamic_command_handler.print_info')
-    @patch('drd.cli.query.dynamic_command_handler.print_success')
-    @patch('drd.cli.query.dynamic_command_handler.click.echo')
-    def test_handle_shell_command(self, mock_echo, mock_print_success, mock_print_info):
-        cmd = {'command': 'echo "Hello"'}
-        self.executor.execute_shell_command.return_value = "Hello"
+    @patch('os.path.exists')    
+    @patch('os.path.isfile')    
+    @patch('os.remove')
+    def test_perform_file_operation_delete(self, mock_remove, mock_isfile, mock_exists):
+        mock_exists.return_value = True
+        mock_isfile.return_value = True
+        result = self.executor.perform_file_operation('DELETE', 'test.txt')
+        self.assertTrue(result)
+        mock_remove.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'))
 
-        output = handle_shell_command(cmd, self.executor)
+    def test_parse_json(self):
+        valid_json = '{\"key\": \"value\"}'
+        invalid_json = '\"{key: value\"}'
+        self.assertEqual(self.executor.parse_json(valid_json), {\"key\": \"value\"})
+        self.assertIsNone(self.executor.parse_json(invalid_json))
 
-        self.assertEqual(output, "Hello")
-        self.executor.execute_shell_command.assert_called_once_with(
-            'echo "Hello"')
-        mock_print_info.assert_called_once_with(
-            'Executing shell command: echo "Hello"')
-        mock_print_success.assert_called_once_with(
-            'Successfully executed: echo "Hello"')
-        mock_echo.assert_called_once_with('Command output:\nHello')
+    def test_merge_json(self):
+        existing_content = '{\"key1\": \"value1\"}'
+        new_content = '{\"key2\": \"value2\"}'
+        expected_result = json.dumps({\"key1\": \"value1\", \"key2\": \"value2\"}, indent=2)
+        self.assertEqual(self.executor.merge_json(existing_content, new_content), expected_result)
 
-    @patch('drd.cli.query.dynamic_command_handler.print_info')
-    @patch('drd.cli.query.dynamic_command_handler.print_success')
-    @patch('drd.cli.query.dynamic_command_handler.update_file_metadata')
-    def test_handle_file_operation(self, mock_update_metadata, mock_print_success, mock_print_info):
-        cmd = {'operation': 'CREATE', 'filename': 'test.txt',
-               'content': 'Test content'}
-        self.executor.perform_file_operation.return_value = True
+    @patch('drd.utils.step_executor.get_ignore_patterns')
+    @patch('drd.utils.step_executor.get_folder_structure')
+    def test_get_folder_structure(self, mock_get_folder_structure, mock_get_ignore_patterns):
+        mock_get_ignore_patterns.return_value = ([], None)
+        mock_get_folder_structure.return_value = {'folder': {'file.txt': 'file'}}
+        result = self.executor.get_folder_structure()
+        self.assertEqual(result, {'folder': {'file.txt': 'file'}})
 
-        output = handle_file_operation(
-            cmd, self.executor, self.metadata_manager)
+    @patch('subprocess.Popen')
+    def test_execute_shell_command(self, mock_popen):
+        mock_process = MagicMock()
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.stdout.readline.return_value = 'output line'
+        mock_process.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_process
 
-        self.assertEqual(output, "Success")
-        self.executor.perform_file_operation.assert_called_once_with(
-            'CREATE', 'test.txt', 'Test content', force=True)
-        mock_update_metadata.assert_called_once_with(
-            cmd, self.metadata_manager, self.executor)
+        result = self.executor.execute_shell_command('ls')
+        self.assertEqual(result, 'output line')
 
-    @patch('drd.cli.query.dynamic_command_handler.generate_file_description')
-    def test_update_file_metadata(self, mock_generate_description):
-        cmd = {'filename': 'test.txt', 'content': 'Test content'}
-        mock_generate_description.return_value = (
-            'python', 'Test file', ['test_function'])
+    @patch('subprocess.run')
+    def test_handle_source_command(self, mock_run):
+        mock_run.return_value = subprocess.CompletedProcess(args=['source', 'test.sh'], returncode=0, stdout='KEY=value\n', stderr='')
+        with patch('os.path.isfile', return_value=True):
+            result = self.executor._handle_source_command('source test.sh')
+        self.assertEqual(result, "Source command executed successfully")
+        self.assertEqual(self.executor.env['KEY'], 'value')
 
-        update_file_metadata(cmd, self.metadata_manager, self.executor)
+    def test_update_env_from_command(self):
+        # Test simple assignment
+        self.executor._update_env_from_command('TEST_VAR=test_value')
+        self.assertEqual(self.executor.env['TEST_VAR'], 'test_value')
 
-        self.metadata_manager.get_project_context.assert_called_once()
-        self.executor.get_folder_structure.assert_called_once()
-        mock_generate_description.assert_called_once_with(
-            'test.txt', 'Test content', self.metadata_manager.get_project_context(), self.executor.get_folder_structure())
-        self.metadata_manager.update_file_metadata.assert_called_once_with(
-            'test.txt', 'python', 'Test content', 'Test file', ['test_function'])
+        # Test export command
+        self.executor._update_env_from_command('export EXPORT_VAR=export_value')
+        self.assertEqual(self.executor.env['EXPORT_VAR'], 'export_value')
 
-    @patch('drd.cli.query.dynamic_command_handler.print_error')
-    @patch('drd.cli.query.dynamic_command_handler.print_info')
-    @patch('drd.cli.query.dynamic_command_handler.print_success')
-    @patch('drd.cli.query.dynamic_command_handler.call_dravid_api')
-    @patch('drd.cli.query.dynamic_command_handler.execute_commands')
-    @patch('drd.cli.query.dynamic_command_handler.click.echo')
-    def test_handle_error_with_dravid(self, mock_echo, mock_execute_commands,
-                                      mock_call_api, mock_print_success, mock_print_info, mock_print_error):
-        error = Exception("Test error")
-        cmd = {'type': 'shell', 'command': 'echo "Hello"'}
+        # Test set command
+        self.executor._update_env_from_command('set SET_VAR=set_value')
+        self.assertEqual(self.executor.env['SET_VAR'], 'set_value')
 
-        mock_call_api.return_value = [
-            {'type': 'shell', 'command': "echo 'Fixed'"}]
-        mock_execute_commands.return_value = (True, 1, None, "Fix applied")
+        # Test with quotes
+        self.executor._update_env_from_command('QUOTE_VAR=\"quoted value\"')
+        self.assertEqual(self.executor.env['QUOTE_VAR'], 'quoted value')
 
-        result = handle_error_with_dravid(
-            error, cmd, self.executor, self.metadata_manager)
+        # Test export with quotes
+        self.executor._update_env_from_command('export EXPORT_QUOTE=\"exported quoted value\"')
+        self.assertEqual(self.executor.env['EXPORT_QUOTE'], 'exported quoted value')
+
+    @patch('os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('click.confirm')
+    def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
+        mock_exists.return_value = False
+        mock_confirm.return_value = True
+        result = self.executor.perform_file_operation('CREATE', 'test.txt', 'content')
+        self.assertTrue(result)
+        mock_file.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
+        mock_file().write.assert_called_with('content')
+        mock_confirm.assert_called_once()
+
+    @patch('os.path.exists')
+    @patch('builtins.open', new_callable=mock_open, read_data="original content")
+    @patch('click.confirm')
+    @patch('drd.utils.step_executor.preview_file_changes')
+    def test_perform_file_operation_update(self, mock_preview, mock_confirm, mock_file, mock_exists):
+        mock_exists.return_value = True
+        mock_confirm.return_value = True
+        mock_preview.return_value = "Preview of changes"
+
+        # Define the changes to be applied
+        changes = "+ 2: This is a new line\nr 1: This is a replaced line"
+
+        result = self.executor.perform_file_operation('UPDATE', 'test.txt', changes)
 
         self.assertTrue(result)
-        mock_call_api.assert_called_once()
-        mock_execute_commands.assert_called_once()
-        mock_print_success.assert_called_with(
-            "All fix steps successfully applied.")
+        mock_file.assert_any_call(os.path.join(self.executor.current_dir, 'test.txt'), 'r')
+        mock_file.assert_any_call(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
 
-    @patch('drd.cli.query.dynamic_command_handler.print_info')
-    @patch('drd.cli.query.dynamic_command_handler.print_success')
-    @patch('drd.cli.query.dynamic_command_handler.click.echo')
-    def test_handle_shell_command_skipped(self, mock_echo, mock_print_success, mock_print_info):
-        cmd = {'command': 'echo "Hello"'}
-        self.executor.execute_shell_command.return_value = "Skipping this step..."
+        # Calculate the expected updated content
+        expected_updated_content = apply_changes("original content", changes)
 
-        output = handle_shell_command(cmd, self.executor)
+        mock_preview.assert_called_once_with('UPDATE', 'test.txt', new_content=expected_updated_content, original_content="original content")
+        mock_file().write.assert_called_once_with(expected_updated_content)
 
-        self.assertEqual(output, "Skipping this step...")
-        self.executor.execute_shell_command.assert_called_once_with(
-            'echo "Hello"')
-        mock_print_info.assert_any_call(
-            'Executing shell command: echo "Hello"')
-        mock_print_info.assert_any_call("Skipping this step...")
-        mock_print_success.assert_not_called()
-        mock_echo.assert_not_called()
+    @patch('os.path.exists')
+    @patch('os.path.isfile')
+    @patch('os.remove')
+    @patch('click.confirm')
+    def test_perform_file_operation_delete(self, mock_confirm, mock_remove, mock_isfile, mock_exists):
+        mock_exists.return_value = True
+        mock_isfile.return_value = True
+        mock_confirm.return_value = True
+        result = self.executor.perform_file_operation('DELETE', 'test.txt')
+        self.assertTrue(result)
+        mock_remove.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'))
+        mock_confirm.assert_called_once()
 
-    @patch('drd.cli.query.dynamic_command_handler.print_step')
-    @patch('drd.cli.query.dynamic_command_handler.print_info')
-    @patch('drd.cli.query.dynamic_command_handler.print_debug')
-    def test_execute_commands(self, mock_print_debug, mock_print_info, mock_print_step):
-        commands = [
-            {'type': 'explanation', 'content': 'Test explanation'},
-            {'type': 'shell', 'command': 'echo "Hello"'},
-            {'type': 'file', 'operation': 'CREATE',
-                'filename': 'test.txt', 'content': 'Test content'},
-        ]
+    @patch('click.confirm')
+    def test_perform_file_operation_user_cancel(self, mock_confirm):
+        mock_confirm.return_value = False
+        result = self.executor.perform_file_operation('UPDATE', 'test.txt', 'content')
+        self.assertFalse(result)
 
-        with patch('drd.cli.query.dynamic_command_handler.handle_shell_command', return_value="Shell output") as mock_shell, \
-                patch('drd.cli.query.dynamic_command_handler.handle_file_operation', return_value="File operation success") as mock_file, \
-                patch('drd.cli.query.dynamic_command_handler.handle_metadata_operation', return_value="Metadata operation success") as mock_metadata:
+    @patch('subprocess.Popen')
+    @patch('click.confirm')
+    def test_execute_shell_command(self, mock_confirm, mock_popen):
+        mock_confirm.return_value = True
+        mock_process = MagicMock()
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.stdout.readline.return_value = 'output line'
+        mock_process.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_process
 
-            success, steps_completed, error, output = execute_commands(
-                commands, self.executor, self.metadata_manager, debug=True)
+        result = self.executor.execute_shell_command('ls')
+        self.assertEqual(result, 'output line')
+        mock_confirm.assert_called_once()
 
-        self.assertTrue(success)
-        self.assertEqual(steps_completed, 3)
-        self.assertIsNone(error)
-        self.assertIn("Explanation - Test explanation", output)
-        self.assertIn("Shell command - echo \"Hello\"", output)
-        self.assertIn("File command -  CREATE", output)
-        mock_print_debug.assert_has_calls([
-            call("Completed step 1/3"),
-            call("Completed step 2/3"),
-            call("Completed step 3/3")
-        ])
+    @patch('click.confirm')
+    def test_execute_shell_command_user_cancel(self, mock_confirm):
+        mock_confirm.return_value = False
+        result = self.executor.execute_shell_command('ls')
+        mock_confirm.assert_called_once()
 
-    @patch('drd.cli.query.dynamic_command_handler.print_step')
-    @patch('drd.cli.query.dynamic_command_handler.print_info')
-    @patch('drd.cli.query.dynamic_command_handler.print_debug')
-    def test_execute_commands_with_skipped_steps(self, mock_print_debug, mock_print_info, mock_print_step):
-        commands = [
-            {'type': 'explanation', 'content': 'Test explanation'},
-            {'type': 'shell', 'command': 'echo "Hello"'},
-            {'type': 'file', 'operation': 'CREATE',
-                'filename': 'test.txt', 'content': 'Test content'},
-        ]
+    @patch('os.chdir')
+    @patch('os.path.abspath')
+    def test_handle_cd_command(self, mock_abspath, mock_chdir):
+        mock_abspath.return_value = '/fake/path/app'
+        result = self.executor._handle_cd_command('cd app')
+        self.assertEqual(result, "Changed directory to: /fake/path/app")
+        mock_chdir.assert_called_once_with('/fake/path/app')
+        self.assertEqual(self.executor.current_dir, '/fake/path/app')
 
-        with patch('drd.cli.query.dynamic_command_handler.handle_shell_command', return_value="Skipping this step...") as mock_shell, \
-                patch('drd.cli.query.dynamic_command_handler.handle_file_operation', return_value="Skipping this step...") as mock_file:
+    @patch('subprocess.Popen')
+    def test_execute_single_command(self, mock_popen):
+        mock_process = MagicMock()
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.stdout.readline.return_value = 'output line'
+        mock_process.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_process
 
-            success, steps_completed, error, output = execute_commands(
-                commands, self.executor, self.metadata_manager, debug=True)
+        result = self.executor._execute_single_command('echo "Hello"', 300)
+        self.assertEqual(result, 'output line')
+        mock_popen.assert_called_once_with('echo "Hello"',
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=self.executor.env,
+            cwd=self.executor.current_dir)
 
-        self.assertTrue(success)
-        self.assertEqual(steps_completed, 3)
-        self.assertIsNone(error)
-        self.assertIn("Explanation - Test explanation", output)
-        self.assertIn("Skipping this step...", output)
-        mock_print_info.assert_any_call("Step 2/3: Skipping this step...")
-        mock_print_info.assert_any_call("Step 3/3: Skipping this step...")
-        mock_print_debug.assert_has_calls([
-            call("Completed step 1/3"),
-            call("Completed step 2/3"),
-            call("Completed step 3/3")
-        ])
+    @patch('click.confirm')
+    @patch('os.chdir')
+    @patch('os.path.abspath')
+    def test_execute_shell_command_cd(self, mock_abspath, mock_chdir, mock_confirm):
+        mock_confirm.return_value = True
+        mock_abspath.return_value = '/fake/path/app'
+        result = self.executor.execute_shell_command('cd app')
+        self.assertEqual(result, "Changed directory to: /fake/path/app")
+        mock_chdir.assert_called_once_with('/fake/path/app')
+        self.assertEqual(self.executor.current_dir, '/fake/path/app')
+
+    @patch('click.confirm')
+    @patch('subprocess.Popen')
+    def test_execute_shell_command_echo(self, mock_popen, mock_confirm):
+        mock_confirm.return_value = True
+        mock_process = MagicMock()
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.stdout.readline.return_value = 'Hello, World!'
+        mock_process.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_process
+
+        result = self.executor.execute_shell_command('echo "Hello, World!"')
+        self.assertEqual(result, 'Hello, World!')
+
+    @patch('os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('click.confirm')
+    def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
+        mock_exists.return_value = False
+        mock_confirm.return_value = True
+        result = self.executor.perform_file_operation('CREATE', 'test.txt', 'content')
+        self.assertTrue(result)
+        mock_file.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
+        mock_file().write.assert_called_with('content')
+
+    @patch('os.chdir')
+    def test_reset_directory(self, mock_chdir):
+        self.executor.current_dir = '/fake/path/app'
+        self.executor.reset_directory()
+        mock_chdir.assert_called_once_with(self.executor.initial_dir)
+        self.assertEqual(self.executor.current_dir, self.executor.initial_dir)
