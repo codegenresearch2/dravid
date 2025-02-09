@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 import xml.etree.ElementTree as ET
+import asyncio
 
 from drd.metadata.updater import update_metadata_with_dravid
 
@@ -21,6 +22,19 @@ class TestMetadataUpdater(unittest.TestCase):
             },
             'README.md': 'file',
             'package.json': 'file'
+        }
+
+    async def mock_analyze_file(self, filename):
+        # Simulate file analysis
+        return {
+            'path': filename,
+            'type': 'python',
+            'summary': 'Main Python file',
+            'exports': ['main_function'],
+            'imports': ['os'],
+            'external_dependencies': {
+                'requests==2.26.0': []
+            }
         }
 
     @patch('drd.metadata.updater.ProjectMetadataManager')    
@@ -97,8 +111,7 @@ class TestMetadataUpdater(unittest.TestCase):
 
         with patch('builtins.open', mock_open_file):
             # Call the function
-            update_metadata_with_dravid(
-                self.meta_description, self.current_dir)
+            asyncio.run(update_metadata_with_dravid(self.meta_description, self.current_dir))
 
         # Assertions
         mock_metadata_manager.assert_called_once_with(self.current_dir)
@@ -109,11 +122,12 @@ class TestMetadataUpdater(unittest.TestCase):
 
         # Check if metadata was correctly updated and removed
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
-            '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", 'Main Python file', [ 
-                'main_function'], ['os'])
+            '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", 'Main Python file', [
+                'main_function'],
+            ['os'])
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
-            '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', 'Package configuration file', [ 
-            ], [])
+            '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', 'Package configuration file', [],
+            [])
         mock_metadata_manager.return_value.remove_file_metadata.assert_called_once_with(
             'README.md')
 
@@ -135,7 +149,6 @@ class TestMetadataUpdater(unittest.TestCase):
         mock_print_success.assert_any_call(
             "Removed metadata for file: README.md")
         mock_print_success.assert_any_call("Metadata update completed.")
-
 
 if __name__ == '__main__':
     unittest.main()
