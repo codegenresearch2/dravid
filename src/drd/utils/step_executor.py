@@ -265,14 +265,20 @@ class Executor:
     def _update_env_from_command(self, command):
         if '=' in command:
             if command.startswith('export '):
-                key, value = command.split('=', 1)[1].strip().strip('"\'')
-                self.env[key] = value
+                parts = command.split('=', 1)
+                if len(parts) == 2:
+                    key, value = parts
+                    self.env[key.strip()] = value.strip().strip('"\'')
             elif command.startswith('set '):
-                key, value = command.split('=', 1)[1].strip().strip('"\'')
-                self.env[key] = value
+                parts = command.split('=', 1)
+                if len(parts) == 2:
+                    key, value = parts
+                    self.env[key.strip()] = value.strip().strip('"\'')
             else:
-                key, value = command.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
+                parts = command.split('=', 1)
+                if len(parts) == 2:
+                    key, value = parts
+                    self.env[key.strip()] = value.strip().strip('"\'')
 
     def _handle_cd_command(self, command):
         new_dir = command.split(None, 1)[1]
