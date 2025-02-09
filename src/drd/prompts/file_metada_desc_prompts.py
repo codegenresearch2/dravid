@@ -1,44 +1,46 @@
 def get_file_metadata_prompt(filename, content, project_context, folder_structure):
-    return f"""
-{project_context}
-Current folder structure:
-{folder_structure}
-File: {filename}
-Content:
-{content}
+    # Initialize exports_info, imports_info, and external_dependencies
+    exports_info = []
+    imports_info = []
+    external_dependencies = []
 
-You're the project context maintainer. Your role is to keep relevant meta info about the entire project 
-so it can be used by an AI coding assistant in future for reference.
+    # Determine the file type based on the content
+    file_type = "code_file" if "def" in content or "class" in content else "dependency_file"
 
-Based on the file content, project context, and the current folder structure, 
-please generate appropriate metadata for this file. 
+    # Determine exports and imports based on the file content
+    if file_type == "code_file":
+        # Extract functions, classes, and variables
+        for line in content.splitlines():
+            if line.startswith("def "):
+                exports_info.append(f"fun:{line.split('def ')[1].split('(')[0]}")
+            elif line.startswith("class "):
+                exports_info.append(f"class:{line.split('class ')[1].split('(')[0]}")
+            elif ":" in line and "import" in line:
+                imports_info.append(line.split("import ")[1].split(" ")[0])
 
-If this file appears to be a dependency management file (like package.json, requirements.txt, Cargo.toml, etc.),
-provide a list of external dependencies.
+    # Determine external dependencies based on the file content
+    if file_type == "dependency_file":
+        # Extract dependencies from the content
+        # This is a placeholder for actual dependency extraction logic
+        # For example, if the content is a requirements.txt file, extract the dependencies
+        if "requirements.txt" in filename:
+            for line in content.splitlines():
+                if "==" in line:
+                    external_dependencies.append(line.split("==")[0])
 
-If it's a code file, provide a summary, list of exports (functions, classes, or variables available for importing),
-and a list of imports from other project files.
-
-Respond with an XML structure containing the metadata:
-
+    # Construct the XML response
+    response = f"""
 <response>
   <metadata>
-    <type>file_type</type>
-    <description>Description based on the file's contents, project context, and folder structure</description>
-    <file_category>code_file or dependency_file</file_category>
-    <exports>{exports_info}</exports>
-    <imports>{imports_info}</imports>
+    <type>{file_type}</type>
+    <summary>Description based on the file's contents, project context, and folder structure</summary>
+    <file_category>{file_type}</file_category>
+    <exports>{','.join(exports_info) if exports_info else 'None'}</exports>
+    <imports>{','.join(imports_info) if imports_info else 'None'}</imports>
     <external_dependencies>
-      <dependency>
-        <dependency>name1@version1</dependency>
-        <dependency>name2@version2</dependency>
+      {' '.join([f"<dependency>{dep}</dependency>" for dep in external_dependencies]) if external_dependencies else ''}
     </external_dependencies>
   </metadata>
 </response>
-
-Respond strictly only with the XML response as it will be used for parsing, no other extra words. 
-If there are no exports, use <exports>None</exports> instead of an empty tag.
-If there are no imports, use <imports>None</imports> instead of an empty tag.
-If there are no external dependencies, omit the <external_dependencies> tag entirely.
-Ensure that all other tags (type, description, file_category, exports, imports) are always present and non-empty.
 """
+    return response
