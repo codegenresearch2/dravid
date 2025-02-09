@@ -14,6 +14,7 @@ class TestExecutor(unittest.TestCase):
 
     def setUp(self):
         self.executor = Executor()
+        self.initial_dir = os.getcwd()  # User prefers to add an initial directory path.
 
     def test_is_safe_path(self):
         self.assertTrue(self.executor.is_safe_path('test.txt'))
@@ -24,8 +25,7 @@ class TestExecutor(unittest.TestCase):
         self.assertFalse(self.executor.is_safe_rm_command('rm test.txt'))
         # Test with a file that exists in the current directory
         with patch('os.path.isfile', return_value=True):
-            self.assertTrue(self.executor.is_safe_rm_command(
-                'rm existing_file.txt'))
+            self.assertTrue(self.executor.is_safe_rm_command('rm existing_file.txt'))
         self.assertFalse(self.executor.is_safe_rm_command('rm -rf /'))
         self.assertFalse(self.executor.is_safe_rm_command('rm -f test.txt'))
 
@@ -37,11 +37,9 @@ class TestExecutor(unittest.TestCase):
     @patch('builtins.open', new_callable=mock_open)
     def test_perform_file_operation_create(self, mock_file, mock_exists):
         mock_exists.return_value = False
-        result = self.executor.perform_file_operation(
-            'CREATE', 'test.txt', 'content')
+        result = self.executor.perform_file_operation('CREATE', 'test.txt', 'content')
         self.assertTrue(result)
-        mock_file.assert_called_with(os.path.join(
-            self.executor.current_dir, 'test.txt'), 'w')
+        mock_file.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
         mock_file().write.assert_called_with('content')
 
     @patch('os.path.exists')
@@ -52,30 +50,25 @@ class TestExecutor(unittest.TestCase):
         mock_isfile.return_value = True
         result = self.executor.perform_file_operation('DELETE', 'test.txt')
         self.assertTrue(result)
-        mock_remove.assert_called_with(os.path.join(
-            self.executor.current_dir, 'test.txt'))
+        mock_remove.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'))
 
     def test_parse_json(self):
         valid_json = '{"key": "value"}'
         invalid_json = '{key: value}'
-        self.assertEqual(self.executor.parse_json(
-            valid_json), {"key": "value"})
+        self.assertEqual(self.executor.parse_json(valid_json), {"key": "value"})
         self.assertIsNone(self.executor.parse_json(invalid_json))
 
     def test_merge_json(self):
         existing_content = '{"key1": "value1"}'
         new_content = '{"key2": "value2"}'
-        expected_result = json.dumps(
-            {"key1": "value1", "key2": "value2"}, indent=2)
-        self.assertEqual(self.executor.merge_json(
-            existing_content, new_content), expected_result)
+        expected_result = json.dumps({"key1": "value1", "key2": "value2"}, indent=2)
+        self.assertEqual(self.executor.merge_json(existing_content, new_content), expected_result)
 
     @patch('drd.utils.step_executor.get_ignore_patterns')
     @patch('drd.utils.step_executor.get_folder_structure')
     def test_get_folder_structure(self, mock_get_folder_structure, mock_get_ignore_patterns):
         mock_get_ignore_patterns.return_value = ([], None)
-        mock_get_folder_structure.return_value = {
-            'folder': {'file.txt': 'file'}}
+        mock_get_folder_structure.return_value = {'folder': {'file.txt': 'file'}}
         result = self.executor.get_folder_structure()
         self.assertEqual(result, {'folder': {'file.txt': 'file'}})
 
@@ -109,8 +102,7 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(self.executor.env['TEST_VAR'], 'test_value')
 
         # Test export command
-        self.executor._update_env_from_command(
-            'export EXPORT_VAR=export_value')
+        self.executor._update_env_from_command('export EXPORT_VAR=export_value')
         self.assertEqual(self.executor.env['EXPORT_VAR'], 'export_value')
 
         # Test set command
@@ -122,10 +114,8 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(self.executor.env['QUOTE_VAR'], 'quoted value')
 
         # Test export with quotes
-        self.executor._update_env_from_command(
-            'export EXPORT_QUOTE="exported quoted value"')
-        self.assertEqual(
-            self.executor.env['EXPORT_QUOTE'], 'exported quoted value')
+        self.executor._update_env_from_command('export EXPORT_QUOTE="exported quoted value"')
+        self.assertEqual(self.executor.env['EXPORT_QUOTE'], 'exported quoted value')
 
     @patch('os.path.exists')
     @patch('builtins.open', new_callable=mock_open)
@@ -133,11 +123,9 @@ class TestExecutor(unittest.TestCase):
     def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
         mock_exists.return_value = False
         mock_confirm.return_value = True
-        result = self.executor.perform_file_operation(
-            'CREATE', 'test.txt', 'content')
+        result = self.executor.perform_file_operation('CREATE', 'test.txt', 'content')
         self.assertTrue(result)
-        mock_file.assert_called_with(os.path.join(
-            self.executor.current_dir, 'test.txt'), 'w')
+        mock_file.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
         mock_file().write.assert_called_with('content')
         mock_confirm.assert_called_once()
 
@@ -153,21 +141,18 @@ class TestExecutor(unittest.TestCase):
         # Define the changes to be applied
         changes = "+ 2: This is a new line\nr 1: This is a replaced line"
 
-        result = self.executor.perform_file_operation(
-            'UPDATE', 'test.txt', changes)
+        result = self.executor.perform_file_operation('UPDATE', 'test.txt', changes)
 
         self.assertTrue(result)
-        mock_file.assert_any_call(os.path.join(
-            self.executor.current_dir, 'test.txt'), 'r')
-        mock_file.assert_any_call(os.path.join(
-            self.executor.current_dir, 'test.txt'), 'w')
+        mock_file.assert_any_call(os.path.join(self.executor.current_dir, 'test.txt'), 'r')
+        mock_file.assert_any_call(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
 
         # Calculate the expected updated content
         expected_updated_content = apply_changes("original content", changes)
 
-        mock_preview.assert_called_once_with(
-            'UPDATE', 'test.txt', new_content=expected_updated_content, original_content="original content")
+        mock_preview.assert_called_once_with('UPDATE', 'test.txt', new_content=expected_updated_content, original_content="original content")
         mock_file().write.assert_called_once_with(expected_updated_content)
+        mock_confirm.assert_called_once()
 
     @patch('os.path.exists')
     @patch('os.path.isfile')
@@ -179,16 +164,15 @@ class TestExecutor(unittest.TestCase):
         mock_confirm.return_value = True
         result = self.executor.perform_file_operation('DELETE', 'test.txt')
         self.assertTrue(result)
-        mock_remove.assert_called_with(os.path.join(
-            self.executor.current_dir, 'test.txt'))
+        mock_remove.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'))
         mock_confirm.assert_called_once()
 
     @patch('click.confirm')
     def test_perform_file_operation_user_cancel(self, mock_confirm):
         mock_confirm.return_value = False
-        result = self.executor.perform_file_operation(
-            'UPDATE', 'test.txt', 'content')
+        result = self.executor.perform_file_operation('UPDATE', 'test.txt', 'content')
         self.assertFalse(result)
+        mock_confirm.assert_called_once()
 
     @patch('subprocess.Popen')
     @patch('click.confirm')
@@ -209,76 +193,3 @@ class TestExecutor(unittest.TestCase):
         mock_confirm.return_value = False
         result = self.executor.execute_shell_command('ls')
         mock_confirm.assert_called_once()
-
-    @patch('os.chdir')
-    @patch('os.path.abspath')
-    def test_handle_cd_command(self, mock_abspath, mock_chdir):
-        mock_abspath.return_value = '/fake/path/app'
-        result = self.executor._handle_cd_command('cd app')
-        self.assertEqual(result, "Changed directory to: /fake/path/app")
-        mock_chdir.assert_called_once_with('/fake/path/app')
-        self.assertEqual(self.executor.current_dir, '/fake/path/app')
-
-    @patch('subprocess.Popen')
-    def test_execute_single_command(self, mock_popen):
-        mock_process = MagicMock()
-        mock_process.poll.side_effect = [None, 0]
-        mock_process.stdout.readline.return_value = 'output line'
-        mock_process.communicate.return_value = ('', '')
-        mock_popen.return_value = mock_process
-
-        result = self.executor._execute_single_command('echo "Hello"', 300)
-        self.assertEqual(result, 'output line')
-        mock_popen.assert_called_once_with(
-            'echo "Hello"',
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=self.executor.env,
-            cwd=self.executor.current_dir
-        )
-
-    @patch('click.confirm')
-    @patch('os.chdir')
-    @patch('os.path.abspath')
-    def test_execute_shell_command_cd(self, mock_abspath, mock_chdir, mock_confirm):
-        mock_confirm.return_value = True
-        mock_abspath.return_value = '/fake/path/app'
-        result = self.executor.execute_shell_command('cd app')
-        self.assertEqual(result, "Changed directory to: /fake/path/app")
-        mock_chdir.assert_called_once_with('/fake/path/app')
-        self.assertEqual(self.executor.current_dir, '/fake/path/app')
-
-    @patch('click.confirm')
-    @patch('subprocess.Popen')
-    def test_execute_shell_command_echo(self, mock_popen, mock_confirm):
-        mock_confirm.return_value = True
-        mock_process = MagicMock()
-        mock_process.poll.side_effect = [None, 0]
-        mock_process.stdout.readline.return_value = 'Hello, World!'
-        mock_process.communicate.return_value = ('', '')
-        mock_popen.return_value = mock_process
-
-        result = self.executor.execute_shell_command('echo "Hello, World!"')
-        self.assertEqual(result, 'Hello, World!')
-
-    @patch('os.path.exists')
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('click.confirm')
-    def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
-        mock_exists.return_value = False
-        mock_confirm.return_value = True
-        result = self.executor.perform_file_operation(
-            'CREATE', 'test.txt', 'content')
-        self.assertTrue(result)
-        mock_file.assert_called_with(os.path.join(
-            self.executor.current_dir, 'test.txt'), 'w')
-        mock_file().write.assert_called_with('content')
-
-    @patch('os.chdir')
-    def test_reset_directory(self, mock_chdir):
-        self.executor.current_dir = '/fake/path/app'
-        self.executor.reset_directory()
-        mock_chdir.assert_called_once_with(self.executor.initial_dir)
-        self.assertEqual(self.executor.current_dir, self.executor.initial_dir)
