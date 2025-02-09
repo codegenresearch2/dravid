@@ -23,8 +23,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
     @patch('drd.cli.query.dynamic_command_handler.print_step')
     @patch('drd.cli.query.dynamic_command_handler.print_info')
     @patch('drd.cli.query.dynamic_command_handler.print_debug')
-    def test_execute_commands(self, mock_print_debug, mock_print_info, mock_print_step,
-                               mock_handle_metadata, mock_handle_file, mock_handle_shell):
+    def test_execute_commands(self, mock_print_debug, mock_print_info, mock_print_step, mock_handle_metadata, mock_handle_file, mock_handle_shell):
         commands = [
             {'type': 'explanation', 'content': 'Test explanation'},
             {'type': 'shell', 'command': 'echo "Hello"'},
@@ -59,8 +58,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
             self.assertEqual(output, 'Hello')
             self.executor.execute_shell_command.assert_called_once_with('echo "Hello"')
             mock_print_success.assert_called_once_with('Successfully executed: echo "Hello"')
-            mock_echo.assert_called_once_with('Command output:
-Hello')
+            mock_echo.assert_called_once_with('Command output:\nHello')
 
     @patch('drd.cli.query.dynamic_command_handler.print_info') as mock_print_info,
          patch('drd.cli.query.dynamic_command_handler.print_success') as mock_print_success,
