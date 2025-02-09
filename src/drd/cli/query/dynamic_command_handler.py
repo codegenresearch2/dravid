@@ -1,10 +1,10 @@
 import traceback
 from ...api.main import call_dravid_api
 from ...utils.step_executor import Executor
-from ...utils.utils import print_error, print_success, print_info
-from ...prompts.monitor_error_resolution import get_error_resolution_prompt
-from ..query.file_operations import get_files_to_modify
-from ...utils.file_utils import get_file_content
+from ...utils.utils import print_error, print_success, print_info, print_step, print_debug
+from ...metadata.common_utils import generate_file_description
+from ...prompts.error_resolution_prompt import get_error_resolution_prompt
+import click
 
 
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
@@ -12,8 +12,12 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
     total_steps = len(commands)
 
     for i, cmd in enumerate(commands, 1):
-        step_description = "fix" if is_fix else "command"
-        print_info(f"Processing {cmd['type']} {step_description}...")
+        print_step(i, total_steps, f"Processing {cmd['type']} {is_fix and 'fix' or 'command'}...")
+
+        if cmd['type'] == 'explanation':
+            print_info(f"Explanation: {cmd['content']}")
+            all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
+            continue
 
         try:
             if cmd['type'] == 'shell':
@@ -27,10 +31,10 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 all_outputs.append(f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} - {output}")
 
             if debug:
-                print_info(f"Completed step {i}/{total_steps}")
+                print_debug(f"Completed step {i}/{total_steps}")
 
         except Exception as e:
-            error_message = f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {str(e)}"
+            error_message = f"Step {i}/{total_steps}: Error executing {is_fix and 'fix' or 'command'}: {cmd}\nError details: {str(e)}"
             print_error(error_message)
             all_outputs.append(error_message)
             return False, i, str(e), "\n".join(all_outputs)
@@ -44,6 +48,7 @@ def handle_shell_command(cmd, executor):
     if output is None:
         raise Exception(f"Command failed: {cmd['command']}")
     print_success(f"Successfully executed: {cmd['command']}")
+    click.echo(f"Command output:\n{output}")
     return output
 
 
@@ -128,11 +133,14 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
     if fix_applied:
         print_success("All fix steps successfully applied.")
         print_info("Fix application details:")
+        click.echo(all_outputs)
         return True
     else:
         print_error(f"Failed to apply the fix at step {step_completed}.")
         print_error(f"Error message: {error_message}")
         print_info("Fix application details:")
+        click.echo(all_outputs)
+
         return handle_error_with_dravid(
             Exception(error_message),
             {"type": "fix", "command": f"apply fix step {step_completed}"},
