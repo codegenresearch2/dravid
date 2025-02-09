@@ -14,31 +14,28 @@ from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
-        self.allowed_directories = [self.current_dir, '/fake/path']
-
-        self.initial_dir = self.current_dir
+        self.allowed_directories = [self.current_dir]
         self.disallowed_commands = [
             'rmdir', 'del', 'format', 'mkfs',
             'dd', 'fsck', 'mkswap', 'mount', 'umount',
             'sudo', 'su', 'chown', 'chmod'
         ]
         self.env = os.environ.copy()
+        self.initial_dir = self.current_dir
 
     def is_safe_path(self, path):
-        full_path = os.path.abspath(path)
-        return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories) or full_path == self.current_dir
+        full_path = os.path.abspath(os.path.join(self.current_dir, path))
+        return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories)
 
     def is_safe_rm_command(self, command):
         parts = command.split()
         if parts[0] != 'rm':
             return False
 
-        # Check for dangerous flags
         dangerous_flags = ['-r', '-f', '-rf', '-fr']
         if any(flag in parts for flag in dangerous_flags):
             return False
 
-        # Check if it's removing a specific file
         if len(parts) != 2:
             return False
 
@@ -163,7 +160,7 @@ class Executor:
         ignore_patterns, _ = get_ignore_patterns(self.current_dir)
         return get_folder_structure(self.current_dir, ignore_patterns)
 
-    def execute_shell_command(self, command, timeout=300):  # 5 minutes timeout
+    def execute_shell_command(self, command, timeout=300):
         if not self.is_safe_command(command):
             print_warning(f"Please verify the command once: {command}")
 
@@ -235,8 +232,7 @@ class Executor:
             raise Exception(error_message)
 
     def _handle_source_command(self, command):
-        # Extract the file path from the source command
-        _, file_path = command.split(None, 1)
+        file_path = command.split(None, 1)[1]
         file_path = os.path.expandvars(os.path.expanduser(file_path))
 
         if not os.path.isfile(file_path):
@@ -244,7 +240,6 @@ class Executor:
             print_error(error_message)
             raise Exception(error_message)
 
-        # Execute the source command in a subshell and capture the environment changes
         try:
             result = subprocess.run(
                 f'source {file_path} && env',
@@ -255,11 +250,10 @@ class Executor:
                 executable='/bin/bash'
             )
 
-            # Update the environment with any changes
             for line in result.stdout.splitlines():
                 if '=' in line:
                     key, value = line.split('=', 1)
-                    self.env[key] = value
+                    self.env[key.strip()] = value.strip().strip('"\'')
 
             print_success(f"Sourced file successfully: {file_path}")
             return "Source command executed successfully"
@@ -271,23 +265,18 @@ class Executor:
     def _update_env_from_command(self, command):
         if '=' in command:
             if command.startswith('export '):
-                # Handle export command
-                _, var_assignment = command.split(None, 1)
-                key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
+                key, value = command.split('=', 1)[1].strip().strip('"\'')
+                self.env[key] = value
             elif command.startswith('set '):
-                # Handle set command
-                _, var_assignment = command.split(None, 1)
-                key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
+                key, value = command.split('=', 1)[1].strip().strip('"\'')
+                self.env[key] = value
             else:
-                # Handle simple assignment
                 key, value = command.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
 
     def _handle_cd_command(self, command):
-        _, path = command.split(None, 1)
-        new_dir = os.path.abspath(os.path.join(self.current_dir, path))
+        new_dir = command.split(None, 1)[1]
+        new_dir = os.path.abspath(os.path.join(self.current_dir, new_dir))
         if self.is_safe_path(new_dir):
             os.chdir(new_dir)
             self.current_dir = new_dir
@@ -299,7 +288,5 @@ class Executor:
 
     def reset_directory(self):
         os.chdir(self.initial_dir)
-        project_dir = self.current_dir
         self.current_dir = self.initial_dir
-        print_info(
-            f"Resetting directory to: {self.current_dir} from project dir:{project_dir}")
+        print_info(f"Reset directory to: {self.current_dir}")
