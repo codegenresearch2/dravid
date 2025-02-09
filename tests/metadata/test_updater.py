@@ -1,7 +1,6 @@
 import unittest
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, MagicMock
 import xml.etree.ElementTree as ET
-import asyncio
 
 from drd.metadata.updater import update_metadata_with_dravid
 
@@ -24,7 +23,7 @@ class TestMetadataUpdater(unittest.TestCase):
             'package.json': 'file'
         }
 
-    async def mock_analyze_file(self, filename):
+    def mock_analyze_file(self, filename):
         # Simulate file analysis
         return {
             'path': filename,
@@ -101,17 +100,11 @@ class TestMetadataUpdater(unittest.TestCase):
         mock_find_file.side_effect = [
             '/fake/project/dir/src/main.py', '/fake/project/dir/package.json']
 
-        # Mock file contents
-        mock_file_contents = {
-            '/fake/project/dir/src/main.py': "print('Hello, World!')",
-            '/fake/project/dir/package.json': '{"name": "test-project"}'}
+        # Mock file analysis
+        mock_metadata_manager.return_value.analyze_file.side_effect = [self.mock_analyze_file('/fake/project/dir/src/main.py'), self.mock_analyze_file('/fake/project/dir/package.json')]
 
-        def mock_open_file(filename, *args, **kwargs):
-            return mock_open(read_data=mock_file_contents.get(filename, ""))()
-
-        with patch('builtins.open', mock_open_file):
-            # Call the function
-            asyncio.run(update_metadata_with_dravid(self.meta_description, self.current_dir))
+        # Call the function
+        update_metadata_with_dravid(self.meta_description, self.current_dir)
 
         # Assertions
         mock_metadata_manager.assert_called_once_with(self.current_dir)
@@ -122,33 +115,26 @@ class TestMetadataUpdater(unittest.TestCase):
 
         # Check if metadata was correctly updated and removed
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
-            '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", 'Main Python file', [
-                'main_function'],
-            ['os'])
+            '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", 'Main Python file', [ 'main_function'], ['os'])
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
-            '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', 'Package configuration file', [],
-            [])
-        mock_metadata_manager.return_value.remove_file_metadata.assert_called_once_with(
-            'README.md')
+            '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', 'Package configuration file', [], [])
+        mock_metadata_manager.return_value.remove_file_metadata.assert_called_once_with('README.md')
 
         # Check if external dependencies were added
-        mock_metadata_manager.return_value.add_external_dependency.assert_any_call(
-            'requests==2.26.0')
-        mock_metadata_manager.return_value.add_external_dependency.assert_any_call(
-            'react@^17.0.2')
-        mock_metadata_manager.return_value.add_external_dependency.assert_any_call(
-            'jest@^27.0.6')
+        mock_metadata_manager.return_value.add_external_dependency.assert_any_call('requests==2.26.0')
+        mock_metadata_manager.return_value.add_external_dependency.assert_any_call('react@^17.0.2')
+        mock_metadata_manager.return_value.add_external_dependency.assert_any_call('jest@^27.0.6')
 
         # Check if appropriate messages were printed
         mock_print_info.assert_any_call(
-            "Updating metadata based on the provided description...")
+            "Updating metadata based on the provided description...")        
         mock_print_success.assert_any_call(
-            "Updated metadata for file: /fake/project/dir/src/main.py")
+            "Updated metadata for file: /fake/project/dir/src/main.py")        
         mock_print_success.assert_any_call(
-            "Updated metadata for file: /fake/project/dir/package.json")
+            "Updated metadata for file: /fake/project/dir/package.json")        
         mock_print_success.assert_any_call(
-            "Removed metadata for file: README.md")
-        mock_print_success.assert_any_call("Metadata update completed.")
+            "Removed metadata for file: README.md")        
+        mock_print_success.assert_any_call("Metadata update completed.")    
 
 if __name__ == '__main__':
     unittest.main()
