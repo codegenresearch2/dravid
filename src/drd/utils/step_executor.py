@@ -41,7 +41,13 @@ class Executor:
         file_to_remove = parts[1]
         return self.is_safe_path(file_to_remove) and os.path.isfile(os.path.join(self.current_dir, file_to_remove))
 
-    def perform_file_operation(self, operation, filename, content=None):
+    def is_safe_command(self, command):
+        command_parts = command.split()
+        if command_parts[0] == 'rm':
+            return self.is_safe_rm_command(command)
+        return not any(cmd in self.disallowed_commands for cmd in command_parts)
+
+    def perform_file_operation(self, operation, filename, content=None, force=False):
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
 
         if not self.is_safe_path(full_path):
@@ -55,7 +61,7 @@ class Executor:
         print_info(f"File: {filename}")
 
         if operation == 'CREATE':
-            if os.path.exists(full_path):
+            if os.path.exists(full_path) and not force:
                 print_info(f"File already exists: {filename}")
                 return False
             try:
