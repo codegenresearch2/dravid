@@ -41,7 +41,7 @@ class TestMetadataUpdater(unittest.TestCase):
         # Set up mocks
         mock_metadata_manager.return_value.get_project_context.return_value = self.project_context
         mock_get_ignore_patterns.return_value = ( 
-            [], "No ignore patterns found")
+            [], "No ignore patterns found") 
         mock_get_folder_structure.return_value = self.folder_structure
 
         mock_call_api.return_value = """
@@ -52,7 +52,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     <action>update</action>
                     <metadata>
                         <type>python</type>
-                        <description>Main Python file</description>
+                        <summary>Main Python file</summary>
                         <exports>main_function</exports>
                         <imports>os</imports>
                         <external_dependencies>
@@ -69,7 +69,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     <action>update</action>
                     <metadata>
                         <type>json</type>
-                        <description>Package configuration file</description>
+                        <summary>Package configuration file</summary>
                         <exports>None</exports>
                         <imports>None</imports>
                         <external_dependencies>
