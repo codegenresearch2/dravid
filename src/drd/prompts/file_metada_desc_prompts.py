@@ -20,7 +20,11 @@ def get_file_metadata_prompt(filename, content, project_context, folder_structur
             elif line.startswith("class "):
                 exports_info.append(f"class:{line.split('class ')[1].split('(')[0]}")
             elif ":" in line and "import" in line:
-                imports_info.append(line.split("import ")[1].split(" ")[0])
+                import_parts = line.split("import ")
+                for part in import_parts:
+                    if ":" in part:
+                        import_item = part.split(" ")[0]
+                        imports_info.append(import_item)
 
     # Determine external dependencies based on the file content
     if file_type == "dependency_file":
@@ -28,19 +32,24 @@ def get_file_metadata_prompt(filename, content, project_context, folder_structur
             if "==" in line:
                 external_dependencies.append(line.split("==")[0])
 
+    # Generate a summary based on the file's contents
+    summary = "Summary based on the file's contents, project context, and folder structure"
+
     # Construct the XML response
     response = f"""
 <response>
   <metadata>
     <path>{filename}</path>
     <type>{file_type}</type>
-    <description>Summary based on the file's contents, project context, and folder structure</description>
+    <summary>{summary}</summary>
     <file_category>{file_type}</file_category>
     <exports>{','.join(exports_info) if exports_info else 'None'}</exports>
     <imports>{','.join(imports_info) if imports_info else 'None'}</imports>
     <external_dependencies>
       {' '.join([f"<dependency>{dep}</dependency>" for dep in external_dependencies]) if external_dependencies else ''}
     </external_dependencies>
+    <project_context>{project_context}</project_context>
+    <folder_structure>{folder_structure}</folder_structure>
   </metadata>
 </response>
 """
