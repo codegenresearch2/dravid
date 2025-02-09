@@ -1,5 +1,5 @@
 <response>
-  <explanation>A brief explanation of the steps, if necessary</explanation>
+  <explanation>This response provides a structured set of instructions to initialize a project, update a file, and modify metadata.</explanation>
   <steps>
     <step>
       <type>shell</type>
@@ -13,18 +13,7 @@
         <![CDATA[
           + 3: import new_module
           - 10:
-          r 15: def updated_function():
-        ]]> 
-      </content>
-    </step>
-    <step>
-      <type>metadata</type>
-      <operation>UPDATE_FILE</operation>
-      <filename>drd.json</filename>
-      <content>
-        <![CDATA[
-          {}
-        ]]> 
+          r 15: def updated_function():]]>
       </content>
     </step>
     <step>
@@ -34,7 +23,27 @@
       <content>
         <![CDATA[
           {}
-        ]]> 
+        ]]>  
+      </content>
+    </step>
+    <step>
+      <type>metadata</type>
+      <operation>UPDATE</operation>
+      <filename>drd.json</filename>
+      <content>
+        <![CDATA[
+          {}
+        ]]>  
+      </content>
+    </step>
+    <step>
+      <type>metadata</type>
+      <operation>UPDATE</operation>
+      <filename>drd.json</filename>
+      <content>
+        <![CDATA[
+          {}
+        ]]>  
       </content>
     </step>
   </steps>
