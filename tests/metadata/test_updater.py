@@ -90,7 +90,7 @@ class TestMetadataUpdater(unittest.TestCase):
         # Mock file contents
         mock_file_contents = {
             '/fake/project/dir/src/main.py': "print('Hello, World!')",
-            '/fake/project/dir/package.json': '{\"name\": \"test-project\"}'}
+            '/fake/project/dir/package.json': '{"name": "test-project"}'}
 
         def mock_open_file(filename, *args, **kwargs):
             return mock_open(read_data=mock_file_contents.get(filename, ""))()
@@ -113,7 +113,7 @@ class TestMetadataUpdater(unittest.TestCase):
                 'main_function'], ['os']
         )
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
-            '/fake/project/dir/package.json', 'json', '{\"name\": \"test-project\"}', 'Package configuration file', [ 
+            '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', 'Package configuration file', [ 
             ], []
         )
         mock_metadata_manager.return_value.remove_file_metadata.assert_called_once_with(
@@ -129,14 +129,14 @@ class TestMetadataUpdater(unittest.TestCase):
 
         # Check if appropriate messages were printed
         mock_print_info.assert_any_call(
-            "Updating metadata based on the provided description...")
+            "Updating metadata based on the provided description...")        
         mock_print_success.assert_any_call(
-            "Updated metadata for file: /fake/project/dir/src/main.py")
+            "Updated metadata for file: /fake/project/dir/src/main.py")        
         mock_print_success.assert_any_call(
-            "Updated metadata for file: /fake/project/dir/package.json")
+            "Updated metadata for file: /fake/project/dir/package.json")        
         mock_print_success.assert_any_call(
-            "Removed metadata for file: README.md")
-        mock_print_success.assert_any_call("Metadata update completed.")
+            "Removed metadata for file: README.md")        
+        mock_print_success.assert_any_call("Metadata update completed.")        
 
 
 if __name__ == '__main__':
