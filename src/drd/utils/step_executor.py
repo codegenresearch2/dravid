@@ -47,7 +47,7 @@ class Executor:
         file_to_remove = parts[1]
         return self.is_safe_path(file_to_remove) and os.path.isfile(os.path.join(self.current_dir, file_to_remove))
 
-    def perform_file_operation(self, operation, filename, content=None):
+    def perform_file_operation(self, operation, filename, content=None, force=False):
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
 
         if not self.is_safe_path(full_path):
@@ -61,7 +61,7 @@ class Executor:
         print_info(f"File: {filename}")
 
         if operation == 'CREATE':
-            if os.path.exists(full_path):
+            if os.path.exists(full_path) and not force:
                 print_info(f"File already exists: {filename}")
                 return False
             try:
@@ -158,7 +158,7 @@ class Executor:
         ignore_patterns, _ = get_ignore_patterns(self.current_dir)
         return get_folder_structure(self.current_dir, ignore_patterns)
 
-    def execute_shell_command(self, command):
+    def execute_shell_command(self, command, timeout=300):
         if not self.is_safe_command(command):
             print_warning(f"Please verify the command once: {command}")
 
@@ -178,9 +178,9 @@ class Executor:
         elif command.strip().startswith(('source', '.')):
             return self._handle_source_command(command)
         else:
-            return self._execute_single_command(command)
+            return self._execute_single_command(command, timeout)
 
-    def _execute_single_command(self, command):
+    def _execute_single_command(self, command, timeout):
         try:
             process = subprocess.Popen(
                 command,
@@ -197,6 +197,8 @@ class Executor:
                 return_code = process.poll()
                 if return_code is not None:
                     break
+
+                time.sleep(0.1)
 
                 line = process.stdout.readline()
                 if line:
