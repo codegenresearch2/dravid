@@ -1,5 +1,14 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, mock_open
+import os
+import json
+import subprocess
+from io import StringIO
+
+# Update this import to match your actual module structure
+from drd.utils.step_executor import Executor
+from drd.utils.apply_file_changes import apply_changes
+
 
 class TestExecutor(unittest.TestCase):
 
@@ -11,6 +20,9 @@ class TestExecutor(unittest.TestCase):
         self.assertFalse(self.executor.is_safe_path('/etc/passwd'))
 
     def test_is_safe_rm_command(self):
+        # Assuming 'rm test.txt' is not considered safe without additional checks
+        self.assertFalse(self.executor.is_safe_rm_command('rm test.txt'))
+        # Test with a file that exists in the current directory
         with patch('os.path.isfile', return_value=True):
             self.assertTrue(self.executor.is_safe_rm_command('rm existing_file.txt'))
         self.assertFalse(self.executor.is_safe_rm_command('rm -rf /'))
@@ -42,13 +54,13 @@ class TestExecutor(unittest.TestCase):
     def test_parse_json(self):
         valid_json = '{"key": "value"}'
         invalid_json = '"{key: value"}'
-        self.assertEqual(self.executor.parse_json(valid_json), {'key': 'value'})
+        self.assertEqual(self.executor.parse_json(valid_json), {"key": "value"})
         self.assertIsNone(self.executor.parse_json(invalid_json))
 
     def test_merge_json(self):
         existing_content = '{"key1": "value1"}'
         new_content = '{"key2": "value2"}'
-        expected_result = json.dumps({'key1': 'value1', 'key2': 'value2'}, indent=2)
+        expected_result = json.dumps({"key1": "value1", "key2": "value2"}, indent=2)
         self.assertEqual(self.executor.merge_json(existing_content, new_content), expected_result)
 
     @patch('drd.utils.step_executor.get_ignore_patterns')     
