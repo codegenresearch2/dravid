@@ -7,14 +7,12 @@
     </step>
     <step>
       <type>file</type>
-      <operation>UPDATE</operation>
+      <operation>CREATE</operation>
       <filename>app.py</filename>
       <content>
         <![CDATA[
-          + 3: import new_module
-          - 10:
-          r 15: def updated_function()
-        ]]>        
+          def example():
+           return 'Hello, World!'\n        ]]>         
       </content>
     </step>
     <step>
@@ -29,7 +27,7 @@
               {
                 "filename": "app.py",
                 "type": "Python",
-                "description": "...
+                "description": "Initial Python file",
                 "exports": "None"
               }
             ],
@@ -39,7 +37,7 @@
               "language": "python"
             }
           }
-        ]]>        
+        ]]>         
       </content>
     </step>
   </steps>
