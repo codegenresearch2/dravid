@@ -9,6 +9,12 @@ def get_file_metadata_prompt(filename, content, project_context, folder_structur
         file_type = "python"
     elif "package.json" in filename:
         file_type = "javascript"
+    elif "tsconfig.json" in filename:
+        file_type = "typescript"
+    elif "composer.json" in filename:
+        file_type = "php"
+    elif "Cargo.toml" in filename:
+        file_type = "rust"
     else:
         file_type = "code_file"
 
@@ -24,7 +30,7 @@ def get_file_metadata_prompt(filename, content, project_context, folder_structur
                 for part in import_parts:
                     if ":" in part:
                         import_item = part.split(" ")[0]
-                        imports_info.append(import_item)
+                        imports_info.append(f"{import_item}")
 
     # Determine external dependencies based on the file content
     if file_type == "dependency_file":
