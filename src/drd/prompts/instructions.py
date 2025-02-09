@@ -33,12 +33,6 @@ def get_instruction_prompt():
                     "type": "JavaScript",
                     "description": "...",
                     "exports": "None"
-                  },
-                  {
-                    "filename": "drd.json",
-                    "type": "json",
-                    "description": "",
-                    "exports": "None"
                   }
                 ],
                 "dev_server": {
