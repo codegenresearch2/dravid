@@ -13,6 +13,11 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
         step_description = "fix" if is_fix else "command"
         print_step(i, total_steps, f"Processing {cmd['type']} {step_description}...")
 
+        if cmd['type'] == 'explanation':
+            print_info(f"Explanation: {cmd['content']}")
+            all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
+            continue
+
         try:
             if cmd['type'] == 'shell':
                 output = handle_shell_command(cmd, executor)
@@ -23,10 +28,6 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
             elif cmd['type'] == 'metadata':
                 output = handle_metadata_operation(cmd, metadata_manager)
                 all_outputs.append(f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} - {output}")
-            elif cmd['type'] == 'explanation':
-                print_info(f"Explanation: {cmd['content']}")
-                all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
-                continue  # Skip the rest of the processing for 'explanation' commands
 
             if debug:
                 print_debug(f"Completed step {i}/{total_steps}")
