@@ -1,5 +1,6 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
+import xml.etree.ElementTree as ET
 
 class TestDynamicCommandHandler(unittest.TestCase):
 
@@ -7,10 +8,10 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.executor = MagicMock()
         self.metadata_manager = MagicMock()
 
-    @patch('drd.cli.query.dynamic_command_handler.call')
+    @patch('drd.cli.query.dynamic_command_handler.print_step')
     @patch('drd.cli.query.dynamic_command_handler.print_info')
     @patch('drd.cli.query.dynamic_command_handler.print_debug')
-    def test_execute_commands(self, mock_print_debug, mock_print_info, mock_call):
+    def test_execute_commands(self, mock_print_debug, mock_print_info, mock_print_step):
         commands = [
             {'type': 'explanation', 'content': 'Test explanation'},
             {'type': 'shell', 'command': 'echo "Hello"'},
@@ -31,9 +32,9 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertIn("Shell command - echo \"Hello\"", output)
         self.assertIn("File command - CREATE - test.txt", output)
         mock_print_debug.assert_has_calls([
-            mock_call.assert_called_once_with("Completed step 1/3"),
-            mock_call.assert_called_once_with("Completed step 2/3"),
-            mock_call.assert_called_once_with("Completed step 3/3")
+            call("Completed step 1/3"),
+            call("Completed step 2/3"),
+            call("Completed step 3/3")
         ])
 
     @patch('drd.cli.query.dynamic_command_handler.print_info')
