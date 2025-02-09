@@ -119,7 +119,7 @@ class TestExecutor(unittest.TestCase):
 
     @patch('os.path.exists')    
     @patch('builtins.open', new_callable=mock_open, read_data="original content")
-    @patch('click.confirm')    
+    @patch('click.confirm')
     def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
         mock_exists.return_value = False
         mock_confirm.return_value = True
@@ -131,7 +131,7 @@ class TestExecutor(unittest.TestCase):
 
     @patch('os.path.exists')    
     @patch('builtins.open', new_callable=mock_open, read_data="original content")
-    @patch('click.confirm')    
+    @patch('click.confirm')
     @patch('drd.utils.step_executor.preview_file_changes')
     def test_perform_file_operation_update(self, mock_preview, mock_confirm, mock_file, mock_exists):
         mock_exists.return_value = True
