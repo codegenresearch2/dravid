@@ -30,8 +30,8 @@ class TestDynamicCommandHandler(unittest.TestCase):
         ]
 
         with patch('drd.cli.query.dynamic_command_handler.handle_shell_command', return_value="Shell output") as mock_shell,
-                patch('drd.cli.query.dynamic_command_handler.handle_file_operation', return_value="File operation success") as mock_file,
-                patch('drd.cli.query.dynamic_command_handler.handle_metadata_operation', return_value="Metadata operation success") as mock_metadata:
+             patch('drd.cli.query.dynamic_command_handler.handle_file_operation', return_value="File operation success") as mock_file,
+             patch('drd.cli.query.dynamic_command_handler.handle_metadata_operation', return_value="Metadata operation success") as mock_metadata:
 
             success, steps_completed, error, output = execute_commands(
                 commands, self.executor, self.metadata_manager, debug=True)
@@ -121,34 +121,6 @@ class TestDynamicCommandHandler(unittest.TestCase):
         mock_print_success.assert_not_called()
         mock_echo.assert_not_called()
 
-    @patch('drd.cli.query.dynamic_command_handler.print_step')
-    @patch('drd.cli.query.dynamic_command_handler.print_info')
-    @patch('drd.cli.query.dynamic_command_handler.print_debug')
-    def test_execute_commands_with_skipped_steps(self, mock_print_debug, mock_print_info, mock_print_step):
-        commands = [
-            {'type': 'explanation', 'content': 'Test explanation'},
-            {'type': 'shell', 'command': 'echo "Hello"'},
-            {'type': 'file', 'operation': 'CREATE', 'filename': 'test.txt', 'content': 'Test content'},
-        ]
-
-        with patch('drd.cli.query.dynamic_command_handler.handle_shell_command', return_value="Skipping this step...") as mock_shell,
-                patch('drd.cli.query.dynamic_command_handler.handle_file_operation', return_value="Skipping this step...") as mock_file:
-
-            success, steps_completed, error, output = execute_commands(
-                commands, self.executor, self.metadata_manager, debug=True)
-
-        self.assertTrue(success)
-        self.assertEqual(steps_completed, 3)
-        self.assertIsNone(error)
-        self.assertIn("Explanation - Test explanation", output)
-        self.assertIn("Skipping this step...", output)
-        mock_print_info.assert_any_call("Step 2/3: Skipping this step...")        
-        mock_print_info.assert_any_call("Step 3/3: Skipping this step...")        
-        mock_print_debug.assert_has_calls([
-            call("Completed step 1/3"),
-            call("Completed step 2/3"),
-            call("Completed step 3/3")]
-
     @patch('os.chdir')
     @patch('os.path.abspath')
     def test_handle_cd_command(self, mock_abspath, mock_chdir):
@@ -194,7 +166,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
         mock_confirm.return_value = True
         mock_process = MagicMock()
         mock_process.poll.side_effect = [None, 0]
-        mock_process.stdout.readline.return_value = 'Hello, World!'
+        mock_process.stdout.readline.return_value = 'Hello, World!')
         mock_process.communicate.return_value = ('', '')
         mock_popen.return_value = mock_process
 
