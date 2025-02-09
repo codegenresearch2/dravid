@@ -38,7 +38,7 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
             return
 
         print_info(
-            f"Files identified for processing: {', '.join([file.find('path').text.strip() for file in files_to_process if file.find('path') is not None])}"
+            f"Files identified for processing: {', '.join([file.find('path').text.strip() for file in files_to_process if file.find('path') is not None])} "
         )
 
         for file in files_to_process:
