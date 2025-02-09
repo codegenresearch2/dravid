@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, MagicMock
 import os
 import json
 import subprocess
@@ -52,14 +52,14 @@ class TestExecutor(unittest.TestCase):
         mock_remove.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'))
 
     def test_parse_json(self):
-        valid_json = '{"key": "value"}'
-        invalid_json = '"{key: value"}'
+        valid_json = '{\"key\": \"value\"}'
+        invalid_json = '\"{key: value\"}'
         self.assertEqual(self.executor.parse_json(valid_json), {"key": "value"})
         self.assertIsNone(self.executor.parse_json(invalid_json))
 
     def test_merge_json(self):
-        existing_content = '{"key1": "value1"}'
-        new_content = '{"key2": "value2"}'
+        existing_content = '{\"key1\": \"value1\"}'
+        new_content = '{\"key2\": \"value2\"}'
         expected_result = json.dumps({"key1": "value1", "key2": "value2"}, indent=2)
         self.assertEqual(self.executor.merge_json(existing_content, new_content), expected_result)
 
@@ -71,7 +71,7 @@ class TestExecutor(unittest.TestCase):
         result = self.executor.get_folder_structure()
         self.assertEqual(result, {'folder': {'file.txt': 'file'}})
 
-    @patch('subprocess.Popen')
+    @patch('subprocess.Popen')     
     def test_execute_shell_command(self, mock_popen):
         mock_process = MagicMock()
         mock_process.poll.side_effect = [None, 0]
@@ -82,7 +82,7 @@ class TestExecutor(unittest.TestCase):
         result = self.executor.execute_shell_command('ls')
         self.assertEqual(result, 'output line')
 
-    @patch('subprocess.run')
+    @patch('subprocess.run')     
     def test_handle_source_command(self, mock_run):
         mock_run.return_value = subprocess.CompletedProcess(args=['source', 'test.sh'], returncode=0, stdout='KEY=value\n', stderr='')
         with patch('os.path.isfile', return_value=True):
@@ -90,8 +90,8 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(result, "Source command executed successfully")
         self.assertEqual(self.executor.env['KEY'], 'value')
 
-    @patch('os.chdir')
-    @patch('os.path.abspath')
+    @patch('os.chdir')     
+    @patch('os.path.abspath')     
     def test_handle_cd_command(self, mock_abspath, mock_chdir):
         mock_abspath.return_value = '/fake/path/app'
         result = self.executor._handle_cd_command('cd app')
@@ -99,7 +99,7 @@ class TestExecutor(unittest.TestCase):
         mock_chdir.assert_called_once_with('/fake/path/app')
         self.assertEqual(self.executor.current_dir, '/fake/path/app')
 
-    @patch('subprocess.Popen')
+    @patch('subprocess.Popen')     
     def test_execute_single_command(self, mock_popen):
         mock_process = MagicMock()
         mock_process.poll.side_effect = [None, 0]
@@ -117,9 +117,9 @@ class TestExecutor(unittest.TestCase):
             env=self.executor.env,
             cwd=self.executor.current_dir)
 
-    @patch('click.confirm')
-    @patch('os.chdir')
-    @patch('os.path.abspath')
+    @patch('click.confirm')     
+    @patch('os.chdir')     
+    @patch('os.path.abspath')     
     def test_execute_shell_command_cd(self, mock_abspath, mock_chdir, mock_confirm):
         mock_confirm.return_value = True
         mock_abspath.return_value = '/fake/path/app'
@@ -128,8 +128,8 @@ class TestExecutor(unittest.TestCase):
         mock_chdir.assert_called_once_with('/fake/path/app')
         self.assertEqual(self.executor.current_dir, '/fake/path/app')
 
-    @patch('click.confirm')
-    @patch('subprocess.Popen')
+    @patch('click.confirm')     
+    @patch('subprocess.Popen')     
     def test_execute_shell_command_echo(self, mock_popen, mock_confirm):
         mock_confirm.return_value = True
         mock_process = MagicMock()
