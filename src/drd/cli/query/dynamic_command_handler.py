@@ -57,10 +57,7 @@ def handle_shell_command(cmd, executor):
 def handle_file_operation(cmd, executor, metadata_manager):
     print_info(f'Performing file operation: {cmd['operation']} on {cmd['filename']}')
     operation_performed = executor.perform_file_operation(
-        cmd['operation'],
-        cmd['filename'],
-        cmd.get('content'),
-        force=True
+        cmd['operation'], cmd['filename'], cmd.get('content'), force=True
     )
     if operation_performed:
         print_success(f'Successfully performed {cmd['operation']} on file: {cmd['filename']}')
@@ -75,7 +72,7 @@ def handle_metadata_operation(cmd, metadata_manager):
     if cmd['operation'] == 'UPDATE_FILE':
         if metadata_manager.update_metadata_from_file(cmd['filename']):
             print_success(f'Updated metadata for file: {cmd['filename']}')
-            return f'Updated metadata for {cmd['filename']}',
+            return f'Updated metadata for {cmd['filename']}')
         else:
             raise Exception(f'Failed to update metadata for file: {cmd['filename']}')
     else:
