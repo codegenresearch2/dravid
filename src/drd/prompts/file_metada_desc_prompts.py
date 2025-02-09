@@ -1,15 +1,19 @@
 def get_file_metadata_prompt(filename, content, project_context, folder_structure):
-    # Initialize exports_info, imports_info, and external_dependencies
+    # Initialize lists for exports, imports, and external dependencies
     exports_info = []
     imports_info = []
     external_dependencies = []
 
-    # Determine the file type based on the content
-    file_type = "code_file" if "def" in content or "class" in content else "dependency_file"
+    # Determine the file type based on the content or filename
+    if "requirements.txt" in filename:
+        file_type = "python"
+    elif "package.json" in filename:
+        file_type = "javascript"
+    else:
+        file_type = "code_file"
 
     # Determine exports and imports based on the file content
     if file_type == "code_file":
-        # Extract functions, classes, and variables
         for line in content.splitlines():
             if line.startswith("def "):
                 exports_info.append(f"fun:{line.split('def ')[1].split('(')[0]}")
@@ -20,13 +24,9 @@ def get_file_metadata_prompt(filename, content, project_context, folder_structur
 
     # Determine external dependencies based on the file content
     if file_type == "dependency_file":
-        # Extract dependencies from the content
-        # This is a placeholder for actual dependency extraction logic
-        # For example, if the content is a requirements.txt file, extract the dependencies
-        if "requirements.txt" in filename:
-            for line in content.splitlines():
-                if "==" in line:
-                    external_dependencies.append(line.split("==")[0])
+        for line in content.splitlines():
+            if "==" in line:
+                external_dependencies.append(line.split("==")[0])
 
     # Construct the XML response
     response = f"""
