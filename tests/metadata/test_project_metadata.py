@@ -34,7 +34,8 @@ class TestProjectMetadataManager(unittest.TestCase):
     @patch.object(ProjectMetadataManager, 'save_metadata')
     def test_update_file_metadata(self, mock_save):
         self.manager.update_file_metadata(
-            'test.py', 'python', 'print("Hello")', 'A test Python file'
+            'test.py', 'python', 'print("Hello")',
+            'A test Python file'
         )
         mock_save.assert_called_once()
         file_entry = next((f for f in self.manager.metadata['files'] if f['filename'] == 'test.py'), None)
