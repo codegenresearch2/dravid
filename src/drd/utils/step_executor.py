@@ -1,10 +1,7 @@
-import subprocess
 import os
 import json
 import click
 from colorama import Fore, Style
-import time
-import re
 from .utils import print_error, print_success, print_info, print_warning, create_confirmation_box
 from .diff import preview_file_changes
 from .apply_file_changes import apply_changes
@@ -14,44 +11,14 @@ from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
-        self.allowed_directories = [self.current_dir, '/fake/path']
-
-        self.initial_dir = self.current_dir
-        self.disallowed_commands = [
-            'rmdir', 'del', 'format', 'mkfs',
-            'dd', 'fsck', 'mkswap', 'mount', 'umount',
-            'sudo', 'su', 'chown', 'chmod'
-        ]
+        self.allowed_directories = [self.current_dir]
         self.env = os.environ.copy()
 
     def is_safe_path(self, path):
-        full_path = os.path.abspath(path)
-        return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories) or full_path == self.current_dir
+        full_path = os.path.abspath(os.path.join(self.current_dir, path))
+        return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories)
 
-    def is_safe_rm_command(self, command):
-        parts = command.split()
-        if parts[0] != 'rm':
-            return False
-
-        # Check for dangerous flags
-        dangerous_flags = ['-r', '-f', '-rf', '-fr']
-        if any(flag in parts for flag in dangerous_flags):
-            return False
-
-        # Check if it's removing a specific file
-        if len(parts) != 2:
-            return False
-
-        file_to_remove = parts[1]
-        return self.is_safe_path(file_to_remove) and os.path.isfile(os.path.join(self.current_dir, file_to_remove))
-
-    def is_safe_command(self, command):
-        command_parts = command.split()
-        if command_parts[0] == 'rm':
-            return self.is_safe_rm_command(command)
-        return not any(cmd in self.disallowed_commands for cmd in command_parts)
-
-    def perform_file_operation(self, operation, filename, content=None, force=False):
+    def perform_file_operation(self, operation, filename, content=None):
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
 
         if not self.is_safe_path(full_path):
@@ -65,7 +32,7 @@ class Executor:
         print_info(f"File: {filename}")
 
         if operation == 'CREATE':
-            if os.path.exists(full_path) and not force:
+            if os.path.exists(full_path):
                 print_info(f"File already exists: {filename}")
                 return False
             try:
@@ -163,7 +130,7 @@ class Executor:
         ignore_patterns, _ = get_ignore_patterns(self.current_dir)
         return get_folder_structure(self.current_dir, ignore_patterns)
 
-    def execute_shell_command(self, command, timeout=300):  # 5 minutes timeout
+    def execute_shell_command(self, command):
         if not self.is_safe_command(command):
             print_warning(f"Please verify the command once: {command}")
 
@@ -183,9 +150,9 @@ class Executor:
         elif command.strip().startswith(('source', '.')):
             return self._handle_source_command(command)
         else:
-            return self._execute_single_command(command, timeout)
+            return self._execute_single_command(command)
 
-    def _execute_single_command(self, command, timeout):
+    def _execute_single_command(self, command):
         try:
             process = subprocess.Popen(
                 command,
@@ -197,24 +164,16 @@ class Executor:
                 cwd=self.current_dir
             )
 
-            start_time = time.time()
             output = []
             while True:
                 return_code = process.poll()
                 if return_code is not None:
                     break
-                if time.time() - start_time > timeout:
-                    process.terminate()
-                    error_message = f"Command timed out after {timeout} seconds: {command}"
-                    print_error(error_message)
-                    raise Exception(error_message)
 
                 line = process.stdout.readline()
                 if line:
                     print(line.strip())
                     output.append(line)
-
-                time.sleep(0.1)
 
             stdout, stderr = process.communicate()
             output.append(stdout)
@@ -235,7 +194,6 @@ class Executor:
             raise Exception(error_message)
 
     def _handle_source_command(self, command):
-        # Extract the file path from the source command
         _, file_path = command.split(None, 1)
         file_path = os.path.expandvars(os.path.expanduser(file_path))
 
@@ -244,7 +202,6 @@ class Executor:
             print_error(error_message)
             raise Exception(error_message)
 
-        # Execute the source command in a subshell and capture the environment changes
         try:
             result = subprocess.run(
                 f'source {file_path} && env',
@@ -255,11 +212,10 @@ class Executor:
                 executable='/bin/bash'
             )
 
-            # Update the environment with any changes
             for line in result.stdout.splitlines():
                 if '=' in line:
                     key, value = line.split('=', 1)
-                    self.env[key] = value
+                    self.env[key.strip()] = value.strip().strip('"')
 
             print_success(f"Sourced file successfully: {file_path}")
             return "Source command executed successfully"
@@ -271,19 +227,16 @@ class Executor:
     def _update_env_from_command(self, command):
         if '=' in command:
             if command.startswith('export '):
-                # Handle export command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
+                self.env[key.strip()] = value.strip().strip('"')
             elif command.startswith('set '):
-                # Handle set command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
+                self.env[key.strip()] = value.strip().strip('"')
             else:
-                # Handle simple assignment
                 key, value = command.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
+                self.env[key.strip()] = value.strip().strip('"')
 
     def _handle_cd_command(self, command):
         _, path = command.split(None, 1)
@@ -299,7 +252,5 @@ class Executor:
 
     def reset_directory(self):
         os.chdir(self.initial_dir)
-        project_dir = self.current_dir
         self.current_dir = self.initial_dir
-        print_info(
-            f"Resetting directory to: {self.current_dir} from project dir:{project_dir}")
+        print_info(f"Reset directory to: {self.current_dir}")
