@@ -44,7 +44,7 @@ class TestExecutor(unittest.TestCase):
 
     @patch('os.path.exists')    
     @patch('os.path.isfile')    
-    @patch('os.remove')    
+    @patch('os.remove')
     def test_perform_file_operation_delete(self, mock_remove, mock_isfile, mock_exists):
         mock_exists.return_value = True
         mock_isfile.return_value = True
@@ -72,7 +72,7 @@ class TestExecutor(unittest.TestCase):
         result = self.executor.get_folder_structure()
         self.assertEqual(result, {'folder': {'file.txt': 'file'}})
 
-    @patch('subprocess.Popen')    
+    @patch('subprocess.Popen')
     def test_execute_shell_command(self, mock_popen):
         mock_process = MagicMock()
         mock_process.poll.side_effect = [None, 0]
@@ -83,7 +83,7 @@ class TestExecutor(unittest.TestCase):
         result = self.executor.execute_shell_command('ls')
         self.assertEqual(result, 'output line')
 
-    @patch('subprocess.run')    
+    @patch('subprocess.run')
     def test_handle_source_command(self, mock_run):
         mock_run.return_value = subprocess.CompletedProcess(
             args=['source', 'test.sh'],
@@ -119,7 +119,7 @@ class TestExecutor(unittest.TestCase):
 
     @patch('os.path.exists')    
     @patch('builtins.open', new_callable=mock_open, read_data="original content")
-    @patch('click.confirm')    
+    @patch('click.confirm')
     def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
         mock_exists.return_value = False
         mock_confirm.return_value = True
@@ -131,8 +131,8 @@ class TestExecutor(unittest.TestCase):
 
     @patch('os.path.exists')    
     @patch('builtins.open', new_callable=mock_open, read_data="original content")
-    @patch('click.confirm')    
-    @patch('drd.utils.step_executor.preview_file_changes')    
+    @patch('click.confirm')
+    @patch('drd.utils.step_executor.preview_file_changes')
     def test_perform_file_operation_update(self, mock_preview, mock_confirm, mock_file, mock_exists):
         mock_exists.return_value = True
         mock_confirm.return_value = True
@@ -156,8 +156,8 @@ class TestExecutor(unittest.TestCase):
 
     @patch('os.path.exists')    
     @patch('os.path.isfile')    
-    @patch('os.remove')    
-    @patch('click.confirm')    
+    @patch('os.remove')
+    @patch('click.confirm')
     def test_perform_file_operation_delete(self, mock_confirm, mock_remove, mock_isfile, mock_exists):
         mock_exists.return_value = True
         mock_isfile.return_value = True
@@ -167,15 +167,15 @@ class TestExecutor(unittest.TestCase):
         mock_remove.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'))
         mock_confirm.assert_called_once()
 
-    @patch('click.confirm')    
+    @patch('click.confirm')
     def test_perform_file_operation_user_cancel(self, mock_confirm):
         mock_confirm.return_value = False
         result = self.executor.perform_file_operation('UPDATE', 'test.txt', 'content')
         self.assertFalse(result)
         mock_confirm.assert_called_once()
 
-    @patch('subprocess.Popen')    
-    @patch('click.confirm')    
+    @patch('subprocess.Popen')
+    @patch('click.confirm')
     def test_execute_shell_command(self, mock_confirm, mock_popen):
         mock_confirm.return_value = True
         mock_process = MagicMock()
@@ -188,7 +188,7 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(result, 'output line')
         mock_confirm.assert_called_once()
 
-    @patch('click.confirm')    
+    @patch('click.confirm')
     def test_execute_shell_command_user_cancel(self, mock_confirm):
         mock_confirm.return_value = False
         result = self.executor.execute_shell_command('ls')
