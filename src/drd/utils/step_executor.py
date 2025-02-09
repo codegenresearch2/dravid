@@ -47,7 +47,7 @@ class Executor:
             return self.is_safe_rm_command(command)
         return not any(cmd in self.disallowed_commands for cmd in command_parts)
 
-    def perform_file_operation(self, operation, filename, content=None, force=False):
+    def perform_file_operation(self, operation, filename, content=None):
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
 
         if not self.is_safe_path(full_path):
@@ -61,7 +61,7 @@ class Executor:
         print_info(f"File: {filename}")
 
         if operation == 'CREATE':
-            if os.path.exists(full_path) and not force:
+            if os.path.exists(full_path):
                 print_info(f"File already exists: {filename}")
                 return False
             try:
