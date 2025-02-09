@@ -58,7 +58,8 @@ class TestDynamicCommandHandler(unittest.TestCase):
             self.assertEqual(output, 'Hello')
             self.executor.execute_shell_command.assert_called_once_with('echo "Hello"')
             mock_print_success.assert_called_once_with('Successfully executed: echo "Hello"')
-            mock_echo.assert_called_once_with('Command output:\nHello')
+            mock_echo.assert_called_once_with('Command output:
+Hello')
 
     @patch('drd.cli.query.dynamic_command_handler.print_info') as mock_print_info,
          patch('drd.cli.query.dynamic_command_handler.print_success') as mock_print_success,
