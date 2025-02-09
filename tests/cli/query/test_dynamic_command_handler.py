@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, mock_open, MagicMock
 import os
 import json
 import subprocess
@@ -33,7 +33,7 @@ class TestExecutor(unittest.TestCase):
         self.assertFalse(self.executor.is_safe_command('sudo rm -rf /'))
 
     @patch('os.path.exists')     
-    @patch('builtins.open', new_callable=mock_open)
+    @patch('builtins.open', new_callable=mock_open)     
     def test_perform_file_operation_create(self, mock_file, mock_exists):
         mock_exists.return_value = False
         result = self.executor.perform_file_operation('CREATE', 'test.txt', 'content')
@@ -43,7 +43,7 @@ class TestExecutor(unittest.TestCase):
 
     @patch('os.path.exists')     
     @patch('os.path.isfile')     
-    @patch('os.remove')
+    @patch('os.remove')     
     def test_perform_file_operation_delete(self, mock_remove, mock_isfile, mock_exists):
         mock_exists.return_value = True
         mock_isfile.return_value = True
@@ -52,14 +52,14 @@ class TestExecutor(unittest.TestCase):
         mock_remove.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'))
 
     def test_parse_json(self):
-        valid_json = '{\"key\": \"value\"}'
-        invalid_json = '\"{key: value\"}'
+        valid_json = '{"key": "value"}'
+        invalid_json = '"{key: value"}'
         self.assertEqual(self.executor.parse_json(valid_json), {"key": "value"})
         self.assertIsNone(self.executor.parse_json(invalid_json))
 
     def test_merge_json(self):
-        existing_content = '{\"key1\": \"value1\"}'
-        new_content = '{\"key2\": \"value2\"}'
+        existing_content = '{"key1": "value1"}'
+        new_content = '{"key2": "value2"}'
         expected_result = json.dumps({"key1": "value1", "key2": "value2"}, indent=2)
         self.assertEqual(self.executor.merge_json(existing_content, new_content), expected_result)
 
@@ -134,7 +134,7 @@ class TestExecutor(unittest.TestCase):
         mock_confirm.return_value = True
         mock_process = MagicMock()
         mock_process.poll.side_effect = [None, 0]
-        mock_process.stdout.readline.return_value = 'Hello, World!'
+        mock_process.stdout.readline.return_value = 'Hello, World!'        
         mock_process.communicate.return_value = ('', '')
         mock_popen.return_value = mock_process
 
