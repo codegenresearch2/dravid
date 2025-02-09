@@ -33,9 +33,7 @@ class TestProjectMetadataManager(unittest.TestCase):
 
     @patch.object(ProjectMetadataManager, 'save_metadata')
     def test_update_file_metadata(self, mock_save):
-        self.manager.update_file_metadata(
-            'test.py', 'python', 'print(\"Hello\")', 'A test Python file'
-        )
+        self.manager.update_file_metadata('test.py', 'python', 'print(\"Hello\")', 'A test Python file')
         mock_save.assert_called_once()
         file_entry = next((f for f in self.manager.metadata['files'] if f['filename'] == 'test.py'), None)
         self.assertIsNotNone(file_entry)
@@ -51,3 +49,37 @@ class TestProjectMetadataManager(unittest.TestCase):
         result = self.manager.update_metadata_from_file('test.py')
         self.assertTrue(result)
         mock_update.assert_called_once_with('test.py', 'py', 'print(\"Hello, World!\")')
+
+    def test_get_project_context(self):
+        self.manager.metadata = {
+            'project_name': 'Test Project',
+            'last_updated': '',
+            'files': [
+                {'filename': 'main.py', 'type': 'python', 'description': 'Main file'},
+                {'filename': 'utils.py', 'type': 'python', 'description': 'Utility functions'},
+            ],
+            'dev_server': {
+                'start_command': '',
+                'framework': '',
+                'language': ''}
+        }
+        context = self.manager.get_project_context()
+        self.assertIn('Test Project', context)
+        self.assertIn('main.py', context)
+        self.assertIn('utils.py', context)
+
+    @patch.object(ProjectMetadataManager, 'save_metadata')
+    def test_update_dev_server_info(self, mock_save):
+        self.manager.update_dev_server_info('npm start', 'react', 'javascript')
+        mock_save.assert_called_once()
+        self.assertEqual(self.manager.metadata['dev_server']['start_command'], 'npm start')
+        self.assertEqual(self.manager.metadata['dev_server']['framework'], 'react')
+        self.assertEqual(self.manager.metadata['dev_server']['language'], 'javascript')
+
+    def test_get_dev_server_info(self):
+        self.manager.metadata['dev_server'] = {
+            'start_command': 'npm start',
+            'framework': 'react',
+            'language': 'javascript'}
+        info = self.manager.get_dev_server_info()
+        self.assertEqual(info, self.manager.metadata['dev_server'])
