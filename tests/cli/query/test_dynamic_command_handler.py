@@ -1,6 +1,6 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
-import xml.etree.ElementTree as ET
+from unittest.mock import patch, MagicMock
+import os
 
 from drd.cli.query.dynamic_command_handler import (
     execute_commands,
@@ -168,12 +168,12 @@ class TestDynamicCommandHandler(unittest.TestCase):
         mock_confirm.return_value = True
         mock_process = MagicMock()
         mock_process.poll.side_effect = [None, 0]
-        mock_process.stdout.readline.return_value = 'Hello, World!')
+        mock_process.stdout.readline.return_value = 'Hello, World!')        
         mock_process.communicate.return_value = ('', '')
         mock_popen.return_value = mock_process
 
         result = self.executor.execute_shell_command('echo "Hello, World!"')
-        self.assertEqual(result, 'Hello, World!')
+        self.assertEqual(result, 'Hello, World!')        
 
     @patch('os.path.exists')
     @patch('builtins.open', new_callable=mock_open)
