@@ -24,7 +24,7 @@ class TestMetadataUpdater(unittest.TestCase):
             'package.json': 'file'
         }
 
-    def mock_analyze_file(self, filename):
+    async def mock_analyze_file(self, filename):
         # Simulate file analysis
         return {
             'path': filename,
@@ -34,7 +34,8 @@ class TestMetadataUpdater(unittest.TestCase):
             'imports': ['os'],
             'external_dependencies': {
                 'requests==2.26.0': []
-            }
+            },
+            'content': "print('Hello, World!')"
         }
 
     @patch('drd.metadata.updater.ProjectMetadataManager')    
@@ -103,8 +104,8 @@ class TestMetadataUpdater(unittest.TestCase):
 
         # Mock file analysis
         mock_metadata_manager.return_value.analyze_file.side_effect = [
-            self.mock_analyze_file('/fake/project/dir/src/main.py'),
-            self.mock_analyze_file('/fake/project/dir/package.json')
+            await self.mock_analyze_file('/fake/project/dir/src/main.py'),
+            await self.mock_analyze_file('/fake/project/dir/package.json')
         ]
 
         # Call the function
