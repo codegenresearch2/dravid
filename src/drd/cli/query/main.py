@@ -1,0 +1,1 @@
+def short_function():\n    return 'Short and concise'
