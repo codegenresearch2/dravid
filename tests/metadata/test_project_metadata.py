@@ -31,9 +31,11 @@ class TestProjectMetadataManager(unittest.TestCase):
         mock_file.assert_called_once_with(os.path.join(self.project_dir, 'drd.json'), 'w')
         mock_json_dump.assert_called_once()
 
-    @patch.object(ProjectMetadataManager, 'save_metadata') 
+    @patch.object(ProjectMetadataManager, 'save_metadata')
     def test_update_file_metadata(self, mock_save):
-        self.manager.update_file_metadata('test.py', 'python', 'print("Hello")', 'A test Python file')
+        self.manager.update_file_metadata(
+            'test.py', 'python', 'print("Hello")', 'A test Python file'
+        )
         mock_save.assert_called_once()
         file_entry = next((f for f in self.manager.metadata['files'] if f['filename'] == 'test.py'), None)
         self.assertIsNotNone(file_entry)
@@ -47,18 +49,20 @@ class TestProjectMetadataManager(unittest.TestCase):
             'last_updated': '',
             'files': [
                 {'filename': 'main.py', 'type': 'python', 'description': 'Main file'},
-                {'filename': 'utils.py', 'type': 'python', 'description': 'Utility functions'}]
+                {'filename': 'utils.py', 'type': 'python', 'description': 'Utility functions'},
+            ],
             'dev_server': {
                 'start_command': '',
                 'framework': '',
-                'language': ''}
+                'language': ''
+            }
         }
         context = self.manager.get_project_context()
         self.assertIn('Test Project', context)
         self.assertIn('main.py', context)
         self.assertIn('utils.py', context)
 
-    @patch.object(ProjectMetadataManager, 'save_metadata') 
+    @patch.object(ProjectMetadataManager, 'save_metadata')
     def test_update_dev_server_info(self, mock_save):
         self.manager.update_dev_server_info('npm start', 'react', 'javascript')
         mock_save.assert_called_once()
@@ -70,13 +74,14 @@ class TestProjectMetadataManager(unittest.TestCase):
         self.manager.metadata['dev_server'] = {
             'start_command': 'npm start',
             'framework': 'react',
-            'language': 'javascript'}
+            'language': 'javascript'
+        }
         info = self.manager.get_dev_server_info()
         self.assertEqual(info, self.manager.metadata['dev_server'])
 
     @patch('os.path.exists') 
     @patch('builtins.open', new_callable=mock_open, read_data='print("Hello, World!")') 
-    @patch.object(ProjectMetadataManager, 'update_file_metadata') 
+    @patch.object(ProjectMetadataManager, 'update_file_metadata')
     def test_update_metadata_from_file(self, mock_update, mock_file, mock_exists):
         mock_exists.return_value = True
         result = self.manager.update_metadata_from_file('test.py')
@@ -84,8 +89,8 @@ class TestProjectMetadataManager(unittest.TestCase):
         mock_update.assert_called_once_with('test.py', 'py', 'print("Hello, World!")')
 
     @patch('os.path.exists') 
-    @patch('builtins.open', new_callable=mock_open) 
-    @patch.object(ProjectMetadataManager, 'save_metadata') 
+    @patch('builtins.open', new_callable=mock_open)
+    @patch.object(ProjectMetadataManager, 'save_metadata')
     def test_update_metadata_from_file(self, mock_save, mock_file, mock_exists):
         mock_exists.return_value = True
 
@@ -97,7 +102,8 @@ class TestProjectMetadataManager(unittest.TestCase):
             'dev_server': {
                 'start_command': '',
                 'framework': '',
-                'language': ''}
+                'language': ''
+            }
         }
         self.manager.metadata = initial_metadata
 
