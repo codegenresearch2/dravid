@@ -76,6 +76,13 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
             except Exception as e:
                 print_error(f"Error processing {found_filename}: {str(e)}")
 
+        # After processing all files, update external dependencies
+        dependencies = root.findall('.//external_dependencies/dependency')
+        for dependency in dependencies:
+            dep_info = dependency.text.strip()
+            metadata_manager.add_external_dependency(dep_info)
+            print_success(f"Added external dependency: {dep_info}")
+
         # After processing all files, update the environment info
         all_languages = set(file['type'] for file in metadata_manager.metadata['key_files']
                             if file['type'] not in ['binary', 'unknown'])
