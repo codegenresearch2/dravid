@@ -3,7 +3,7 @@ import subprocess
 from queue import Queue
 from .input_handler import InputHandler
 from .output_monitor import OutputMonitor
-from ...utils import print_info, print_success, print_error, print_prompt
+from ...utils import print_header, print_success, print_error, print_prompt
 
 MAX_RETRIES = 3
 
@@ -23,11 +23,11 @@ class DevServerMonitor:
         self.retry_count = 0
 
     def start(self):
-        print_info(f"Starting Dravid AI along with your process/server: {self.command}")
+        print_header(f"Starting Dravid AI along with your process/server: {self.command}")
         self.should_stop.clear()
         self.restart_requested.clear()
         try:
-            self.process = self.start_process(self.command, self.project_dir)
+            self.process = self._start_process(self.command, self.project_dir)
             self.output_monitor.start()
             self.input_handler.start()
         except Exception as e:
@@ -52,7 +52,7 @@ class DevServerMonitor:
             self.process.wait()
 
         try:
-            self.process = self.start_process(self.command, self.project_dir)
+            self.process = self._start_process(self.command, self.project_dir)
             self.retry_count = 0
             self.restart_requested.clear()
             print_success("Server restarted successfully.")
@@ -69,7 +69,7 @@ class DevServerMonitor:
                     f"Retrying... (Attempt {self.retry_count + 1}/{MAX_RETRIES})")
                 self.request_restart()
 
-    def start_process(self, command, cwd):
+    def _start_process(self, command, cwd):
         try:
             return subprocess.Popen(
                 command,
