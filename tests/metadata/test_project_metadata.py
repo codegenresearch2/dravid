@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import patch, mock_open, MagicMock
 import os
 import re
-import xml.etree.ElementTree as ET
 
 # Assuming the project structure, adjust the import path as necessary
 from src.drd.metadata.project_metadata import ProjectMetadataManager
@@ -26,15 +25,13 @@ class TestProjectMetadataManager(unittest.TestCase):
         with patch('builtins.open', side_effect=mock_open_calls):
             patterns, message = self.manager.get_ignore_patterns()
 
-        self.assertIn(re.compile(r'\.log$'), patterns)
-        self.assertIn(re.compile(r'node_modules/'), patterns)
-        self.assertIn(re.compile(r'subfolder/.*\.tmp$'), patterns)
+        self.assertIn('*.log', patterns)
+        self.assertIn('node_modules/', patterns)
+        self.assertIn('subfolder/*.tmp', patterns)
 
     def test_should_ignore(self):
         self.manager.ignore_patterns = [
-            re.compile(r'\.log$'),
-            re.compile(r'node_modules/'),
-            re.compile(r'subfolder/.*\.tmp$')
+            '*.log', 'node_modules/', 'subfolder/*.tmp'
         ]
         self.assertTrue(self.manager.should_ignore('/fake/project/dir/test.log'))
         self.assertTrue(self.manager.should_ignore('/fake/project/dir/node_modules/package.json'))
@@ -81,8 +78,7 @@ class TestProjectMetadataManager(unittest.TestCase):
           </metadata>
         </response>
         '''
-        mock_root = ET.fromstring(mock_api_call.return_value)
-        file_info = await self.manager.analyze_file('/fake/project/dir/script.py', mock_root)
+        file_info = await self.manager.analyze_file('/fake/project/dir/script.py', mock_api_call.return_value)
         self.assertEqual(file_info['path'], 'script.py')
         self.assertEqual(file_info['type'], 'python')
         self.assertEqual(file_info['summary'], 'A simple Python script')
