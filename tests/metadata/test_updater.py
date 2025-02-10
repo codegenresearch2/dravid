@@ -103,6 +103,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     'exports': [],
                     'imports': []
                 }
+            return None
 
         mock_metadata_manager.return_value.analyze_file = mock_analyze_file
 
