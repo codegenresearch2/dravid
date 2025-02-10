@@ -10,7 +10,7 @@ def pretty_print_xml_stream(chunk, state):
     while iteration_count < max_iterations:
         iteration_count += 1
 
-        # Check for explanation tag
+        # Process explanation tags
         match = re.search(r'<\s*explanation\s*>(.*?)<\s*/\s*explanation\s*>', state['buffer'], re.DOTALL | re.IGNORECASE)
         if match:
             explanation = match.group(1).strip()
@@ -19,15 +19,14 @@ def pretty_print_xml_stream(chunk, state):
             state['buffer'] = state['buffer'][match.end():]
             continue
 
-        # Check if not in a step before processing step tags
-        if not state.get('in_step'):
-            step_start_match = re.search(r'<\s*step\s*>', state['buffer'], re.IGNORECASE)
-            if step_start_match:
-                state['in_step'] = True
-                state['buffer'] = state['buffer'][step_start_match.end():]
-                continue
+        # Look for step start
+        step_start_match = re.search(r'<\s*step\s*>', state['buffer'], re.IGNORECASE)
+        if step_start_match:
+            state['in_step'] = True
+            state['buffer'] = state['buffer'][step_start_match.end():]
+            continue
 
-        if state.get('in_step'):
+        if state['in_step']:
             step_end_match = re.search(r'<\s*/\s*step\s*>', state['buffer'], re.IGNORECASE)
             if step_end_match:
                 step_content = state['buffer'][:step_end_match.start()]
