@@ -39,18 +39,18 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
                         f"Main file to modify: {files_info['main_file']}", indent=6)
                 if 'dependencies' in files_info:
                     print_info("Dependencies:", indent=6)
-                    for dep in files_info['dependencies']:
+                    for dep in files_info.get('dependencies', []):
                         print_info(f"- {dep['file']}", indent=8)
                         if 'imports' in dep:
-                            for imp in dep['imports']:
+                            for imp in dep.get('imports', []):
                                 print_info(f"  Imports: {imp}", indent=10)
                 if 'new_files' in files_info:
                     print_info("New files to create:", indent=6)
-                    for new_file in files_info['new_files']:
+                    for new_file in files_info.get('new_files', []):
                         print_info(f"- {new_file['file']}", indent=8)
                 if 'file_contents_to_load' in files_info:
                     print_info("File contents to load:", indent=6)
-                    for file in files_info['file_contents_to_load']:
+                    for file in files_info.get('file_contents_to_load', []):
                         print_info(f"- {file}", indent=8)
 
         full_query = construct_full_query(
@@ -135,7 +135,7 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
         if files_info and isinstance(files_info, dict):
             if 'file_contents_to_load' in files_info:
                 file_contents = {}
-                for file in files_info['file_contents_to_load']:
+                for file in files_info.get('file_contents_to_load', []):
                     content = get_file_content(file)
                     if content:
                         file_contents[file] = content
@@ -147,12 +147,12 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
 
             if 'dependencies' in files_info:
                 dependency_context = "\n".join(
-                    [f"Dependency {dep['file']} exports: {', '.join(dep['imports'])}" for dep in files_info['dependencies']])
+                    [f"Dependency {dep['file']} exports: {', '.join(dep.get('imports', []))}" for dep in files_info.get('dependencies', [])])
                 full_query += f"Dependencies:\n{dependency_context}\n\n"
 
             if 'new_files' in files_info:
                 new_files_context = "\n".join(
-                    [f"New file to create: {new_file['file']}" for new_file in files_info['new_files']])
+                    [f"New file to create: {new_file['file']}" for new_file in files_info.get('new_files', [])])
                 full_query += f"New files to create:\n{new_files_context}\n\n"
 
             if 'main_file' in files_info:
