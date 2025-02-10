@@ -27,11 +27,11 @@ def handle_ask_command(ask, file, debug):
         if content is not None:
             context += f"Content of {file_path}:\n{content}\n\n"
         else:
-            print_info(f"File not found: {file_path}. Finding similar or alternative file.")
-            print_info("LLM call to be made: 1")
+            print_info(f"File not found: {file_path}. Finding a similar or alternative file.")
+            print_info("Making a call to the LLM to suggest an alternative file.")
             suggestion = suggest_file_alternative(file_path, project_metadata)
             print_info(f"Suggestion: {suggestion}")
-            user_input = click.prompt("Do you want to proceed without this file?", type=str)
+            user_input = click.prompt("Do you want to proceed without this file? ", type=str)
             if user_input.lower() != 'y':
                 return
 
@@ -44,5 +44,5 @@ def handle_ask_command(ask, file, debug):
         return
 
     print_info("Streaming response from LLM.")
-    print_info("LLM call to be made: 1")
+    print_info("Making a call to the LLM to generate a response.")
     stream_dravid_api(context, print_chunk=True)
