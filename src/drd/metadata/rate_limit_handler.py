@@ -2,6 +2,7 @@ import functools
 import sys
 import asyncio
 import time
+import os
 from ..api.main import call_dravid_api_with_pagination
 from ..utils.parser import extract_and_parse_xml
 from ..prompts.file_metada_desc_prompts import get_file_metadata_prompt
@@ -45,6 +46,11 @@ async def process_single_file(filename, content, project_context, folder_structu
             print_warning(f"Could not find file: {filename}")
             return filename, "unknown", "File not found", "", ""
 
+        # Check if CLAUDE_API_KEY is set in the environment variables
+        if 'CLAUDE_API_KEY' not in os.environ:
+            print_error("CLAUDE_API_KEY is not found in the environment variables")
+            return filename, "unknown", "CLAUDE_API_KEY not found", "", ""
+
         metadata_query = get_file_metadata_prompt(found_filename, content, project_context, folder_structure)
         async with rate_limiter.semaphore:
             await rate_limiter.acquire()
@@ -52,12 +58,12 @@ async def process_single_file(filename, content, project_context, folder_structu
 
         root = extract_and_parse_xml(response)
         type_elem = root.find('.//type')
-        desc_elem = root.find('.//description')
+        summary_elem = root.find('.//summary')
         exports_elem = root.find('.//exports')
         imports_elem = root.find('.//imports')
 
         file_type = type_elem.text.strip() if type_elem is not None and type_elem.text else "unknown"
-        summary = desc_elem.text.strip() if desc_elem is not None and desc_elem.text else "No description available"
+        summary = summary_elem.text.strip() if summary_elem is not None and summary_elem.text else "No summary available"
         exports = exports_elem.text.strip() if exports_elem is not None and exports_elem.text else ""
         imports = imports_elem.text.strip() if imports_elem is not None and imports_elem.text else ""
 
