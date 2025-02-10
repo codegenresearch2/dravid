@@ -11,7 +11,6 @@ def read_file_content(file_path):
         with open(file_path, 'r') as file:
             return file.read()
     except FileNotFoundError:
-        print_error(f"File not found: {file_path}.")
         return None
 
 
