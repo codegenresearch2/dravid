@@ -15,8 +15,9 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
         print_step(i, total_steps, f"Processing {cmd['type']} {step_description}...")
 
         if cmd['type'] == 'explanation':
-            print_info(f"Explanation: {cmd['content']}")
-            all_outputs.append(f"Explanation - {cmd['content']}")
+            explanation_message = f"Step {i}/{total_steps}: Explanation - {cmd['content']}"
+            print_info(explanation_message)
+            all_outputs.append(explanation_message)
         else:
             try:
                 if cmd['type'] == 'shell':
@@ -27,10 +28,13 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                     output = handle_metadata_operation(cmd, metadata_manager)
 
                 if isinstance(output, str) and output.startswith("Skipping"):
-                    print_info(f"Step {i}/{total_steps}: Skipping this step...")
-                    all_outputs.append(f"Step {i}/{total_steps}: Skipping this step...")
+                    skipping_message = f"Step {i}/{total_steps}: Skipping this step..."
+                    print_info(skipping_message)
+                    all_outputs.append(skipping_message)
                 else:
-                    all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} command - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
+                    command_message = f"Step {i}/{total_steps}: {cmd['type'].capitalize()} command - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}"
+                    print_info(command_message)
+                    all_outputs.append(command_message)
 
             except Exception as e:
                 error_message = f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {str(e)}"
@@ -39,7 +43,8 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 return False, i, str(e), "\n".join(all_outputs)
 
         if debug:
-            print_debug(f"Completed step {i}/{total_steps}")
+            debug_message = f"Completed step {i}/{total_steps}"
+            print_debug(debug_message)
 
     return True, total_steps, None, "\n".join(all_outputs)
 
