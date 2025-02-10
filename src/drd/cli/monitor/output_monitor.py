@@ -30,10 +30,12 @@ class OutputMonitor:
         error_buffer = []
         iteration = 0
         self.last_output_time = time.time()
+
         while not self.monitor.should_stop.is_set():
             iteration += 1
 
-            if self.monitor.process.poll() is not None and not self.monitor.processing_input.is_set():
+            if (self.monitor.process.poll() is not None and
+                    not self.monitor.processing_input.is_set()):
                 if not self.monitor.restart_requested.is_set():
                     print_info("Server process ended unexpectedly.")
                     if self.retry_count < MAX_RETRIES:
@@ -66,13 +68,17 @@ class OutputMonitor:
             else:
                 self._check_idle_state()
 
-            if self.monitor.restart_requested.is_set() and not self.monitor.processing_input.is_set():
+            if (self.monitor.restart_requested.is_set() and
+                    not self.monitor.processing_input.is_set()):
                 self.monitor.perform_restart()
 
     def _check_idle_state(self):
         current_time = time.time()
         time_since_last_output = current_time - self.last_output_time
-        if (time_since_last_output > 5 and not self.idle_prompt_shown and not self.monitor.processing_input.is_set()):
+
+        if (time_since_last_output > 5 and
+                not self.idle_prompt_shown and
+                not self.monitor.processing_input.is_set()):
             print_prompt("\nNo more tasks to auto-process. What can I do next?")
             self._show_options()
             self.idle_prompt_shown = True
