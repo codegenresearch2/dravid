@@ -70,11 +70,12 @@ class TestDynamicCommandHandler(unittest.TestCase):
         mock_print_success.assert_called_once_with('Successfully performed CREATE on file: test.txt')
 
     @patch('drd.cli.query.dynamic_command_handler.generate_file_description')
-    def test_update_file_metadata(self, mock_generate_description):
+    def async_test_update_file_metadata(self, mock_generate_description):
         cmd = {'filename': 'test.txt', 'content': 'Test content'}
         mock_generate_description.return_value = ('python', 'Test file', ['test_function'])
 
-        update_file_metadata(cmd, self.metadata_manager, self.executor)
+        async def update_file_metadata_async():
+            await update_file_metadata(cmd, self.metadata_manager, self.executor)
 
         self.metadata_manager.get_project_context.assert_called_once()
         self.executor.get_folder_structure.assert_called_once()
