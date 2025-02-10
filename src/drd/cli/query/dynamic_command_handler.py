@@ -73,18 +73,24 @@ def handle_file_operation(cmd, executor, metadata_manager):
 
 def handle_metadata_operation(cmd, metadata_manager, executor):
     if cmd['operation'] == 'UPDATE_FILE':
-        update_file_metadata(cmd, metadata_manager, executor)
-        print_success(f'Updated metadata for file: {cmd["filename"]}')
-        return f'Updated metadata for {cmd["filename"]}'
+        if metadata_manager.update_metadata_from_file():
+            print_success(f'Updated metadata for file: {cmd["filename"]}')
+            return f'Updated metadata for {cmd["filename"]}'
+        else:
+            raise Exception(f'Failed to update metadata for file: {cmd["filename"]}')
     else:
         raise Exception(f'Unknown operation: {cmd["operation"]}')
 
 @patch('drd.metadata.common_utils.analyze_file')
 def update_file_metadata(mock_analyze_file, cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
-    mock_analyze_file.return_value = {'file_type': 'python', 'description': 'Test description', 'exports': []}
-    file_type, description, exports = generate_file_description(cmd['filename'], cmd.get('content', ''), project_context)
-    metadata_manager.update_file_metadata(cmd['filename'], file_type, cmd.get('content', ''), description, exports)
+    try:
+        mock_analyze_file.return_value = {'file_type': 'python', 'description': 'Test description', 'exports': []}
+        file_type, description, exports = generate_file_description(cmd['filename'], cmd.get('content', ''), project_context)
+        metadata_manager.update_file_metadata(cmd['filename'], file_type, cmd.get('content', ''), description, exports)
+    except ET.ParseError as e:
+        print_error(f'Error parsing XML response: {str(e)}')
+        return False
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context='', debug=False):
     if depth > 3:
