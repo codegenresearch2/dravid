@@ -33,15 +33,19 @@ class InputHandler:
 
         if user_input:
             self.monitor.processing_input.set()
-            self._handle_general_input(user_input)
-            self.monitor.processing_input.clear()
+            try:
+                self._handle_general_input(user_input)
+            finally:
+                self.monitor.processing_input.clear()
 
     def _handle_vision_input(self):
         print_info("Enter the image path and instructions (use Tab for autocomplete):")
         user_input = self._get_input_with_autocomplete()
         self.monitor.processing_input.set()
-        self._handle_general_input(user_input)
-        self.monitor.processing_input.clear()
+        try:
+            self._handle_general_input(user_input)
+        finally:
+            self.monitor.processing_input.clear()
 
     def _handle_general_input(self, user_input):
         instruction_prompt = get_instruction_prompt()  # Initialize instruction_prompt at the beginning
@@ -54,7 +58,6 @@ class InputHandler:
 
             if not os.path.exists(image_path):
                 print_error(f"Image file not found: {image_path}")
-                self.monitor.processing_input.clear()
                 return
 
             try:
