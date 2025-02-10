@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, MagicMock, mock_open, AsyncMock
 import xml.etree.ElementTree as ET
 
 from drd.metadata.updater import update_metadata_with_dravid
@@ -47,7 +47,7 @@ class TestMetadataUpdater(unittest.TestCase):
             <files>
                 <file>
                     <path>src/main.py</path>
-                    <action>UPDATE</action>
+                    <action>update</action>
                     <metadata>
                         <type>python</type>
                         <summary>Main Python file</summary>
@@ -60,11 +60,11 @@ class TestMetadataUpdater(unittest.TestCase):
                 </file>
                 <file>
                     <path>README.md</path>
-                    <action>REMOVE</action>
+                    <action>remove</action>
                 </file>
                 <file>
                     <path>package.json</path>
-                    <action>UPDATE</action>
+                    <action>update</action>
                     <metadata>
                         <type>json</type>
                         <summary>Package configuration file</summary>
@@ -95,10 +95,10 @@ class TestMetadataUpdater(unittest.TestCase):
             return mock_open(read_data=mock_file_contents.get(filename, ""))()
 
         # Mock analyze_file method
-        mock_metadata_manager.return_value.analyze_file.side_effect = [
+        mock_metadata_manager.return_value.analyze_file = AsyncMock(side_effect=[
             {'path': '/fake/project/dir/src/main.py', 'type': 'python', 'summary': "print('Hello, World!')", 'exports': ['main_function'], 'imports': ['os']},
             {'path': '/fake/project/dir/package.json', 'type': 'json', 'summary': '{"name": "test-project"}', 'exports': [], 'imports': []}
-        ]
+        ])
 
         with patch('builtins.open', mock_open_file):
             # Call the function
