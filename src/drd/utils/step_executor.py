@@ -1,16 +1,17 @@
-import subprocess
 import os
-import json
-import click
-from .diff import preview_file_changes
-from .apply_file_changes import apply_changes
-from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
-
+import subprocess
+import time
+from colorama import Fore, Style
 
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
         self.allowed_directories = [self.current_dir]
+        self.disallowed_commands = [
+            'rmdir', 'del', 'format', 'mkfs',
+            'dd', 'fsck', 'mkswap', 'mount', 'umount',
+            'sudo', 'su', 'chown', 'chmod'
+        ]
         self.env = os.environ.copy()
 
     def is_safe_path(self, path):
@@ -30,7 +31,7 @@ class Executor:
         command_parts = command.split()
         if command_parts[0] == 'rm':
             return self.is_safe_rm_command(command)
-        return True
+        return not any(cmd in self.disallowed_commands for cmd in command_parts)
 
     def perform_file_operation(self, operation, filename, content=None, force=False):
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
@@ -53,13 +54,13 @@ class Executor:
                 if click.confirm(f"Confirm creation [y/N]:", default=False):
                     with open(full_path, 'w') as f:
                         f.write(content)
-                    print(f"File created successfully: {filename}")
+                    print_success(f"File created successfully: {filename}")
                     return True
                 else:
                     print("File creation cancelled by user.")
                     return "Skipping this step"
             except Exception as e:
-                print(f"Error creating file: {str(e)}")
+                print_error(f"Error creating file: {str(e)}")
                 return False
 
         elif operation == 'UPDATE':
@@ -76,7 +77,7 @@ class Executor:
                     if click.confirm(f"Confirm update [y/N]:", default=False):
                         with open(full_path, 'w') as f:
                             f.write(updated_content)
-                        print(f"File updated successfully: {filename}")
+                        print_success(f"File updated successfully: {filename}")
                         return True
                     else:
                         print("File update cancelled by user.")
@@ -85,7 +86,7 @@ class Executor:
                     print("No content or changes provided for update operation")
                     return False
             except Exception as e:
-                print(f"Error updating file: {str(e)}")
+                print_error(f"Error updating file: {str(e)}")
                 return False
 
         elif operation == 'DELETE':
@@ -95,10 +96,10 @@ class Executor:
             if click.confirm(f"Confirm deletion [y/N]:", default=False):
                 try:
                     os.remove(full_path)
-                    print(f"File deleted successfully: {filename}")
+                    print_success(f"File deleted successfully: {filename}")
                     return True
                 except Exception as e:
-                    print(f"Error deleting file: {str(e)}")
+                    print_error(f"Error deleting file: {str(e)}")
                     return False
             else:
                 print("File deletion cancelled by user.")
@@ -112,7 +113,7 @@ class Executor:
         try:
             return json.loads(json_string)
         except json.JSONDecodeError as e:
-            print(f"JSON parsing error: {str(e)}")
+            print_error(f"JSON parsing error: {str(e)}")
             return None
 
     def merge_json(self, existing_content, new_content):
@@ -122,7 +123,7 @@ class Executor:
             merged_json = {**existing_json, **new_json}
             return json.dumps(merged_json, indent=2)
         except json.JSONDecodeError as e:
-            print(f"Error merging JSON content: {str(e)}")
+            print_error(f"Error merging JSON content: {str(e)}")
             return None
 
     def get_folder_structure(self):
@@ -131,7 +132,7 @@ class Executor:
 
     def execute_shell_command(self, command, timeout=300):
         if not self.is_safe_command(command):
-            print(f"Please verify the command once: {command}")
+            print_warning(f"Please verify the command once: {command}")
         if not click.confirm(f"Confirm execution [y/N]:", default=False):
             print("Command execution cancelled by user.")
             return 'Skipping this step...'
@@ -163,7 +164,7 @@ class Executor:
                 if time.time() - start_time > timeout:
                     process.terminate()
                     error_message = f"Command timed out after {timeout} seconds: {command}"
-                    print(error_message)
+                    print_error(error_message)
                     raise Exception(error_message)
                 line = process.stdout.readline()
                 if line:
@@ -174,14 +175,14 @@ class Executor:
             output.append(stdout)
             if return_code != 0:
                 error_message = f"Command failed with return code {return_code}\nError output: {stderr}"
-                print(error_message)
+                print_error(error_message)
                 raise Exception(error_message)
             self._update_env_from_command(command)
-            print("Command executed successfully.")
+            print_success("Command executed successfully.")
             return ''.join(output)
         except Exception as e:
             error_message = f"Error executing command '{command}': {str(e)}"
-            print(error_message)
+            print_error(error_message)
             raise Exception(error_message)
 
     def _handle_source_command(self, command):
@@ -189,7 +190,7 @@ class Executor:
         file_path = os.path.expandvars(os.path.expanduser(file_path))
         if not os.path.isfile(file_path):
             error_message = f"Source file not found: {file_path}"
-            print(error_message)
+            print_error(error_message)
             raise Exception(error_message)
         try:
             result = subprocess.run(
@@ -204,11 +205,11 @@ class Executor:
                 if '=' in line:
                     key, value = line.split('=', 1)
                     self.env[key] = value
-            print(f"Sourced file successfully: {file_path}")
+            print_success(f"Sourced file successfully: {file_path}")
             return "Source command executed successfully"
         except subprocess.CalledProcessError as e:
             error_message = f"Error executing source command: {str(e)}"
-            print(error_message)
+            print_error(error_message)
             raise Exception(error_message)
 
     def _update_env_from_command(self, command):
@@ -231,8 +232,13 @@ class Executor:
         if self.is_safe_path(new_dir):
             os.chdir(new_dir)
             self.current_dir = new_dir
-            print(f"Changed directory to: {self.current_dir}")
+            print_info(f"Changed directory to: {self.current_dir}")
             return f"Changed directory to: {self.current_dir}"
         else:
-            print(f"Cannot change to directory: {new_dir}")
+            print_error(f"Cannot change to directory: {new_dir}")
             return f"Failed to change directory to: {new_dir}"
+
+    def reset_directory(self):
+        os.chdir(self.initial_dir)
+        self.current_dir = self.initial_dir
+        print_info(f"Reset directory to: {self.current_dir}")
