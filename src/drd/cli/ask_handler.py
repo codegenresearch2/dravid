@@ -14,8 +14,6 @@ def read_file_content(file_path):
 
 def suggest_file_alternative(file_path, project_metadata):
     query = f"The file '{file_path}' doesn't exist. Can you suggest similar existing files or interpret what the user might have meant? Use the following project metadata as context:\n\n{project_metadata}"
-    print_info("Making API call for file suggestion")
-    print_info("LLM call to be made: 1")
     response = call_dravid_api_with_pagination(query)
     return response
 
@@ -47,5 +45,4 @@ def handle_ask_command(ask, file, debug):
         return
 
     print_info("Streaming response from LLM")
-    print_info("LLM call to be made: 1")
     stream_dravid_api(context, print_chunk=True)
