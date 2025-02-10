@@ -46,4 +46,6 @@ def handle_ask_command(ask, file, debug):
         print_error("Please provide a question using --ask or through stdin")
         return
 
+    print_info("Streaming response from LLM")
+    print_info("LLM call to be made: 1")
     stream_dravid_api(context, print_chunk=True)
