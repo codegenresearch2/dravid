@@ -1,6 +1,5 @@
 import unittest
-import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from io import StringIO
 from drd.cli.monitor.output_monitor import OutputMonitor
 
