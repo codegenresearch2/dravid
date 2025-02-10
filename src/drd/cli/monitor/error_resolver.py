@@ -8,11 +8,11 @@ from ..query.file_operations import get_files_to_modify
 from ...utils.file_utils import get_file_content
 
 def monitoring_handle_error_with_dravid(error, line, monitor):
-    print_error(f"An error has been detected: {error}")
+    print_error(f"Error detected: {error}")
 
     error_message = str(error)
     error_type = type(error).__name__
-    error_trace = ''.join(traceback.format_exception(type(error), error, error.__traceback__))
+    error_trace = ''.join(traceback.format_tb(error.__traceback__))
 
     project_context = monitor.metadata_manager.get_project_context()
 
@@ -42,7 +42,7 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
     try:
         commands = call_dravid_api(error_query, include_context=True)
     except ValueError as e:
-        print_error(f"There was an error parsing Dravid's response: {str(e)}")
+        print_error(f"Error parsing Dravid's response: {str(e)}")
         return False
 
     requires_restart = False
@@ -71,7 +71,7 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
                 print_info(f"Performing file operation: {cmd['operation']} on {cmd['filename']}")
                 executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'))
 
-        print_success("The fix has been successfully applied.")
+        print_success("Fix applied.")
 
         if requires_restart:
             print_info("The applied fix requires a server restart.")
