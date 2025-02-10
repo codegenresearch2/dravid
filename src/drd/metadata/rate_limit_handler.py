@@ -2,10 +2,10 @@ import functools
 import sys
 import asyncio
 import time
-from ..api.main import call_dravid_api_with_pagination
-from ..utils.parser import extract_and_parse_xml
-from ..prompts.file_metadata_desc_prompts import get_file_metadata_prompt
-from ..utils.utils import print_info, print_error, print_success, print_warning
+from drd.api.main import call_dravid_api_with_pagination
+from drd.utils.parser import extract_and_parse_xml
+from drd.prompts.file_metadata_desc_prompts import get_file_metadata_prompt
+from drd.utils.utils import print_info, print_error, print_success, print_warning
 
 MAX_CONCURRENT_REQUESTS = 10
 MAX_CALLS_PER_MINUTE = 100
@@ -46,7 +46,7 @@ async def process_single_file(filename, content, project_context, folder_structu
 
         root = extract_and_parse_xml(response)
         type_elem = root.find('.//type')
-        summary_elem = root.find('.//description')
+        summary_elem = root.find('.//summary')
         exports_elem = root.find('.//exports')
         imports_elem = root.find('.//imports')
 
