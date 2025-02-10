@@ -19,24 +19,24 @@ def run_dev_server_with_monitoring(command: str):
         print_info("Server monitor is up and running! Press Ctrl+C to stop.")
         while not monitor.should_stop.is_set():
             pass
-        print_info("Server monitor has ended.")
     except KeyboardInterrupt:
         print_info("Stopping server...")
     finally:
         monitor.stop()
+        print_info("Server monitor has ended.")
 
 def handle_module_not_found(error_msg, monitor):
     match = re.search(
         r"(?:Cannot find module|Module not found|ImportError|No module named).*['\"](.*?)['\"]", error_msg, re.IGNORECASE)
     if match:
         module_name = match.group(1)
-        error = ImportError(f"Oops! It seems like the module '{module_name}' is missing. Please install it and try again.")
+        error = ImportError(f"Module '{module_name}' not found. Please install it and try again.")
         monitoring_handle_error_with_dravid(error, error_msg, monitor)
 
 def handle_syntax_error(error_msg, monitor):
-    error = SyntaxError(f"Uh-oh! There's a syntax error in your code. Please check for any missing or misplaced characters: {error_msg}")
+    error = SyntaxError(f"Syntax error detected: {error_msg}. Please check your code for any missing or misplaced characters.")
     monitoring_handle_error_with_dravid(error, error_msg, monitor)
 
 def handle_general_error(error_msg, monitor):
-    error = Exception(f"Whoops! A general error has occurred. Here's what we know: {error_msg}")
+    error = Exception(f"General error detected: {error_msg}. Please check the error message for more details.")
     monitoring_handle_error_with_dravid(error, error_msg, monitor)
