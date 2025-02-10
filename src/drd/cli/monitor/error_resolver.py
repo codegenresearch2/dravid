@@ -17,14 +17,17 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
     project_context = monitor.metadata_manager.get_project_context()
 
     print_info('Identifying relevant files for error context...')
-    error_details = f'error_msg: {error_message}, error_type: {error_type}, error_trace: {error_trace}'
+    error_details = f'Error Message: {error_message}\nError Type: {error_type}\nError Trace: {error_trace}'
     files_to_check = run_with_loader(lambda: get_files_to_modify(error_details, project_context), 'Analyzing project files')
 
     print_info(f'Found {len(files_to_check)} potentially relevant files.')
 
-    file_contents = {file: get_file_content(file) for file in files_to_check if get_file_content(file)}
-    for file in file_contents:
-        print_info(f'Read content of {file}')
+    file_contents = {}
+    for file in files_to_check:
+        content = get_file_content(file)
+        if content:
+            file_contents[file] = content
+            print_info(f'Read content of {file}')
 
     file_context = '\n'.join([f'Content of {file}:\n{content}' for file, content in file_contents.items()])
 
@@ -34,19 +37,24 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
     try:
         commands = call_dravid_api(error_query, include_context=True)
     except ValueError as e:
-        print_error(f'Error parsing dravid\'s response: {str(e)}')
+        print_error(f'Error parsing Dravid\'s response: {str(e)}')
         return False
 
-    requires_restart = any(cmd['content'].lower() == 'true' for cmd in commands if cmd['type'] == 'requires_restart')
-    fix_commands = [cmd for cmd in commands if cmd['type'] != 'explanation']
+    requires_restart = False
+    fix_commands = []
+    for command in commands:
+        if command['type'] == 'requires_restart':
+            requires_restart = command['content'].lower() == 'true'
+        elif command['type'] != 'explanation':
+            fix_commands.append(command)
 
     print_info('Dravid\'s suggested fix:')
     print_command_details(fix_commands)
 
-    user_input = monitor.get_user_input('Proceed with this fix? [y/N]: ')
+    user_input = monitor.get_user_input('Proceed with this fix? This may require a server restart. [y/N]: ')
 
     if user_input.lower() == 'y':
-        print_info('Applying dravid\'s suggested fix...')
+        print_info('Applying Dravid\'s suggested fix...')
         executor = Executor()
         for cmd in fix_commands:
             if cmd['type'] == 'shell':
