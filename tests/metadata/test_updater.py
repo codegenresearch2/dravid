@@ -109,11 +109,11 @@ class TestMetadataUpdater(unittest.TestCase):
         mock_extract_xml.assert_called_once_with(mock_call_api.return_value)
 
         # Check if metadata was correctly updated and removed
-        mock_metadata_manager.return_value.update_file_metadata.assert_called_once_with(
+        mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
             '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", 'Main Python file', [
                 'os']
         )
-        mock_metadata_manager.return_value.update_file_metadata.assert_called_with(
+        mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
             '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', 'Package configuration file', [
             ], []
         )
