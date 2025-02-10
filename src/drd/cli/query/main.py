@@ -20,8 +20,8 @@ def execute_dravid_command(query, image_path=None, debug=False, instruction_prom
         project_context = metadata_manager.get_project_context()
         full_query = prepare_query(query, project_context, image_path, executor)
 
-        print_info("Sending query to Claude API...")
-        print_info(f"LLM calls to be made: 1")
+        print_info("Preparing to send query to Claude API...")
+        print_info("LLM calls to be made: 1")
         commands = get_commands(full_query, image_path, instruction_prompt)
 
         if debug:
