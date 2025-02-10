@@ -8,7 +8,7 @@ from ...utils.file_utils import get_file_content, fetch_project_guidelines
 from .file_operations import get_files_to_modify
 from ...utils.parser import parse_dravid_response
 
-def execute_dravid_command(query, image_path=None, debug=False):
+def execute_dravid_command(query, image_path=None, debug=False, instruction_prompt=None):
     print_info("Starting Dravid CLI tool..")
     print_warning("Please make sure you are in a fresh directory.")
     print_warning("If it is an existing project, please ensure you're in a git branch")
@@ -55,13 +55,13 @@ def execute_dravid_command(query, image_path=None, debug=False):
             print_info(f"Processing image: {image_path}")
             print_info("LLM calls to be made: 1")
             commands = run_with_loader(
-                lambda: call_dravid_vision_api(full_query, image_path),
+                lambda: call_dravid_vision_api(full_query, image_path, include_context=True, instruction_prompt=instruction_prompt),
                 "Analyzing image and generating response"
             )
         else:
             print_info("Streaming response from Claude API...")
             print_info("LLM calls to be made: 1")
-            xml_result = stream_dravid_api(full_query)
+            xml_result = stream_dravid_api(full_query, include_context=True, instruction_prompt=instruction_prompt)
             commands = parse_dravid_response(xml_result)
             print_debug("commands")
             print_info(commands)
