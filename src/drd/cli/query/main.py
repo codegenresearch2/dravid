@@ -9,7 +9,7 @@ from .file_operations import get_files_to_modify
 from ...utils.parser import parse_dravid_response
 
 def execute_dravid_command(query, image_path=None, debug=False, instruction_prompt=None):
-    print_info("Starting Dravid CLI tool..")
+    print_info("Starting Dravid CLI tool...")
     print_warning("Ensure you're in a fresh directory and a git branch if it's an existing project.")
     print_warning("Press Ctrl+C to exit if not.")
 
