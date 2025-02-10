@@ -81,12 +81,13 @@ def print_command_details(commands):
         else:
             print_warning(f"  Unknown command type: {cmd_type}", 4)
 
-# Removed the problematic line at line 89
+# Removed the problematic line at line 86
+
 
 This revised code snippet addresses the feedback from the oracle by:
 
 1. Placing the `print_header` function at the end of the file.
-2. Adding a `print_prompt` function (assuming it was missing).
+2. Adding a `print_prompt` function.
 3. Ensuring consistent indentation in the `print_command_details` function.
 4. Adjusting the `create_confirmation_box` function to match the formatting style of the gold code.
 5. Reviewing and improving the formatting of messages in the print functions.
