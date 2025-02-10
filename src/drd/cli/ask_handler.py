@@ -31,6 +31,7 @@ def handle_ask_command(ask, file, debug):
         else:
             print_error(f"File not found: {file_path}.")
             print_info("Finding similar or alternative file")
+            logging.info("Making API call for file suggestion")
             suggestion = suggest_file_alternative(file_path, project_metadata)
             print_info(f"Suggestion: {suggestion}")
             user_input = click.prompt(
