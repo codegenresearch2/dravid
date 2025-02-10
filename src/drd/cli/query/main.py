@@ -3,15 +3,15 @@ from ...api.main import stream_dravid_api, call_dravid_vision_api
 from ...utils.step_executor import Executor
 from ...metadata.project_metadata import ProjectMetadataManager
 from .dynamic_command_handler import handle_error_with_dravid, execute_commands
-from ...utils import print_error, print_success, print_info, print_debug, print_warning, run_with_loader
+from ...utils import print_error, print_success, print_header, print_debug, print_warning, run_with_loader
 from ...utils.file_utils import get_file_content, fetch_project_guidelines, is_directory_empty
 from .file_operations import get_files_to_modify
 from ...utils.parser import parse_dravid_response
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None):
-    print_info("ð Starting Dravid AI ...")
+    print_header("ð Starting Dravid AI ...")
     if warn:
-        print_warning("â ï¸ Please ensure you are in a fresh directory. Review and commit changes if necessary.")
+        print_warning("â ï¸ Please ensure you are in a fresh directory. Review and commit changes if necessary.\n")
 
     executor = Executor()
     metadata_manager = ProjectMetadataManager(executor.current_dir)
@@ -45,9 +45,9 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
             project_guidelines = fetch_project_guidelines(executor.current_dir)
             file_context = "\n".join(
                 [f"Current content of {file}:\n{content}" for file, content in file_contents.items()])
-            full_query = f"{project_context}\n\nProject Guidelines:\n{project_guidelines}\n\nCurrent file contents:\n{file_context}\n\nCurrent directory is not empty.\n\nUser query: {query}"
-        else:
             is_empty = is_directory_empty(executor.current_dir)
+            full_query = f"{project_context}\n\nProject Guidelines:\n{project_guidelines}\n\nCurrent file contents:\n{file_context}\n\nCurrent directory is {'not ' if not is_empty else ''}empty.\n\nUser query: {query}"
+        else:
             print_info("ð No project context found. Creating a new project in the current directory.")
             full_query = f"User query: {query}"
 
