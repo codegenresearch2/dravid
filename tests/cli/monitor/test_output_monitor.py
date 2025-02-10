@@ -11,10 +11,6 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor = MagicMock()
         self.output_monitor = OutputMonitor(self.mock_monitor)
 
-    def tearDown(self):
-        # Cleanup after each test
-        self.mock_monitor.reset_mock()
-
     @patch('select.select')
     @patch('time.time')
     @patch('drd.cli.monitor.output_monitor.print_info')
@@ -24,7 +20,7 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor.should_stop.is_set.side_effect = [False] * 10 + [True]
         self.mock_monitor.process.poll.return_value = None
         self.mock_monitor.processing_input.is_set.return_value = False
-        self.mock_monitor.process.stdout = MagicMock()
+        self.mock_monitor.process.stdout = MagicMock(spec=sys.stdout)
         self.mock_monitor.process.stdout.readline.return_value = ""
         mock_select.return_value = ([self.mock_monitor.process.stdout], [], [])
         mock_time.side_effect = [0] + [6] * 10  # Simulate time passing
@@ -36,8 +32,10 @@ class TestOutputMonitor(unittest.TestCase):
         # Run
         self.output_monitor._monitor_output()
 
-        # Restore stdout
+        # Restore stdout and print captured output
         sys.stdout = sys.__stdout__
+        print("Captured output:")
+        print(captured_output.getvalue())
 
         # Assert
         mock_print_prompt.assert_called_once_with(
@@ -72,7 +70,7 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor.should_stop.is_set.side_effect = [False] * 5 + [True]
         self.mock_monitor.process.poll.return_value = None
         self.mock_monitor.processing_input.is_set.return_value = False
-        self.mock_monitor.process.stdout = MagicMock()
+        self.mock_monitor.process.stdout = MagicMock(spec=sys.stdout)
         self.mock_monitor.process.stdout.readline.return_value = "Test output\n"
 
         # Run
