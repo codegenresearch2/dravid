@@ -84,15 +84,6 @@ class TestMetadataUpdater(unittest.TestCase):
 
         mock_find_file.side_effect = ['/fake/project/dir/src/main.py', '/fake/project/dir/package.json']
 
-        # Mock file contents
-        mock_file_contents = {
-            '/fake/project/dir/src/main.py': "print('Hello, World!')",
-            '/fake/project/dir/package.json': '{"name": "test-project"}'
-        }
-
-        def mock_open_file(filename, *args, **kwargs):
-            return mock_open(read_data=mock_file_contents.get(filename, ""))()
-
         # Mocking asynchronous function
         async def mock_analyze_file(filename):
             if filename == '/fake/project/dir/src/main.py':
@@ -112,10 +103,10 @@ class TestMetadataUpdater(unittest.TestCase):
                     'imports': []
                 }
 
-        mock_metadata_manager.return_value.analyze_file.side_effect = mock_analyze_file
+        mock_metadata_manager.return_value.analyze_file = mock_analyze_file
 
-        with patch('builtins.open', mock_open_file):
-            # Call the function
+        # Call the function
+        with patch('builtins.open', mock_open(read_data="print('Hello, World!')")) as mock_file:
             update_metadata_with_dravid(self.meta_description, self.current_dir)
 
         # Assertions
@@ -125,7 +116,6 @@ class TestMetadataUpdater(unittest.TestCase):
         mock_call_api.assert_called_once()
         mock_extract_xml.assert_called_once_with(mock_call_api.return_value)
 
-        # Check if metadata was correctly updated and removed
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
             '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", ['main_function'], ['os']
         )
@@ -134,12 +124,10 @@ class TestMetadataUpdater(unittest.TestCase):
         )
         mock_metadata_manager.return_value.remove_file_metadata.assert_called_once_with('README.md')
 
-        # Check if external dependencies were added
         mock_metadata_manager.return_value.add_external_dependency.assert_any_call('requests==2.26.0')
         mock_metadata_manager.return_value.add_external_dependency.assert_any_call('react@^17.0.2')
         mock_metadata_manager.return_value.add_external_dependency.assert_any_call('jest@^27.0.6')
 
-        # Check if appropriate messages were printed
         mock_print_info.assert_any_call("Updating metadata based on the provided description...")
         mock_print_success.assert_any_call("Updated metadata for file: /fake/project/dir/src/main.py")
         mock_print_success.assert_any_call("Updated metadata for file: /fake/project/dir/package.json")
@@ -148,5 +136,3 @@ class TestMetadataUpdater(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-I have addressed the feedback provided by the test case. The line that was causing the `SyntaxError` has been converted into a proper comment by prefixing it with a `#`. This will allow the Python interpreter to ignore the line during execution, thus preventing the `SyntaxError` and allowing the tests to run successfully. Additionally, I have ensured that all comments in the code are properly formatted for code clarity and to prevent similar issues in the future.
