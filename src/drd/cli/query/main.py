@@ -10,9 +10,9 @@ from ...utils.parser import parse_dravid_response
 
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None):
-    print_info("🚀 Starting Dravid AI tool...")
+    print_header("Starting Dravid AI tool...")
     if warn:
-        print_warning("⚠️ Please make sure you are in a fresh directory.")
+        print_warning("⚠️ Please review and commit your changes before proceeding.")
         print_warning(
             "⚠️ If it is an existing project, please ensure you're in a git branch")
 
