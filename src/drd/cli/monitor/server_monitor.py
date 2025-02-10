@@ -3,7 +3,7 @@ import subprocess
 from queue import Queue
 from .input_handler import InputHandler
 from .output_monitor import OutputMonitor
-from ...utils import print_header, print_success, print_error, print_info
+from ...utils import print_header, print_success, print_error, print_info, print_prompt
 
 MAX_RETRIES = 3
 
@@ -29,9 +29,9 @@ class DevServerMonitor:
         self._start_process()
 
     def stop(self):
-        print_info("Initiating Dravid AI and server monitor shutdown...")
+        print_prompt("Initiating Dravid AI and server monitor shutdown...")
         self.should_stop.set()
-        if self.process:
+        if self.process and self.process.poll() is None:
             self.process.terminate()
             self.process.wait()
         print_info("Dravid AI and server monitor have been stopped.")
@@ -41,17 +41,10 @@ class DevServerMonitor:
 
     def perform_restart(self):
         print_info("Attempting to restart server...")
-        if self.process:
+        if self.process and self.process.poll() is None:
             self.process.terminate()
             self.process.wait()
-
-        self.retry_count += 1
-        if self.retry_count > MAX_RETRIES:
-            print_error(f"Server failed to start after {MAX_RETRIES} attempts. Exiting.")
-            self.stop()
-        else:
-            print_info(f"Restart attempt failed. Retrying... (Attempt {self.retry_count}/{MAX_RETRIES})")
-            self._start_process()
+        self._start_process()
 
     def _start_process(self):
         try:
@@ -73,8 +66,12 @@ class DevServerMonitor:
             self.output_monitor.start()
             self.input_handler.start()
         except Exception as e:
-            print_error(f"Failed to start server process: {str(e)}")
-            self.stop()
+            self.retry_count += 1
+            if self.retry_count > MAX_RETRIES:
+                print_error(f"Server failed to start after {MAX_RETRIES} attempts. Exiting.")
+                self.stop()
+            else:
+                print_info(f"Restart attempt failed. Retrying... (Attempt {self.retry_count}/{MAX_RETRIES})")
 
 def start_process(command, cwd):
     return subprocess.Popen(
