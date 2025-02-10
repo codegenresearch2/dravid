@@ -100,7 +100,7 @@ class TestMetadataUpdater(unittest.TestCase):
                 return {
                     'path': '/fake/project/dir/src/main.py',
                     'type': 'python',
-                    'summary': "print('Hello, World!')",
+                    'summary': "Main Python file",
                     'exports': ['main_function'],
                     'imports': ['os']
                 }
@@ -112,6 +112,8 @@ class TestMetadataUpdater(unittest.TestCase):
                     'exports': [],
                     'imports': []
                 }
+            else:
+                return None
 
         mock_metadata_manager.return_value.analyze_file = mock_analyze_file
 
@@ -128,9 +130,9 @@ class TestMetadataUpdater(unittest.TestCase):
 
         # Check if metadata was correctly updated and removed
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
-            '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", 'Main Python file', ['main_function'], ['os'])
+            '/fake/project/dir/src/main.py', 'python', "Main Python file", ['main_function'], ['os'])
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
-            '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', 'Package configuration file', [], [])
+            '/fake/project/dir/package.json', 'json', 'Package configuration file', [], [])
         mock_metadata_manager.return_value.remove_file_metadata.assert_called_once_with('README.md')
 
         # Check if external dependencies were added
