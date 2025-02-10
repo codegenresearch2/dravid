@@ -9,10 +9,10 @@ from .file_operations import get_files_to_modify
 from ...utils.parser import parse_dravid_response
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None):
-    print_info("ð Starting Dravid CLI tool...")
+    print_info("ð Starting Dravid AI...")
     if warn:
-        print_warning("â ï¸ Please make sure you are in a fresh directory.")
-        print_warning("â ï¸ If it is an existing project, please ensure you're in a git branch.")
+        print_warning("â ï¸ Ensure you are in a fresh directory.")
+        print_warning("â ï¸ If it's an existing project, make sure you're in a git branch.")
 
     executor = Executor()
     metadata_manager = ProjectMetadataManager(executor.current_dir)
@@ -21,8 +21,8 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
         project_context = metadata_manager.get_project_context()
 
         if project_context:
-            print_info("ð Identifying related files to the query...")
-            print_info("ð¡ LLM calls to be made: (1)")
+            print_info("ð Identifying relevant files for the query...")
+            print_info("ð¡ LLM calls to be made: (1)", indent=2)
             files_to_modify = run_with_loader(
                 lambda: get_files_to_modify(query, project_context),
                 "Analyzing project files"
@@ -48,13 +48,13 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
             full_query = f"{project_context}\n\nProject Guidelines:\n{project_guidelines}\n\nCurrent file contents:\n{file_context}\n\nCurrent directory is not empty.\n\nUser query: {query}"
         else:
             is_empty = is_directory_empty(executor.current_dir)
-            print_info("ð No current project context found. Will create a new project in the current directory.")
+            print_info("ð No project context found. Creating a new project in the current directory.")
             full_query = f"User query: {query}"
 
         print_info("ð¤ Preparing to send query to LLM...")
         if image_path:
-            print_info(f"ð· Processing image: {image_path}")
-            print_info("ð¡ LLM calls to be made: (1)")
+            print_info(f"ð· Processing image: {image_path}", indent=4)
+            print_info("ð¡ LLM calls to be made: (1)", indent=4)
             commands = run_with_loader(
                 lambda: call_dravid_vision_api(
                     full_query, image_path, include_context=True, instruction_prompt=instruction_prompt),
@@ -62,12 +62,12 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
             )
         else:
             print_info("ð¡ Streaming response from LLM...")
-            print_info("ð¡ LLM calls to be made: (1)")
+            print_info("ð¡ LLM calls to be made: (1)", indent=4)
             xml_result = stream_dravid_api(
                 full_query, include_context=True, instruction_prompt=instruction_prompt, print_chunk=False)
             commands = parse_dravid_response(xml_result)
             if debug:
-                print_debug(f"Received {len(commands)} new command(s)")
+                print_debug(f"Received {len(commands)} new command(s)", indent=4)
 
         if not commands:
             print_error("ð« Failed to parse Claude's response or no commands to execute.")
@@ -95,7 +95,7 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
         print_info("ð Execution details:")
         click.echo(all_outputs)
 
-        print_success("ð Dravid CLI tool execution completed.")
+        print_success("ð Dravid AI execution completed.")
     except Exception as e:
         print_error(f"ð« An unexpected error occurred: {str(e)}")
         if debug:
