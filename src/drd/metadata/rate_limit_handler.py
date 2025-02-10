@@ -2,10 +2,10 @@ import functools
 import sys
 import asyncio
 import time
-from ..api.main import call_dravid_api_with_pagination
-from ..utils.parser import extract_and_parse_xml
-from ..prompts.file_metadata_desc_prompts import get_file_metadata_prompt
-from ..utils.utils import print_info, print_error, print_success, print_warning
+from drd.api.main import call_dravid_api_with_pagination
+from drd.utils.parser import extract_and_parse_xml
+from drd.prompts.file_metadata_desc_prompts import get_file_metadata_prompt
+from drd.utils.utils import print_info, print_error, print_success, print_warning
 from .common_utils import generate_file_description
 
 MAX_CONCURRENT_REQUESTS = 10
@@ -55,23 +55,23 @@ async def process_single_file(filename, content, project_context, folder_structu
         imports_elem = root.find('.//imports')
 
         # Extract metadata from the response
-        file_type = type_elem.text.strip() if type_elem is not None and type_elem.text else "unknown"
-        summary = summary_elem.text.strip() if summary_elem is not None and summary_elem.text else "No summary available"
-        exports = exports_elem.text.strip() if exports_elem is not None and exports_elem.text else ""
-        imports = imports_elem.text.strip() if imports_elem is not None and imports_elem.text else ""
+        file_type = type_elem.text.strip() if type_elem is not None and type_elem.text else 'unknown'
+        summary = summary_elem.text.strip() if summary_elem is not None and summary_elem.text else 'No summary available'
+        exports = exports_elem.text.strip() if exports_elem is not None and exports_elem.text else ''
+        imports = imports_elem.text.strip() if imports_elem is not None and imports_elem.text else ''
 
-        print_success(f"Processed: {filename}")
+        print_success(f'Processed: {filename}')
         # Return the extracted metadata
         return filename, file_type, summary, exports, imports
     except Exception as e:
-        print_error(f"Error processing {filename}: {e}")
+        print_error(f'Error processing {filename}: {e}')
         # Return error metadata in case of exception
-        return filename, "unknown", f"Error: {e}", "", ""
+        return filename, 'unknown', f'Error: {e}', '', ''
 
 async def process_files(files, project_context, folder_structure):
     total_files = len(files)
-    print_info(f"Processing {total_files} files to construct metadata per file")
-    print_info(f"LLM calls to be made: {total_files}")
+    print_info(f'Processing {total_files} files to construct metadata per file')
+    print_info(f'LLM calls to be made: {total_files}')
 
     async def process_batch(batch):
         tasks = [process_single_file(filename, content, project_context, folder_structure)
@@ -84,6 +84,6 @@ async def process_files(files, project_context, folder_structure):
         batch = files[i:i+batch_size]
         batch_results = await process_batch(batch)
         results.extend(batch_results)
-        print_info(f"Progress: {len(results)}/{total_files} files processed")
+        print_info(f'Progress: {len(results)}/{total_files} files processed')
 
     return results
