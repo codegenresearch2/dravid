@@ -39,26 +39,26 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
     return True, total_steps, None, "\n".join(all_outputs)
 
 def handle_shell_command(cmd, executor):
-    print_info(f"  Executing shell command: {cmd['command']}")
+    print_info(f"Executing shell command: {cmd['command']}")
     output = executor.execute_shell_command(cmd['command'])
     if isinstance(output, str) and output.startswith("Skipping"):
-        print_info(f"  {output}")
+        print_info("Skipping this step...")
         return output
     if output is None:
         raise Exception(f"Command failed: {cmd['command']}")
-    print_success(f"  Successfully executed: {cmd['command']}")
+    print_success(f"Successfully executed: {cmd['command']}")
     if output:
-        click.echo(f"  Command output:\n{output}")
+        click.echo(f"Command output:\n{output}")
     return output
 
 def handle_file_operation(cmd, executor, metadata_manager):
-    print_info(f"  Performing file operation: {cmd['operation']} on {cmd['filename']}")
+    print_info(f"Performing file operation: {cmd['operation']} on {cmd['filename']}")
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
     if isinstance(operation_performed, str) and operation_performed.startswith("Skipping"):
-        print_info(f"  {operation_performed}")
+        print_info("Skipping this step...")
         return operation_performed
     elif operation_performed:
-        print_success(f"  Successfully performed {cmd['operation']} on file: {cmd['filename']}")
+        print_success(f"Successfully performed {cmd['operation']} on file: {cmd['filename']}")
         if cmd['operation'] in ['CREATE', 'UPDATE']:
             update_file_metadata(cmd, metadata_manager, executor)
         return "Success"
@@ -68,7 +68,7 @@ def handle_file_operation(cmd, executor, metadata_manager):
 def handle_metadata_operation(cmd, metadata_manager):
     if cmd['operation'] == 'UPDATE_FILE':
         if metadata_manager.update_metadata_from_file():
-            print_success(f"  Updated metadata for file: {cmd['filename']}")
+            print_success(f"Updated metadata for file: {cmd['filename']}")
             return f"Updated metadata for {cmd['filename']}"
         else:
             raise Exception(f"Failed to update metadata for file: {cmd['filename']}")
