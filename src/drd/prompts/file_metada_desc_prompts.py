@@ -17,13 +17,9 @@ Respond with an XML structure containing the metadata:
 
 <response>
   <guidelines>
-    <path>Full path of the file within the project</path>
-    <type>Programming language or file type (e.g., "typescript", "python", "json")</type>
-    <summary>Brief description of the file's purpose and functionality</summary>
-    <file_category>code_file or dependency_file</file_category>
-    <exports>Comma-separated list of exports or 'None'</exports>
-    <imports>Comma-separated list of imports or 'None'</imports>
-    <external_dependencies>Include only if there are external dependencies</external_dependencies>
+    <instruction>Ensure all fields are included in the XML response.</instruction>
+    <instruction>Use 'None' for exports, imports, and external_dependencies if there are none.</instruction>
+    <instruction>Respond strictly with the XML structure; no additional text.</instruction>
   </guidelines>
   <metadata>
     <path>{filename}</path>
@@ -32,13 +28,12 @@ Respond with an XML structure containing the metadata:
     <file_category>code_file or dependency_file</file_category>
     <exports>Comma-separated list of exports or 'None'</exports>
     <imports>Comma-separated list of imports or 'None'</imports>
-    <!-- Include <external_dependencies> tag only if there are external dependencies -->
     <external_dependencies>
+      <!-- Include dependency elements only if there are external dependencies -->
       <dependency>
         <name>name1</name>
         <version>version1</version>
       </dependency>
-      <!-- Add more dependency elements as needed -->
     </external_dependencies>
   </metadata>
   <examples>
@@ -68,8 +63,4 @@ Respond with an XML structure containing the metadata:
 </response>
 
 Respond strictly only with the XML response as it will be used for parsing.
-Ensure that all other tags (path, type, summary, file_category, exports, imports) are always present and non-empty.
-If there are no exports or imports, use 'None' instead of an empty tag.
-Include a <guidelines> tag to clarify how each field should be populated based on the context.
-Include an <examples> tag to provide examples of the expected XML output for different scenarios.
 """
