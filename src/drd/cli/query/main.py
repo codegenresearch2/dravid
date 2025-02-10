@@ -7,7 +7,7 @@ from ...utils import print_error, print_success, print_info, print_debug, print_
 from ...utils.file_utils import get_file_content, fetch_project_guidelines
 from .file_operations import get_files_to_modify
 
-def execute_dravid_command(query, img_path=None, debug=False, instruction_prompt=None):
+def execute_dravid_command(query, image_path=None, debug=False, instruction_prompt=None):
     print_info("Starting Dravid CLI tool..")
     print_warning("Ensure you're in a fresh directory and a git branch if it's an existing project.")
     print_warning("Press Ctrl+C to exit if not.")
@@ -17,14 +17,18 @@ def execute_dravid_command(query, img_path=None, debug=False, instruction_prompt
 
     try:
         project_context = metadata_manager.get_project_context()
-        full_query = prepare_query(query, project_context, img_path)
+        full_query = prepare_query(query, project_context, image_path, executor)
 
         print_info("Sending query to Claude API...")
-        commands = get_commands(full_query, img_path, instruction_prompt)
+        print_info(f"LLM calls to be made: 1")
+        commands = get_commands(full_query, image_path, instruction_prompt)
 
         if not commands:
             print_error("Failed to parse Claude's response or no commands to execute.")
             return
+
+        if debug:
+            print_debug(f"Received {len(commands)} new command(s)")
 
         execute_and_handle_commands(commands, executor, metadata_manager, debug)
 
@@ -35,23 +39,32 @@ def execute_dravid_command(query, img_path=None, debug=False, instruction_prompt
             import traceback
             traceback.print_exc()
 
-def prepare_query(query, project_context, img_path):
+def prepare_query(query, project_context, image_path, executor):
     if project_context:
-        print_info("Analyzing project files...")
+        print_info("Identifying related files to the query...")
         files_to_modify = run_with_loader(lambda: get_files_to_modify(query, project_context), "Analyzing project files")
-        file_contents = {file: get_file_content(file) for file in files_to_modify}
+
+        print_info(f"Found {len(files_to_modify)} potentially relevant files.")
+        print_info("Reading file contents...")
+        file_contents = {}
+        for file in files_to_modify:
+            content = get_file_content(file)
+            if content:
+                file_contents[file] = content
+                print_info(f"  - Read content of {file}")
+
         project_guidelines = fetch_project_guidelines(executor.current_dir)
         file_context = "\n".join([f"Current content of {file}:\n{content}" for file, content in file_contents.items()])
         full_query = f"{project_context}\n\nProject Guidelines:\n{project_guidelines}\n\nCurrent file contents:\n{file_context}\n\nUser query: {query}"
     else:
-        print_info("No project context found. Creating a new project in the current directory.")
+        print_info("No current project context found. Will create a new project in the current directory.")
         full_query = f"User query: {query}"
     return full_query
 
-def get_commands(query, img_path, instruction_prompt):
-    if img_path:
-        print_info(f"Processing image: {img_path}")
-        commands = run_with_loader(lambda: call_dravid_vision_api(query, img_path, include_context=True, instruction_prompt=instruction_prompt), "Analyzing image and generating response")
+def get_commands(query, image_path, instruction_prompt):
+    if image_path:
+        print_info(f"Processing image: {image_path}")
+        commands = run_with_loader(lambda: call_dravid_vision_api(query, image_path, include_context=True, instruction_prompt=instruction_prompt), "Analyzing image and generating response")
     else:
         print_info("Streaming response from Claude API...")
         xml_result = stream_dravid_api(query, include_context=True, instruction_prompt=instruction_prompt, print_chunk=False)
