@@ -26,7 +26,6 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 output = handle_file_operation(cmd, executor, metadata_manager)
                 all_outputs.append(f"Step {i}/{total_steps}: File operation - {cmd['operation']} - {cmd['filename']} - {output}")
             elif cmd['type'] == 'metadata':
-                print_info(f"Processing metadata operation: {cmd['operation']}")
                 output = handle_metadata_operation(cmd, metadata_manager)
                 all_outputs.append(f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} - {output}")
 
@@ -63,7 +62,6 @@ def handle_file_operation(cmd, executor, metadata_manager):
         raise Exception(f"File operation failed: {cmd['operation']} on {cmd['filename']}")
 
 def handle_metadata_operation(cmd, metadata_manager):
-    print_info(f"Processing metadata operation: {cmd['operation']}")
     if cmd['operation'] == 'UPDATE_FILE':
         if metadata_manager.update_metadata_from_file(cmd['filename']):
             print_success(f"Updated metadata for file: {cmd['filename']}")
