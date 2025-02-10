@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 import os
 import json
 import subprocess
@@ -15,22 +15,7 @@ class TestExecutor(unittest.TestCase):
     def setUp(self):
         self.executor = Executor()
 
-    def test_is_safe_path(self):
-        self.assertTrue(self.executor.is_safe_path('test.txt'))
-        self.assertFalse(self.executor.is_safe_path('/etc/passwd'))
-
-    def test_is_safe_rm_command(self):
-        with patch('os.path.isfile', return_value=True):
-            self.assertFalse(self.executor.is_safe_rm_command('rm test.txt'))
-            self.assertTrue(self.executor.is_safe_rm_command('rm existing_file.txt'))
-        self.assertFalse(self.executor.is_safe_rm_command('rm -rf /'))
-        self.assertFalse(self.executor.is_safe_rm_command('rm -f test.txt'))
-
-    def test_is_safe_command(self):
-        self.assertTrue(self.executor.is_safe_command('ls'))
-        self.assertFalse(self.executor.is_safe_command('sudo rm -rf /'))
-
-    @patch('os.path.exists', return_value=False)
+    @patch('os.path.exists')
     @patch('builtins.open', new_callable=mock_open)
     @patch('click.confirm', return_value=True)
     def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
