@@ -37,8 +37,7 @@ class OutputMonitor:
             iteration += 1
 
             # Check if the process has ended unexpectedly
-            if (self.monitor.process.poll() is not None and
-                    not self.monitor.processing_input.is_set()):
+            if self.monitor.process.poll() is not None and not self.monitor.processing_input.is_set():
                 if not self.monitor.restart_requested.is_set():
                     print_info("Server process ended unexpectedly.")
                     if self.retry_count < MAX_RETRIES:
@@ -74,8 +73,7 @@ class OutputMonitor:
                 self._check_idle_state()
 
             # Check if a restart is requested
-            if (self.monitor.restart_requested.is_set() and
-                    not self.monitor.processing_input.is_set()):
+            if self.monitor.restart_requested.is_set() and not self.monitor.processing_input.is_set():
                 self.monitor.perform_restart()
 
     def _check_idle_state(self):
@@ -83,18 +81,19 @@ class OutputMonitor:
         current_time = time.time()
         time_since_last_output = current_time - self.last_output_time
 
-        if (time_since_last_output > 5 and
-                not self.idle_prompt_shown and
-                not self.monitor.processing_input.is_set()):
+        if time_since_last_output > 5 and not self.idle_prompt_shown and not self.monitor.processing_input.is_set():
             print_prompt("\nNo more tasks to auto-process. What can I do next?")
             self._show_options()
             self.idle_prompt_shown = True
 
     def _show_options(self):
         # Show available options to the user
-        print_info("\nAvailable actions:")
-        print_info("1. Give a coding instruction to perform")
-        print_info("2. Process an image (type 'vision')")
-        print_info("3. Exit monitoring mode (type 'exit')")
-        print_info("\nType your choice or command:")
+        options_message = (
+            "\nAvailable actions:\n"
+            "1. Give a coding instruction to perform\n"
+            "2. Process an image (type 'vision')\n"
+            "3. Exit monitoring mode (type 'exit')\n"
+            "\nType your choice or command:"
+        )
+        print_info(options_message)
         print("> ", end="", flush=True)
