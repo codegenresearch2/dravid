@@ -38,13 +38,17 @@ class InputHandler:
                 self.monitor.processing_input.clear()
 
     def _handle_vision_input(self):
+        # Print a prompt for the user to enter the image path and instructions
         print_info("Enter the image path and instructions (use Tab for autocomplete):")
         self.monitor.processing_input.set()
-        user_input = self._get_input_with_autocomplete()
-        self._handle_general_input(user_input)
-        self.monitor.processing_input.clear()
+        try:
+            user_input = self._get_input_with_autocomplete()
+            self._handle_general_input(user_input)
+        finally:
+            self.monitor.processing_input.clear()
 
     def _handle_general_input(self, user_input):
+        # Define a regex pattern to extract image paths and instructions
         image_pattern = r"([a-zA-Z0-9._/-]+(?:/|\\)?)+\.(jpg|jpeg|png|bmp|gif)"
         match = re.search(image_pattern, user_input)
         instruction_prompt = get_instruction_prompt()
