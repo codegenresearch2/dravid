@@ -1,8 +1,9 @@
+import threading
 import subprocess
 from queue import Queue
 from .input_handler import InputHandler
 from .output_monitor import OutputMonitor
-from ...utils import print_header, print_success, print_error, print_prompt
+from ...utils import print_info, print_success, print_error, print_prompt
 
 MAX_RETRIES = 3
 
@@ -22,7 +23,7 @@ class DevServerMonitor:
         self.retry_count = 0
 
     def start(self):
-        print_header(f"Starting Dravid AI along with your process/server: {self.command}")
+        print_info(f"Starting Dravid AI along with your process/server: {self.command}")
         self.should_stop.clear()
         self.restart_requested.clear()
         try:
@@ -68,19 +69,20 @@ class DevServerMonitor:
                     f"Retrying... (Attempt {self.retry_count + 1}/{MAX_RETRIES})")
                 self.request_restart()
 
-def start_process(command, cwd):
-    try:
-        return subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            stdin=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True,
-            shell=True,
-            cwd=cwd
-        )
-    except Exception as e:
-        print_error(f"Failed to start server process: {str(e)}")
-        return None
+    def start_process(self, command, cwd):
+        try:
+            return subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                stdin=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                shell=True,
+                cwd=cwd
+            )
+        except Exception as e:
+            print_error(f"Failed to start server process: {str(e)}")
+            self.stop()
+            return None
