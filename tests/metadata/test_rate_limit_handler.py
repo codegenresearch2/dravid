@@ -36,13 +36,8 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
         logger.debug(f"Total time: {total_time:.4f} seconds")
         logger.debug(f"Acquire times: {acquire_times}")
 
-        # Check that the first 3 calls were almost instantaneous
         self.assertLess(acquire_times[2] - acquire_times[0], 0.1)
-
-        # Check that the 4th call was delayed
         self.assertGreater(acquire_times[3] - acquire_times[2], 0.9)
-
-        # Check that the total time is at least 1 second (allowing some margin for error)
         self.assertGreater(total_time, 0.9)
 
     @patch('drd.metadata.rate_limit_handler.call_dravid_api_with_pagination')
@@ -103,7 +98,4 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
         await process_files(files, project_context, folder_structure)
         end_time = time.time()
 
-        # With MAX_CONCURRENT_REQUESTS = 10, it should take about 0.2 seconds
-        # (2 batches of 10 files, each taking 0.1 seconds)
-        # Allow some margin for error
         self.assertLess(end_time - start_time, 0.3)
