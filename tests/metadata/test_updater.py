@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 import xml.etree.ElementTree as ET
+import asyncio
 
 from drd.metadata.updater import update_metadata_with_dravid
 
@@ -50,7 +51,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     <action>update</action>
                     <metadata>
                         <type>python</type>
-                        <summary>print('Hello, World!')</summary>
+                        <summary>Main Python file</summary>
                         <exports>main_function</exports>
                         <imports>os</imports>
                         <external_dependencies>
@@ -67,7 +68,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     <action>update</action>
                     <metadata>
                         <type>json</type>
-                        <summary>{"name": "test-project"}</summary>
+                        <summary>Package configuration file</summary>
                         <exports>None</exports>
                         <imports>None</imports>
                         <external_dependencies>
@@ -100,7 +101,7 @@ class TestMetadataUpdater(unittest.TestCase):
                 return {
                     'path': '/fake/project/dir/src/main.py',
                     'type': 'python',
-                    'summary': "print('Hello, World!')",
+                    'summary': "Main Python file",
                     'exports': ['main_function'],
                     'imports': ['os']
                 }
@@ -108,7 +109,7 @@ class TestMetadataUpdater(unittest.TestCase):
                 return {
                     'path': '/fake/project/dir/package.json',
                     'type': 'json',
-                    'summary': '{"name": "test-project"}',
+                    'summary': 'Package configuration file',
                     'exports': [],
                     'imports': []
                 }
@@ -130,9 +131,9 @@ class TestMetadataUpdater(unittest.TestCase):
 
         # Check if metadata was correctly updated and removed
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
-            '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", ['main_function'], ['os'])
+            '/fake/project/dir/src/main.py', 'python', "Main Python file", ['main_function'], ['os'])
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
-            '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', [], [])
+            '/fake/project/dir/package.json', 'json', 'Package configuration file', [], [])
         mock_metadata_manager.return_value.remove_file_metadata.assert_called_once_with('README.md')
 
         # Check if external dependencies were added
