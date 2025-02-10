@@ -2,7 +2,6 @@ import functools
 import sys
 import asyncio
 import time
-import logging
 from ..api.main import call_dravid_api_with_pagination
 from ..utils.parser import extract_and_parse_xml
 from ..prompts.file_metadata_desc_prompts import get_file_metadata_prompt
@@ -47,18 +46,20 @@ async def process_single_file(filename, content, project_context, folder_structu
 
         root = extract_and_parse_xml(response)
         type_elem = root.find('.//type')
-        desc_elem = root.find('.//description')
+        summary_elem = root.find('.//description')
         exports_elem = root.find('.//exports')
+        imports_elem = root.find('.//imports')
 
         file_type = type_elem.text.strip() if type_elem is not None and type_elem.text else "unknown"
-        description = desc_elem.text.strip() if desc_elem is not None and desc_elem.text else "No description available"
+        summary = summary_elem.text.strip() if summary_elem is not None and summary_elem.text else "No description available"
         exports = exports_elem.text.strip() if exports_elem is not None and exports_elem.text else ""
+        imports = imports_elem.text.strip() if imports_elem is not None and imports_elem.text else ""
 
         print_success(f"Processed: {filename}")
-        return filename, file_type, description, exports
+        return filename, file_type, summary, exports, imports
     except Exception as e:
-        logging.error(f"Error processing {filename}: {e}")
-        return filename, "unknown", f"Error: {e}", ""
+        print_error(f"Error processing {filename}: {e}")
+        return filename, "unknown", f"Error: {e}", "", ""
 
 async def process_files(files, project_context, folder_structure):
     total_files = len(files)
@@ -78,6 +79,3 @@ async def process_files(files, project_context, folder_structure):
         print_info(f"Progress: {len(results)}/{total_files} files processed")
 
     return results
-
-
-In the rewritten code, I have added logging for error handling and improved the error message in the XML response to provide more clarity. I have also kept the code structure and functionality the same to ensure that the changes are minimal and easy to understand.
