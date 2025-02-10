@@ -21,12 +21,12 @@ class TestInputHandler(unittest.TestCase):
         thread = threading.Thread(target=run_input_handler)
         thread.start()
 
-        time.sleep(0.1)  # Add a small delay to allow the thread to process the input
+        time.sleep(0.1)  # Allow time for the thread to process the input
 
         thread.join(timeout=10)
 
         if thread.is_alive():
-            self.fail("Input handling did not complete within the timeout period")
+            self.fail('Input handling did not complete within the timeout period')
 
         self.mock_monitor.stop.assert_called_once()
         self.assertEqual(mock_input.call_count, 2)
@@ -75,21 +75,21 @@ class TestInputHandler(unittest.TestCase):
 
 # Updated _handle_vision_input method to handle the case where the image file does not exist
     def _handle_vision_input(self):
-        print_info("Enter the image path and instructions (use Tab for autocomplete):")
+        print_info('Enter the image path and instructions (use Tab for autocomplete):')
         user_input = self._get_input_with_autocomplete()
 
         # Extract image path and instructions
-        image_pattern = r"([a-zA-Z0-9._/-]+(?:/|\\)?)+\.(jpg|jpeg|png|bmp|gif)"
+        image_pattern = r'([a-zA-Z0-9._/-]+(?:/|\\)?)+\.(jpg|jpeg|png|bmp|gif)'
         match = re.search(image_pattern, user_input)
         instruction_prompt = get_instruction_prompt()
 
         if match:
             image_path = match.group(0)
-            instructions = user_input.replace(image_path, "").strip()
+            instructions = user_input.replace(image_path, '').strip()
             image_path = os.path.expanduser(image_path)
 
             if not os.path.exists(image_path):
-                print_error(f"Image file not found: {image_path}")
+                print_error(f'Image file not found: {image_path}')
                 return
 
             self.monitor.processing_input.set()
