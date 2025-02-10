@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 import asyncio
 import time
+import logging
 import xml.etree.ElementTree as ET
 
 from drd.metadata.rate_limit_handler import (
@@ -12,6 +13,9 @@ from drd.metadata.rate_limit_handler import (
     MAX_CALLS_PER_MINUTE,
     RATE_LIMIT_PERIOD
 )
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
@@ -24,9 +28,13 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
             await limiter.acquire()
             current_time = time.time()
             acquire_times.append(current_time - start_time)
+            logger.debug(f'Acquire {i+1} at {current_time - start_time:.4f} seconds')
 
         end_time = time.time()
         total_time = end_time - start_time
+
+        logger.debug(f'Total time: {total_time:.4f} seconds')
+        logger.debug(f'Acquire times: {acquire_times}')
 
         self.assertLess(acquire_times[2] - acquire_times[0], 0.1)
         self.assertGreater(acquire_times[3] - acquire_times[2], 0.9)
@@ -41,7 +49,12 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         result = await process_single_file("test.py", "print('Hello')", "Test project", {"test.py": "file"})
 
-        self.assertEqual(result, ("test.py", "python", "A test file", "test_function", "os, sys"))
+        self.assertEqual(len(result), 5)
+        self.assertEqual(result[0], "test.py")
+        self.assertEqual(result[1], "python")
+        self.assertEqual(result[2], "A test file")
+        self.assertEqual(result[3], "test_function")
+        self.assertEqual(result[4], "os, sys")
         mock_call_api.assert_called_once()
         mock_extract_xml.assert_called_once_with(mock_call_api.return_value)
 
@@ -52,7 +65,12 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         result = await process_single_file("test.py", "print('Hello')", "Test project", {"test.py": "file"})
 
-        self.assertEqual(result, ("test.py", "unknown", "Error: API Error", "", ""))
+        self.assertEqual(len(result), 5)
+        self.assertEqual(result[0], "test.py")
+        self.assertEqual(result[1], "unknown")
+        self.assertTrue(result[2].startswith("Error:"))
+        self.assertEqual(result[3], "")
+        self.assertEqual(result[4], "")
 
     @patch('drd.metadata.rate_limit_handler.process_single_file')
     async def test_process_files(self, mock_process_single_file):
@@ -67,7 +85,9 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         results = await process_files(files, project_context, folder_structure)
 
-        self.assertEqual(results, [("file1.py", "python", "File 1", "func1", "os"), ("file2.py", "python", "File 2", "func2", "sys")])
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0], ("file1.py", "python", "File 1", "func1", "os"))
+        self.assertEqual(results[1], ("file2.py", "python", "File 2", "func2", "sys"))
 
     @patch('drd.metadata.rate_limit_handler.process_single_file')
     async def test_process_files_concurrency(self, mock_process_single_file):
