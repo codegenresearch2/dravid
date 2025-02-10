@@ -120,6 +120,3 @@ def initialize_metadata(metadata_manager, debug=False):
         if debug:
             import traceback
             traceback.print_exc()
-
-
-In the rewritten code, I have added two new functions: `update_metadata` and `initialize_metadata`. These functions handle metadata operations with improved error handling. The function signatures for metadata updates are now consistent. Additionally, I have improved the readability and maintainability of the test cases by separating the metadata operations into their own functions.
