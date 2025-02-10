@@ -12,28 +12,17 @@ class TestOutputMonitor(unittest.TestCase):
         self.output_monitor = OutputMonitor(self.mock_monitor)
 
     @patch('select.select')
-    @patch('time.time')
+    @patch('time.time', side_effect=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     @patch('drd.cli.monitor.output_monitor.print_info')
     @patch('drd.cli.monitor.output_monitor.print_prompt')
     def test_idle_state(self, mock_print_prompt, mock_print_info, mock_time, mock_select):
         # Setup
-        self.mock_monitor.should_stop.is_set.side_effect = [
-            False] * 10 + [True]
+        self.mock_monitor.should_stop.is_set.side_effect = [False] * 10 + [True]
         self.mock_monitor.process.poll.return_value = None
         self.mock_monitor.processing_input.is_set.return_value = False
         self.mock_monitor.process.stdout = MagicMock()
         self.mock_monitor.process.stdout.readline.return_value = ""
         mock_select.return_value = ([self.mock_monitor.process.stdout], [], [])
-
-        # Create a function to generate increasing time values
-        start_time = 1000000  # Start with a large value to avoid negative times
-
-        def time_sequence():
-            nonlocal start_time
-            start_time += 1  # Increment by 1 second each time
-            return start_time
-
-        mock_time.side_effect = time_sequence
 
         # Capture stdout
         captured_output = StringIO()
