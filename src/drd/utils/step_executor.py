@@ -21,6 +21,7 @@ class Executor:
             'sudo', 'su', 'chown', 'chmod'
         ]
         self.env = os.environ.copy()
+        self.CONFIRMATION_COLOR = Fore.YELLOW
 
     def is_safe_path(self, path):
         full_path = os.path.abspath(path)
@@ -49,9 +50,9 @@ class Executor:
 
         if not self.is_safe_path(full_path):
             confirmation_box = create_confirmation_box(
-                filename, f"File operation is being carried out outside of the project directory. {operation.lower()} this file")
+                filename, f"File operation is being carried out outside of the project directory. {operation.lower()} this file?")
             print(confirmation_box)
-            if not click.confirm(f"{Fore.YELLOW}Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
+            if not click.confirm(f"{self.CONFIRMATION_COLOR}Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
                 print_info(f"File {operation.lower()} cancelled by user.")
                 return "Skipping this step"
 
@@ -66,7 +67,7 @@ class Executor:
                 preview = preview_file_changes(
                     operation, filename, new_content=content)
                 print(preview)
-                if click.confirm(f"{Fore.YELLOW}Confirm creation [y/N]:{Style.RESET_ALL}", default=False):
+                if click.confirm(f"{self.CONFIRMATION_COLOR}Confirm creation [y/N]:{Style.RESET_ALL}", default=False):
                     with open(full_path, 'w') as f:
                         f.write(content)
                     print_success(f"File created successfully: {filename}")
@@ -92,10 +93,10 @@ class Executor:
                         operation, filename, new_content=updated_content, original_content=original_content)
                     print(preview)
                     confirmation_box = create_confirmation_box(
-                        filename, f"{operation.lower()} this file")
+                        filename, f"{operation.lower()} this file?")
                     print(confirmation_box)
 
-                    if click.confirm(f"{Fore.YELLOW}Confirm update [y/N]:{Style.RESET_ALL}", default=False):
+                    if click.confirm(f"{self.CONFIRMATION_COLOR}Confirm update [y/N]:{Style.RESET_ALL}", default=False):
                         with open(full_path, 'w') as f:
                             f.write(updated_content)
                         print_success(f"File updated successfully: {filename}")
@@ -117,9 +118,9 @@ class Executor:
                     f"Delete operation is only allowed for files: {filename}")
                 return False
             confirmation_box = create_confirmation_box(
-                filename, f"{operation.lower()} this file")
+                filename, f"{operation.lower()} this file?")
             print(confirmation_box)
-            if click.confirm(f"{Fore.YELLOW}Confirm deletion [y/N]:{Style.RESET_ALL}", default=False):
+            if click.confirm(f"{self.CONFIRMATION_COLOR}Confirm deletion [y/N]:{Style.RESET_ALL}", default=False):
                 try:
                     os.remove(full_path)
                     print_success(f"File deleted successfully: {filename}")
@@ -161,15 +162,15 @@ class Executor:
             print_warning(f"Please verify the command once: {command}")
 
         confirmation_box = create_confirmation_box(
-            command, "execute this command")
+            command, "execute this command?")
         print(confirmation_box)
 
-        if not click.confirm(f"{Fore.YELLOW}Confirm execution [y/N]:{Style.RESET_ALL}", default=False):
+        if not click.confirm(f"{self.CONFIRMATION_COLOR}Confirm execution [y/N]:{Style.RESET_ALL}", default=False):
             print_info("Command execution cancelled by user.")
             return 'Skipping this step...'
 
         click.echo(
-            f"{Fore.YELLOW}Executing shell command: {command}{Style.RESET_ALL}")
+            f"{self.CONFIRMATION_COLOR}Executing shell command: {command}{Style.RESET_ALL}")
 
         if command.strip().startswith(('cd', 'chdir')):
             return self._handle_cd_command(command)
@@ -228,6 +229,7 @@ class Executor:
             raise Exception(error_message)
 
     def _handle_source_command(self, command):
+        # Extract the file path from the source command
         _, file_path = command.split(None, 1)
         file_path = os.path.expandvars(os.path.expanduser(file_path))
 
@@ -236,6 +238,7 @@ class Executor:
             print_error(error_message)
             raise Exception(error_message)
 
+        # Execute the source command in a subshell and capture the environment changes
         try:
             result = subprocess.run(
                 f'source {file_path} && env',
@@ -246,6 +249,7 @@ class Executor:
                 executable='/bin/bash'
             )
 
+            # Update the environment with any changes
             for line in result.stdout.splitlines():
                 if '=' in line:
                     key, value = line.split('=', 1)
@@ -261,14 +265,17 @@ class Executor:
     def _update_env_from_command(self, command):
         if '=' in command:
             if command.startswith('export '):
+                # Handle export command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
             elif command.startswith('set '):
+                # Handle set command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
             else:
+                # Handle simple assignment
                 key, value = command.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
 
