@@ -109,12 +109,86 @@ class Executor:
     def _execute_single_command(self, command, timeout):
         # Implement single command execution logic here
         # Return the output of the command if successful, raise an exception otherwise
-        pass
+        try:
+            process = subprocess.Popen(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=self.env,
+                cwd=self.current_dir
+            )
+
+            start_time = time.time()
+            output = []
+            while True:
+                return_code = process.poll()
+                if return_code is not None:
+                    break
+                if time.time() - start_time > timeout:
+                    process.terminate()
+                    error_message = f"Command timed out after {timeout} seconds: {command}"
+                    print_error(error_message)
+                    raise Exception(error_message)
+
+                line = process.stdout.readline()
+                if line:
+                    print(line.strip())
+                    output.append(line)
+
+                time.sleep(0.1)
+
+            stdout, stderr = process.communicate()
+            output.append(stdout)
+
+            if return_code != 0:
+                error_message = f"Command failed with return code {return_code}\nError output: {stderr}"
+                print_error(error_message)
+                raise Exception(error_message)
+
+            self._update_env_from_command(command)
+
+            print_success("Command executed successfully.")
+            return ''.join(output)
+
+        except Exception as e:
+            error_message = f"Error executing command '{command}': {str(e)}"
+            print_error(error_message)
+            raise Exception(error_message)
 
     def _handle_source_command(self, command):
         # Implement source command handling logic here
         # Return a success message if successful, raise an exception otherwise
-        pass
+        _, file_path = command.split(None, 1)
+        file_path = os.path.expandvars(os.path.expanduser(file_path))
+
+        if not os.path.isfile(file_path):
+            error_message = f"Source file not found: {file_path}"
+            print_error(error_message)
+            raise Exception(error_message)
+
+        try:
+            result = subprocess.run(
+                f'source {file_path} && env',
+                shell=True,
+                check=True,
+                capture_output=True,
+                text=True,
+                executable='/bin/bash'
+            )
+
+            for line in result.stdout.splitlines():
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    self.env[key] = value
+
+            print_success(f"Sourced file successfully: {file_path}")
+            return "Source command executed successfully"
+        except subprocess.CalledProcessError as e:
+            error_message = f"Error executing source command: {str(e)}"
+            print_error(error_message)
+            raise Exception(error_message)
 
     def _update_env_from_command(self, command):
         if '=' in command:
