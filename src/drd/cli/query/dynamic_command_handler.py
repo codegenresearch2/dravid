@@ -7,6 +7,7 @@ from ...metadata.common_utils import generate_file_description
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 from ...utils.executor import Executor
 from ...metadata.metadata_manager import ProjectMetadataManager
+import xml.etree.ElementTree as ET
 
 # Define command types and operations as constants
 SHELL_COMMAND = 'shell'
@@ -21,9 +22,22 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
 
     for i, cmd in enumerate(commands, 1):
         step_description = 'fix' if is_fix else 'command'
+        output = ''
 
         try:
-            output = handle_command(cmd, executor, metadata_manager)
+            if cmd['type'] == EXPLANATION:
+                output = f'Explanation - {cmd["content"]}'
+            elif cmd['type'] == SHELL_COMMAND:
+                output = handle_shell_command(cmd, executor)
+            elif cmd['type'] == FILE_OPERATION:
+                output = handle_file_operation(cmd, executor, metadata_manager)
+            elif cmd['type'] == METADATA_OPERATION:
+                output = handle_metadata_operation(cmd, metadata_manager)
+            elif cmd['type'] == REQUIRES_RESTART:
+                output = 'requires restart if the server is running'
+            else:
+                raise ValueError(f'Unknown command type: {cmd["type"]}')
+
             all_outputs.append(f'Step {i}/{total_steps}: {cmd["type"].capitalize()} command - {cmd.get("command", "")} {cmd.get("operation", "")}\nOutput: {output}')
 
         except Exception as e:
@@ -37,26 +51,14 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
 
     return True, total_steps, None, '\n'.join(all_outputs)
 
-def handle_command(cmd, executor, metadata_manager):
-    if cmd['type'] == EXPLANATION:
-        return f'Explanation - {cmd["content"]}'
-    elif cmd['type'] == SHELL_COMMAND:
-        return handle_shell_command(cmd, executor)
-    elif cmd['type'] == FILE_OPERATION:
-        return handle_file_operation(cmd, executor, metadata_manager)
-    elif cmd['type'] == METADATA_OPERATION:
-        return handle_metadata_operation(cmd, metadata_manager)
-    elif cmd['type'] == REQUIRES_RESTART:
-        return 'requires restart if the server is running'
-    else:
-        raise ValueError(f'Unknown command type: {cmd["type"]}')
-
 def handle_shell_command(cmd, executor):
     output = executor.execute_shell_command(cmd['command'])
     if output is None:
         raise Exception(f'Command failed: {cmd["command"]}')
     print_success(f'Successfully executed: {cmd["command"]}')
-    if output:
+    if output.startswith('Skipping'):
+        print_info(output)
+    elif output:
         click.echo(f'Command output:\n{output}')
     return output
 
