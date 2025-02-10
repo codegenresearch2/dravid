@@ -1,3 +1,5 @@
+import xml.etree.ElementTree as ET
+
 def get_file_metadata_prompt(filename, content, project_context, folder_structure):
     metadata = {
         "path": filename,
@@ -9,7 +11,7 @@ def get_file_metadata_prompt(filename, content, project_context, folder_structur
         "external_dependencies": determine_external_dependencies(filename, content) or []
     }
 
-    return format_metadata(metadata)
+    return format_metadata_as_xml(metadata)
 
 def determine_file_type(content):
     # Implement logic to determine file type based on content
@@ -35,9 +37,20 @@ def determine_external_dependencies(filename, content):
     # Implement logic to determine external dependencies based on filename and content
     pass
 
-def format_metadata(metadata):
-    # Implement logic to format metadata into the specified output format
-    pass
+def format_metadata_as_xml(metadata):
+    root = ET.Element("response")
+    metadata_element = ET.SubElement(root, "metadata")
+
+    for key, value in metadata.items():
+        if key == "external_dependencies":
+            if value:
+                dependencies_element = ET.SubElement(metadata_element, "external_dependencies")
+                for dependency in value:
+                    ET.SubElement(dependencies_element, "dependency").text = dependency
+        else:
+            ET.SubElement(metadata_element, key).text = value
+
+    return ET.tostring(root, encoding='unicode')
 
 
-In the updated code, I have changed the output format to return a dictionary containing the metadata fields. I have also added a new function `format_metadata` to handle the formatting of the metadata into the specified output format. This addresses the feedback received from the oracle regarding the output format and metadata structure.
+In the updated code, I have added a new function `format_metadata_as_xml` to format the metadata as an XML response. This function creates an XML tree with the metadata fields as elements and returns the XML string representation of the tree. This addresses the feedback received from the oracle regarding the output format and metadata structure.
