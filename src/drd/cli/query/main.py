@@ -19,7 +19,7 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
     try:
         project_context = metadata_manager.get_project_context()
         if project_context:
-            print_info("ð Analyzing project files for relevance...")
+            print_info("ð Identifying related files to the query...")
             files_to_modify = run_with_loader(
                 lambda: get_files_to_modify(query, project_context),
                 "Analyzing project files"
@@ -31,23 +31,26 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
                     print(f"  - {file}")
 
             print_info("ð Reading file contents...")
-            file_contents = {file: get_file_content(file) for file in files_to_modify if get_file_content(file)}
-            for file in file_contents:
-                print_info(f"  â
+            file_contents = {}
+            for file in files_to_modify:
+                content = get_file_content(file)
+                if content:
+                    file_contents[file] = content
+                    print_info(f"  â
  Read content of {file}")
 
             project_guidelines = fetch_project_guidelines(executor.current_dir)
             file_context = "\n".join(
                 [f"Current content of {file}:\n{content}" for file, content in file_contents.items()])
-            full_query = f"{project_context}\nProject Guidelines:\n{project_guidelines}\nCurrent file contents:\n{file_context}\nUser query: {query}"
+            full_query = f"{project_context}\n\nProject Guidelines:\n{project_guidelines}\n\nCurrent file contents:\n{file_context}\n\nUser query: {query}"
         else:
             is_empty = is_directory_empty(executor.current_dir)
             print_info("ð Creating new project in the current directory.")
             full_query = f"User query: {query}"
 
-        print_info("ð¤ Sending query to LLM...")
+        print_info("ð¤ Preparing to send query to LLM...")
         if image_path:
-            print_info(f"ð¼ï¸  Processing image: {image_path}")
+            print_info(f"ð¼ï¸ Processing image: {image_path}")
             commands = run_with_loader(
                 lambda: call_dravid_vision_api(full_query, image_path, include_context=True, instruction_prompt=instruction_prompt),
                 "Analyzing image and generating response"
