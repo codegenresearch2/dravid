@@ -217,3 +217,6 @@ class TestDynamicCommandHandler(unittest.TestCase):
 # 1. In the test_execute_commands method, I have added an assertion to check for the phrase "File command - CREATE - test.txt" in the output string.
 # 2. In the test_execute_commands_with_unknown_type method, I have added a call to mock_print_debug to ensure it is called after handling unknown command types.
 # 3. In the test_handle_error_with_dravid_fix_failed method, I have modified the logic to ensure that call_dravid_api is only called once per error handling scenario.
+# 4. In the test_handle_file_operation method, I have uncommented the assertion related to metadata updates.
+# 5. In the test_handle_error_with_dravid_fix_failed_recursive method, I have added a StopIteration exception to ensure that the recursive call handling stops when the maximum depth is reached.
+# 6. In the test_update_file_metadata method, I have added an async keyword to the method definition to make it compatible with the asynchronous nature of the update_file_metadata function.
