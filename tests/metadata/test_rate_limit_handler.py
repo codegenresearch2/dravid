@@ -49,11 +49,7 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         result = await process_single_file("test.py", "print('Hello')", "Test project", {"test.py": "file"})
 
-        self.assertEqual(result[0], "test.py")
-        self.assertEqual(result[1], "python")
-        self.assertEqual(result[2], "A test file")
-        self.assertEqual(result[3], "test_function")
-        self.assertEqual(result[4], "os, sys")
+        self.assertEqual(result, ("test.py", "python", "A test file", "test_function", "os, sys"))
         mock_call_api.assert_called_once()
         mock_extract_xml.assert_called_once_with(mock_call_api.return_value)
 
@@ -64,11 +60,7 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         result = await process_single_file("test.py", "print('Hello')", "Test project", {"test.py": "file"})
 
-        self.assertEqual(result[0], "test.py")
-        self.assertEqual(result[1], "unknown")
-        self.assertTrue(result[2].startswith("Error:"))
-        self.assertEqual(result[3], "")
-        self.assertEqual(result[4], "")
+        self.assertEqual(result, ("test.py", "unknown", "Error: API Error", "", ""))
         mock_call_api.assert_called_once()
         mock_extract_xml.assert_not_called()
 
@@ -105,4 +97,7 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
         await process_files(files, project_context, folder_structure)
         end_time = time.time()
 
+        # With MAX_CONCURRENT_REQUESTS = 10, it should take about 0.2 seconds
+        # (2 batches of 10 files, each taking 0.1 seconds)
+        # Allow some margin for error
         self.assertLess(end_time - start_time, 0.3)
