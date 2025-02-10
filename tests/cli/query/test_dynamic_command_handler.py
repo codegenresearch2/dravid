@@ -41,7 +41,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertIsNone(error)
         self.assertIn("Explanation - Test explanation", output)
         self.assertIn("Shell command - echo \"Hello\"", output)
-        self.assertIn("File command - CREATE - test.txt", output)
+        self.assertIn("File command - CREATE - test.txt - File operation success", output)
         mock_print_debug.assert_called_with("Completed step 3/3")
         self.executor.reset_directory.assert_called()
 
@@ -162,9 +162,8 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertEqual(steps_completed, 3)
         self.assertIsNone(error)
         self.assertIn("Explanation - Test explanation", output)
-        self.assertIn("Skipping this step...", output)
-        mock_print_info.assert_any_call("Step 2/3: Skipping this step...")
-        mock_print_info.assert_any_call("Step 3/3: Skipping this step...")
+        self.assertIn("Shell command - echo \"Hello\" - Skipping this step...", output)
+        self.assertIn("File command - CREATE - test.txt - Skipping this step...", output)
         mock_print_debug.assert_has_calls([
             call("Completed step 1/3"),
             call("Completed step 2/3"),
