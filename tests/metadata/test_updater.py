@@ -106,7 +106,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     'imports': []
                 }
             else:
-                return None
+                return None  # Added return statement for other cases
 
         mock_metadata_manager.return_value.analyze_file = mock_analyze_file
 
