@@ -3,7 +3,6 @@ import sys
 from unittest.mock import patch, MagicMock, call
 from io import StringIO
 from drd.cli.monitor.output_monitor import OutputMonitor
-import threading
 
 class TestOutputMonitor(unittest.TestCase):
 
@@ -17,8 +16,7 @@ class TestOutputMonitor(unittest.TestCase):
     @patch('drd.cli.monitor.output_monitor.print_prompt')
     def test_idle_state(self, mock_print_prompt, mock_print_info, mock_time, mock_select):
         # Setup
-        self.mock_monitor.should_stop.is_set.side_effect = [
-            False] * 10 + [True]
+        self.mock_monitor.should_stop.is_set.side_effect = [False] * 10 + [True]
         self.mock_monitor.process.poll.return_value = None
         self.mock_monitor.processing_input.is_set.return_value = False
         self.mock_monitor.process.stdout = MagicMock()
@@ -41,12 +39,11 @@ class TestOutputMonitor(unittest.TestCase):
         print(captured_output.getvalue())
 
         # Assert
-        mock_print_prompt.assert_called_once_with(
-            "\nNo more tasks to auto-process. What can I do next?")
+        mock_print_prompt.assert_called_once_with("\nNo more tasks to auto-process. What can I do next?")
         expected_calls = [
             call("\nAvailable actions:"),
             call("1. Give a coding instruction to perform"),
-            call("2. Process an image (type 'vision')"),
+            call("2. Same but with autocomplete for files (type 'p')"),
             call("3. Exit monitoring mode (type 'exit')"),
             call("\nType your choice or command:")
         ]
@@ -59,22 +56,11 @@ class TestOutputMonitor(unittest.TestCase):
             r"Error:": MagicMock()
         }
 
-        # Use a lock for thread safety
-        lock = threading.Lock()
-
         # Run
-        with lock:
-            self.output_monitor._check_for_errors(
-                "Error: Test error\n", error_buffer)
+        self.output_monitor._check_for_errors("Error: Test error\n", error_buffer)
 
         # Assert
-        self.mock_monitor.error_handlers[r"Error:"].assert_called_once_with(
-            "Error: Test error\n", self.mock_monitor)
+        self.mock_monitor.error_handlers[r"Error:"].assert_called_once_with("Error: Test error\n", self.mock_monitor)
 
 if __name__ == '__main__':
     unittest.main()
-
-
-In the rewritten code, I have added a threading lock to ensure thread safety during input handling in the `test_check_for_errors` method. This lock is acquired before calling `_check_for_errors` and released afterwards to prevent race conditions.
-
-Additionally, I have simplified error handling in vision input by removing the unnecessary error buffer and directly calling the error handler with the error message and monitor object. This simplifies the error handling logic and makes it more clear.
