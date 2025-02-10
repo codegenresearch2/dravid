@@ -81,7 +81,10 @@ def print_command_details(commands):
         else:
             print_warning(f"  Unknown command type: {cmd_type}", 4)
 
-# Removed the problematic line at line 86
+# Removed the problematic line at line 87
+
+def print_prompt(message):
+    click.echo(f"{Fore.YELLOW}❓ {message}{Style.RESET_ALL}")
 
 
 This revised code snippet addresses the feedback from the oracle by:
