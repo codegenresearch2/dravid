@@ -2,11 +2,10 @@ import functools
 import sys
 import asyncio
 import time
-from drd.api.main import call_dravid_api_with_pagination
-from drd.utils.parser import extract_and_parse_xml
-from drd.prompts.file_metadata_desc_prompts import get_file_metadata_prompt
-from drd.utils.utils import print_info, print_error, print_success, print_warning
-from .common_utils import generate_file_description
+from ..api.main import call_dravid_api_with_pagination
+from ..utils.parser import extract_and_parse_xml
+from ..prompts.file_metadata_desc_prompts import get_file_metadata_prompt
+from ..utils.utils import print_info, print_error, print_success, print_warning
 
 MAX_CONCURRENT_REQUESTS = 10
 MAX_CALLS_PER_MINUTE = 100
@@ -40,7 +39,8 @@ def to_thread(func, *args, **kwargs):
 
 async def process_single_file(filename, content, project_context, folder_structure):
     # Generate metadata query for the file
-    metadata_query = get_file_metadata_prompt(filename, content, project_context, folder_structure)
+    metadata_query = get_file_metadata_prompt(
+        filename, content, project_context, folder_structure)
     try:
         async with rate_limiter.semaphore:
             await rate_limiter.acquire()
@@ -74,8 +74,10 @@ async def process_files(files, project_context, folder_structure):
     print_info(f'LLM calls to be made: {total_files}')
 
     async def process_batch(batch):
-        tasks = [process_single_file(filename, content, project_context, folder_structure)
-                 for filename, content in batch]
+        tasks = [
+            process_single_file(filename, content, project_context, folder_structure)
+            for filename, content in batch
+        ]
         return await asyncio.gather(*tasks)
 
     batch_size = MAX_CONCURRENT_REQUESTS
