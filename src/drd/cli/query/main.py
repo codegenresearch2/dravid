@@ -9,9 +9,9 @@ from .file_operations import get_files_to_modify
 from ...utils.parser import parse_dravid_response
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None):
-    print_info('ð Starting Dravid CLI tool...')
+    print_info('ð Starting Dravid AI tool...')
     if warn:
-        print_warning('â ï¸ Ensure you\'re in a fresh directory or a git branch for existing projects.')
+        print_warning('â ï¸ Ensure you\'re in a fresh directory or a git branch for existing projects.\n')
 
     executor = Executor()
     metadata_manager = ProjectMetadataManager(executor.current_dir)
@@ -49,6 +49,7 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
             full_query = f'User query: {query}'
 
         print_info('ð¤ Preparing to send query to LLM...')
+        print_info('LLM calls to be made: 1')
         if image_path:
             print_info(f'ð¼ï¸ Processing image: {image_path}')
             commands = run_with_loader(
@@ -86,7 +87,7 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
         print_info('ð Execution details:')
         click.echo(all_outputs)
         print_success('â
- Dravid CLI tool execution completed.')
+ Dravid AI tool execution completed.')
     except Exception as e:
         print_error(f'â An unexpected error occurred: {str(e)}')
         if debug:
