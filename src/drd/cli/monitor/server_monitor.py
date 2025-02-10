@@ -62,17 +62,20 @@ class DevServerMonitor:
                 self.stop()
             else:
                 print_info(f"Restart attempt failed. Retrying... (Attempt {self.retry_count}/{MAX_RETRIES})")
-                self._start_process()
 
 def start_process(command, cwd):
-    return subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.PIPE,
-        text=True,
-        bufsize=1,
-        universal_newlines=True,
-        shell=True,
-        cwd=cwd
-    )
+    try:
+        return subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            universal_newlines=True,
+            shell=True,
+            cwd=cwd
+        )
+    except Exception as e:
+        print_error(f"Failed to start server process: {str(e)}")
+        return None
