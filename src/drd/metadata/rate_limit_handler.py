@@ -40,8 +40,7 @@ def to_thread(func, *args, **kwargs):
 
 async def process_single_file(filename, content, project_context, folder_structure):
     # Generate metadata query for the file
-    metadata_query = get_file_metadata_prompt(
-        filename, content, project_context, folder_structure)
+    metadata_query = get_file_metadata_prompt(filename, content, project_context, folder_structure)
     try:
         async with rate_limiter.semaphore:
             await rate_limiter.acquire()
