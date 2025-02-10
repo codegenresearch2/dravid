@@ -63,9 +63,21 @@ class InputHandler:
 
             print_info(f"Processing image: {image_path}")
             print_info(f"With instructions: {instructions}")
-            execute_dravid_command(instructions, image_path, False, instruction_prompt, warn=False)
+            execute_dravid_command(
+                instructions=instructions,
+                image_path=image_path,
+                debug=False,
+                instruction_prompt=instruction_prompt,
+                warn=False
+            )
         else:
-            execute_dravid_command(user_input, None, False, instruction_prompt, warn=False)
+            execute_dravid_command(
+                instructions=user_input,
+                image_path=None,
+                debug=False,
+                instruction_prompt=instruction_prompt,
+                warn=False
+            )
 
     def _get_input_with_autocomplete(self, prompt="> "):
         current_input = ""
