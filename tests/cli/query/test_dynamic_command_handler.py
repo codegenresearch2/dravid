@@ -28,7 +28,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
                 patch('drd.cli.query.dynamic_command_handler.handle_file_operation', return_value="File operation success") as mock_file, \
                 patch('drd.cli.query.dynamic_command_handler.handle_metadata_operation', return_value="Metadata operation success") as mock_metadata:
 
-            success, steps_completed, error, output = execute_commands(commands, self.executor, self.metadata_manager)
+            success, steps_completed, error, output = execute_commands(commands, self.executor, self.metadata_manager, debug=True)
 
         self.assertTrue(success)
         self.assertEqual(steps_completed, 3)
