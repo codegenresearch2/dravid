@@ -28,13 +28,13 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
             await limiter.acquire()
             current_time = time.time()
             acquire_times.append(current_time - start_time)
-            logger.debug(f"Acquire {i+1} at {current_time - start_time:.4f} seconds")
+            logger.debug(f'Acquire {i+1} at {current_time - start_time:.4f} seconds')
 
         end_time = time.time()
         total_time = end_time - start_time
 
-        logger.debug(f"Total time: {total_time:.4f} seconds")
-        logger.debug(f"Acquire times: {acquire_times}")
+        logger.debug(f'Total time: {total_time:.4f} seconds')
+        logger.debug(f'Acquire times: {acquire_times}')
 
         self.assertLess(acquire_times[2] - acquire_times[0], 0.1)
         self.assertGreater(acquire_times[3] - acquire_times[2], 0.9)
