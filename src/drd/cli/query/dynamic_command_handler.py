@@ -29,6 +29,9 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
             elif cmd['type'] == 'metadata':
                 output = handle_metadata_operation(cmd, metadata_manager)
                 all_outputs.append(f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} - {output}")
+            elif cmd['type'] == 'explanation':
+                print_info(f"Explanation: {cmd['content']}")
+                all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
 
             if debug:
                 print_debug(f"Completed step {i}/{total_steps}")
@@ -91,22 +94,26 @@ def handle_metadata_operation(cmd, metadata_manager):
 def update_file_metadata(cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
     folder_structure = executor.get_folder_structure()
-    file_type, description, exports = metadata_manager.generate_file_description(
-        cmd['filename'],
-        cmd.get('content', ''),
-        project_context,
-        folder_structure
-    )
-    if file_type is not None and description is not None and exports is not None:
-        metadata_manager.update_file_metadata(
+    try:
+        file_type, description, exports = metadata_manager.generate_file_description(
             cmd['filename'],
-            file_type,
             cmd.get('content', ''),
-            description,
-            exports
+            project_context,
+            folder_structure
         )
-    else:
-        raise ValueError("generate_file_description did not return the expected values.")
+        if file_type is not None and description is not None and exports is not None:
+            metadata_manager.update_file_metadata(
+                cmd['filename'],
+                file_type,
+                cmd.get('content', ''),
+                description,
+                exports
+            )
+        else:
+            raise ValueError("generate_file_description did not return the expected values.")
+    except Exception as e:
+        print_error(f"Error updating file metadata: {e}")
+        raise
 
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context="", debug=False):
