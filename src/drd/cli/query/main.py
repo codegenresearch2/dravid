@@ -34,9 +34,9 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt):
             print_info(
                 f"Found {len(files_to_modify)} potentially relevant files.")
             if debug:
-                print_debug("Possible files to be modified:")
+                print(f"Possible files to be modified:")
                 for file in files_to_modify:
-                    print_debug(f"  - {file}")
+                    print(f"  - {file}")
 
             print_info("Reading file contents...")
             file_contents = {}
