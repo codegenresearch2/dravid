@@ -39,7 +39,7 @@ class InputHandler:
                 self.monitor.processing_input.clear()
 
     def _handle_vision_input(self):
-        print("Enter the image path and instructions (use Tab for autocomplete): ")
+        print_info("Enter the image path and instructions (use Tab for autocomplete):")
         user_input = self._get_input_with_autocomplete()
         self.monitor.processing_input.set()
         try:
@@ -80,7 +80,7 @@ class InputHandler:
                 warn=False
             )
 
-    def _get_input_with_autocomplete(self, prompt=""):
+    def _get_input_with_autocomplete(self, prompt="> "):
         current_input = ""
         while True:
             click.echo(prompt + current_input, nl=False)
