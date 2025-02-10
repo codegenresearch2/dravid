@@ -13,7 +13,7 @@ class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
         self.initial_dir = self.current_dir
-        self.allowed_directories = [self.current_dir]  # Update example path
+        self.allowed_directories = [self.current_dir, '/example/path']  # Add example path
         self.disallowed_commands = ['rmdir', 'del', 'format', 'mkfs', 'dd', 'fsck', 'mkswap', 'mount', 'umount', 'sudo', 'su', 'chown', 'chmod']
         self.env = os.environ.copy()
 
@@ -41,7 +41,28 @@ class Executor:
 
     def perform_file_operation(self, operation, filename, content=None, force=False):
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
-        # Implement file operation logic here
+
+        if not self.is_safe_path(full_path):
+            confirmation_box = create_confirmation_box(filename, f"File operation is being carried out outside of the project directory. {operation.lower()} this file")
+            print(confirmation_box)
+            if not click.confirm(f"{Fore.YELLOW}Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
+                print_info(f"File {operation.lower()} cancelled by user.")
+                return "Skipping this step"
+
+        print_info(f"File: {filename}")
+
+        if operation == 'CREATE':
+            # Implement file creation logic here
+            pass
+        elif operation == 'UPDATE':
+            # Implement file update logic here
+            pass
+        elif operation == 'DELETE':
+            # Implement file deletion logic here
+            pass
+        else:
+            print_error(f"Unknown file operation: {operation}")
+            return False
 
     def parse_json(self, json_string):
         try:
@@ -67,13 +88,23 @@ class Executor:
     def execute_shell_command(self, command, timeout=300):
         if not self.is_safe_command(command):
             print_warning(f"Please verify the command once: {command}")
+
+        confirmation_box = create_confirmation_box(command, "execute this command")
+        print(confirmation_box)
+
+        if not click.confirm(f"{Fore.YELLOW}Confirm execution [y/N]:{Style.RESET_ALL}", default=False):
+            print_info("Command execution cancelled by user.")
+            return 'Skipping this step...'
+
         # Implement shell command execution logic here
 
     def _execute_single_command(self, command, timeout):
         # Implement single command execution logic here
+        pass
 
     def _handle_source_command(self, command):
         # Implement source command handling logic here
+        pass  # Added to resolve the IndentationError
 
     def _update_env_from_command(self, command):
         if '=' in command:
