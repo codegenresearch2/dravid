@@ -33,10 +33,11 @@ class TestMetadataUpdater(unittest.TestCase):
     @patch('drd.metadata.updater.print_success')
     @patch('drd.metadata.updater.print_warning')
     @patch('drd.metadata.updater.print_error')
-    def test_update_metadata_with_dravid(self, mock_print_error, mock_print_warning,
-                                         mock_print_success, mock_print_info,
-                                         mock_find_file, mock_extract_xml, mock_call_api,
-                                         mock_get_folder_structure, mock_get_ignore_patterns,
+    @patch('drd.metadata.updater.asyncio')
+    @patch('drd.metadata.updater.ProjectMetadataManager.analyze_file')
+    def test_update_metadata_with_dravid(self, mock_analyze_file, mock_asyncio, mock_print_error, mock_print_warning,
+                                         mock_print_success, mock_print_info, mock_find_file, mock_extract_xml,
+                                         mock_call_api, mock_get_folder_structure, mock_get_ignore_patterns,
                                          mock_metadata_manager):
         # Set up mocks
         mock_metadata_manager.return_value.get_project_context.return_value = self.project_context
