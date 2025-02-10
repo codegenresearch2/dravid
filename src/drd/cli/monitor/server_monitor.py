@@ -3,7 +3,7 @@ import subprocess
 from queue import Queue
 from .input_handler import InputHandler
 from .output_monitor import OutputMonitor
-from ...utils import print_header, print_success, print_error, print_prompt
+from ...utils import print_info, print_success, print_error, print_prompt
 
 MAX_RETRIES = 3
 
@@ -25,16 +25,16 @@ class DevServerMonitor:
     def start(self):
         self.should_stop.clear()
         self.restart_requested.clear()
-        print_header(f"Attempting to start server with command: {self.command}")
-        self._start_process()
+        print_info(f"Starting Dravid AI along with your process/server with command: {self.command}")
+        self.start_process()
 
     def stop(self):
-        print_header("Initiating server monitor shutdown...")
+        print_info("Initiating Dravid AI and server monitor shutdown...")
         self.should_stop.set()
         if self.process:
             self.process.terminate()
             self.process.wait()
-        print_header("Server monitor has been stopped.")
+        print_info("Dravid AI and server monitor have been stopped.")
 
     def request_restart(self):
         self.restart_requested.set()
@@ -51,9 +51,9 @@ class DevServerMonitor:
             self.stop()
         else:
             print_prompt(f"Restart attempt failed. Retrying... (Attempt {self.retry_count}/{MAX_RETRIES})")
-            self._start_process()
+            self.start_process()
 
-    def _start_process(self):
+    def start_process(self):
         try:
             self.process = subprocess.Popen(
                 self.command,
@@ -74,6 +74,6 @@ class DevServerMonitor:
             self.input_handler.start()
         except Exception as e:
             print_error(f"Failed to start server process: {str(e)}")
-            self.perform_restart()
+            self.stop()
 
 # No changes needed for the start_process function as it is not used in the provided code snippet.
