@@ -61,7 +61,7 @@ class TestOutputMonitor(unittest.TestCase):
 
         # Assert
         self.mock_monitor.error_handlers[r"Error:"].assert_called_once_with("Error: Test error\n", self.mock_monitor)
-        self.assertEqual(error_buffer, [], "Error buffer should be cleared after handling an error.")
+        self.assertEqual(len(error_buffer), 0, "Error buffer should be cleared after handling an error.")
 
 if __name__ == '__main__':
     unittest.main()
