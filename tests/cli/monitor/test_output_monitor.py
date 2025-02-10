@@ -24,7 +24,7 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor.process.stdout = MagicMock()
         self.mock_monitor.process.stdout.readline.return_value = ""
         mock_select.return_value = ([self.mock_monitor.process.stdout], [], [])
-        mock_time.side_effect = [0] + [6] * 10  # Simulate time passing
+        mock_time.side_effect = [0] * 10 + [6]  # Simulate time passing
 
         # Capture stdout
         captured_output = StringIO()
