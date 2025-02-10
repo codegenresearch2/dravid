@@ -1,6 +1,6 @@
 import unittest
 import threading
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, MagicMock
 from drd.cli.monitor.input_handler import InputHandler
 
 
