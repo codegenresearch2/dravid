@@ -66,9 +66,9 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
                     # Update external dependencies
                     metadata_element = file.find('metadata')
                     if metadata_element is not None:
-                        dependencies = metadata_element.find('external_dependencies')
-                        if dependencies is not None:
-                            for dep in dependencies.findall('dependency'):
+                        external_deps = metadata_element.find('external_dependencies')
+                        if external_deps is not None:
+                            for dep in external_deps.findall('dependency'):
                                 metadata_manager.add_external_dependency(dep.text.strip())
                 else:
                     print_warning(f'Could not analyze file: {found_filename}')
