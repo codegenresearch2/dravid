@@ -105,3 +105,5 @@ class TestProjectMetadataManager(unittest.TestCase):
         self.assertEqual(metadata['project_info']['primary_language'], 'python')
         self.assertEqual(len(metadata['files']), 1)
         self.assertEqual(metadata['files'][0]['path'], 'main.py')
+
+# The test_get_directory_structure method has been updated to wrap the structure in a dictionary with the key 'project_dir'
