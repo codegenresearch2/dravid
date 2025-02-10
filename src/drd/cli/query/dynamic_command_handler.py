@@ -11,10 +11,9 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
 
     for i, cmd in enumerate(commands, 1):
         step_description = "fix" if is_fix else "command"
-
         try:
-            output = handle_command(cmd, executor, metadata_manager)
-            all_outputs.append(format_output(i, total_steps, cmd, output))
+            output = handle_command(i, total_steps, cmd, executor, metadata_manager)
+            all_outputs.append(output)
 
             if debug:
                 print_debug(f"Completed step {i}/{total_steps}")
@@ -27,60 +26,46 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
 
     return True, total_steps, None, "\n".join(all_outputs)
 
-def handle_command(cmd, executor, metadata_manager):
+def handle_command(i, total_steps, cmd, executor, metadata_manager):
     if cmd['type'] == 'explanation':
-        return f"Explanation - {cmd['content']}"
+        return f"Step {i}/{total_steps}: Explanation - {cmd['content']}"
     elif cmd['type'] == 'shell':
-        return handle_shell_command(cmd, executor)
+        return handle_shell_command(i, total_steps, cmd, executor)
     elif cmd['type'] == 'file':
-        return handle_file_operation(cmd, executor, metadata_manager)
+        return handle_file_operation(i, total_steps, cmd, executor, metadata_manager)
     elif cmd['type'] == 'metadata':
-        return handle_metadata_operation(cmd, metadata_manager)
+        return handle_metadata_operation(i, total_steps, cmd, metadata_manager)
     elif cmd['type'] == 'requires_restart':
-        return 'requires restart if the server is running'
+        return f"Step {i}/{total_steps}: Requires restart - {cmd['content']}"
     else:
         raise ValueError(f"Unknown command type: {cmd['type']}")
-
-def format_output(i, total_steps, cmd, output):
-    if isinstance(output, str) and output.startswith("Skipping"):
-        print_info(f"Step {i}/{total_steps}: {output}")
-        return f"Step {i}/{total_steps}: {output}"
-    elif cmd['type'] == 'explanation':
-        return f"Step {i}/{total_steps}: {output}"
-    else:
-        return f"Step {i}/{total_steps}: {cmd['type'].capitalize()} command - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}"
 
 def format_error_message(i, total_steps, step_description, cmd, error_details):
     return f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {error_details}"
 
-def handle_shell_command(cmd, executor):
+def handle_shell_command(i, total_steps, cmd, executor):
     output = executor.execute_shell_command(cmd['command'])
     if isinstance(output, str) and output.startswith("Skipping"):
-        print_info(output)
-        return output
+        return f"Step {i}/{total_steps}: {output}"
     if output is None:
         raise Exception(f"Command failed: {cmd['command']}")
-    print_success(f"Successfully executed: {cmd['command']}")
-    if output:
-        click.echo(f"Command output:\n{output}")
-    return output
+    return f"Step {i}/{total_steps}: Shell command - {cmd['command']}\nOutput: {output}"
 
-def handle_file_operation(cmd, executor, metadata_manager):
+def handle_file_operation(i, total_steps, cmd, executor, metadata_manager):
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
     if isinstance(operation_performed, str) and operation_performed.startswith("Skipping"):
-        print_info(operation_performed)
-        return operation_performed
+        return f"Step {i}/{total_steps}: {operation_performed}"
     elif operation_performed:
-        print_success(f"Successfully performed {cmd['operation']} on file: {cmd['filename']}")
         if cmd['operation'] in ['CREATE', 'UPDATE']:
             update_file_metadata(cmd, metadata_manager, executor)
-        return "Success"
+        return f"Step {i}/{total_steps}: File operation - {cmd['operation']} on {cmd['filename']}\nOutput: Success"
     else:
         raise Exception(f"File operation failed: {cmd['operation']} on {cmd['filename']}")
 
-def handle_metadata_operation(cmd, metadata_manager):
+def handle_metadata_operation(i, total_steps, cmd, metadata_manager):
     if cmd['operation'] in ['CREATE', 'UPDATE']:
-        return update_file_metadata(cmd, metadata_manager)
+        update_file_metadata(cmd, metadata_manager)
+        return f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} on {cmd['filename']}\nOutput: Success"
     else:
         raise Exception(f"Unknown operation: {cmd['operation']}")
 
@@ -90,7 +75,6 @@ def update_file_metadata(cmd, metadata_manager, executor):
     file_type, description, exports = generate_file_description(cmd['filename'], cmd.get('content', ''), project_context, folder_structure)
     metadata_manager.update_file_metadata(cmd['filename'], file_type, cmd.get('content', ''), description, exports)
     print_success(f"Updated metadata for file: {cmd['filename']}")
-    return f"Updated metadata for {cmd['filename']}"
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context="", debug=False):
     if depth > 3:
