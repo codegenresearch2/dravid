@@ -44,6 +44,15 @@ def get_instruction_prompt():
           <content>
             <![CDATA[
               {
+                "project_name": "New Next.js Project",
+                "files": [
+                  {
+                    "filename": "new_file.js",
+                    "type": "JavaScript",
+                    "description": "Newly created file",
+                    "exports": "None"
+                  }
+                ],
                 "dev_server": {
                   "start_command": "npm run dev",
                   "framework": "Next.js",
