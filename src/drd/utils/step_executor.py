@@ -2,11 +2,18 @@ import os
 import subprocess
 import time
 from colorama import Fore, Style
+import json
+import click
+from .utils import print_error, print_success, print_info, print_warning, create_confirmation_box
+from .diff import preview_file_changes
+from .apply_file_changes import apply_changes
+from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
 
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
-        self.allowed_directories = [self.current_dir]
+        self.initial_dir = self.current_dir
+        self.allowed_directories = [self.current_dir, '/fake/path']
         self.disallowed_commands = [
             'rmdir', 'del', 'format', 'mkfs',
             'dd', 'fsck', 'mkswap', 'mount', 'umount',
@@ -16,7 +23,7 @@ class Executor:
 
     def is_safe_path(self, path):
         full_path = os.path.abspath(os.path.join(self.current_dir, path))
-        return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories)
+        return full_path == self.current_dir or any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories)
 
     def is_safe_rm_command(self, command):
         parts = command.split()
@@ -25,7 +32,8 @@ class Executor:
         if len(parts) != 2:
             return False
         file_to_remove = parts[1]
-        return self.is_safe_path(file_to_remove) and os.path.isfile(os.path.join(self.current_dir, file_to_remove))
+        full_path = os.path.abspath(os.path.join(self.current_dir, file_to_remove))
+        return self.is_safe_path(file_to_remove) and os.path.isfile(full_path)
 
     def is_safe_command(self, command):
         command_parts = command.split()
@@ -36,16 +44,18 @@ class Executor:
     def perform_file_operation(self, operation, filename, content=None, force=False):
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
         if not self.is_safe_path(full_path):
-            if click.confirm(f"File operation is being carried out outside of the project directory. {operation.lower()} this file", default=False):
-                pass
-            else:
+            confirmation_box = create_confirmation_box(
+                filename, f"File operation is being carried out outside of the project directory. {operation.lower()} this file")
+            print(confirmation_box)
+            if not click.confirm(f"{Fore.YELLOW}Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
+                print_info(f"File {operation.lower()} cancelled by user.")
                 return "Skipping this step"
 
-        print(f"File: {filename}")
+        print_info(f"File: {filename}")
 
         if operation == 'CREATE':
             if os.path.exists(full_path) and not force:
-                print(f"File already exists: {filename}")
+                print_info(f"File already exists: {filename}")
                 return False
             try:
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
@@ -57,7 +67,7 @@ class Executor:
                     print_success(f"File created successfully: {filename}")
                     return True
                 else:
-                    print("File creation cancelled by user.")
+                    print_info("File creation cancelled by user.")
                     return "Skipping this step"
             except Exception as e:
                 print_error(f"Error creating file: {str(e)}")
@@ -65,7 +75,7 @@ class Executor:
 
         elif operation == 'UPDATE':
             if not os.path.exists(full_path):
-                print(f"File does not exist: {filename}")
+                print_info(f"File does not exist: {filename}")
                 return False
             try:
                 with open(full_path, 'r') as f:
@@ -80,10 +90,10 @@ class Executor:
                         print_success(f"File updated successfully: {filename}")
                         return True
                     else:
-                        print("File update cancelled by user.")
+                        print_info(f"File update cancelled by user.")
                         return "Skipping this step"
                 else:
-                    print("No content or changes provided for update operation")
+                    print_error("No content or changes provided for update operation")
                     return False
             except Exception as e:
                 print_error(f"Error updating file: {str(e)}")
@@ -91,8 +101,10 @@ class Executor:
 
         elif operation == 'DELETE':
             if not os.path.isfile(full_path):
-                print(f"Delete operation is only allowed for files: {filename}")
+                print_info(f"Delete operation is only allowed for files: {filename}")
                 return False
+            confirmation_box = create_confirmation_box(filename, f"{operation.lower()} this file")
+            print(confirmation_box)
             if click.confirm(f"Confirm deletion [y/N]:", default=False):
                 try:
                     os.remove(full_path)
@@ -102,11 +114,11 @@ class Executor:
                     print_error(f"Error deleting file: {str(e)}")
                     return False
             else:
-                print("File deletion cancelled by user.")
+                print_info("File deletion cancelled by user.")
                 return "Skipping this step"
 
         else:
-            print(f"Unknown file operation: {operation}")
+            print_error(f"Unknown file operation: {operation}")
             return False
 
     def parse_json(self, json_string):
@@ -133,8 +145,10 @@ class Executor:
     def execute_shell_command(self, command, timeout=300):
         if not self.is_safe_command(command):
             print_warning(f"Please verify the command once: {command}")
-        if not click.confirm(f"Confirm execution [y/N]:", default=False):
-            print("Command execution cancelled by user.")
+        confirmation_box = create_confirmation_box(command, "execute this command")
+        print(confirmation_box)
+        if not click.confirm(f"{Fore.YELLOW}Confirm execution [y/N]:{Style.RESET_ALL}", default=False):
+            print_info("Command execution cancelled by user.")
             return 'Skipping this step...'
         click.echo(f"Executing shell command: {command}")
         if command.strip().startswith(('cd', 'chdir')):
