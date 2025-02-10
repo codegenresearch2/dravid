@@ -3,7 +3,6 @@ import sys
 from unittest.mock import patch, MagicMock, call
 from io import StringIO
 from drd.cli.monitor.output_monitor import OutputMonitor
-import time
 
 class TestOutputMonitor(unittest.TestCase):
 
@@ -32,8 +31,10 @@ class TestOutputMonitor(unittest.TestCase):
         # Run
         self.output_monitor._monitor_output()
 
-        # Restore stdout
+        # Restore stdout and print captured output
         sys.stdout = sys.__stdout__
+        print("Captured output:")
+        print(captured_output.getvalue())
 
         # Assert
         mock_print_prompt.assert_called_once_with(
