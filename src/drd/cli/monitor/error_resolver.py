@@ -18,7 +18,10 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
 
     print_info('Identifying relevant files for error context...')
     error_details = f'error_msg: {error_message}, error_type: {error_type}, error_trace: {error_trace}'
-    files_to_check = run_with_loader(lambda: get_files_to_modify(error_details, project_context), 'Analyzing project files')
+    files_to_check = run_with_loader(
+        lambda: get_files_to_modify(error_details, project_context),
+        'Analyzing project files'
+    )
 
     print_info(f'Found {len(files_to_check)} potentially relevant files.')
 
