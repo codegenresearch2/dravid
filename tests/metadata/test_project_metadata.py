@@ -23,7 +23,7 @@ class TestProjectMetadataManager(unittest.TestCase):
             mock_open(read_data="*.tmp\n").return_value
         ]
         with patch('builtins.open', side_effect=mock_open_calls):
-            patterns, message = self.manager.get_ignore_patterns()
+            patterns = self.manager.get_ignore_patterns()
 
         self.assertIn('*.log', patterns)
         self.assertIn('node_modules/', patterns)
@@ -78,7 +78,7 @@ class TestProjectMetadataManager(unittest.TestCase):
           </metadata>
         </response>
         '''
-        file_info = await self.manager.analyze_file('/fake/project/dir/script.py', mock_api_call.return_value)
+        file_info = await self.manager.analyze_file('/fake/project/dir/script.py')
         self.assertEqual(file_info['path'], 'script.py')
         self.assertEqual(file_info['type'], 'python')
         self.assertEqual(file_info['summary'], 'A simple Python script')
