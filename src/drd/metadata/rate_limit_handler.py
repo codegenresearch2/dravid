@@ -2,11 +2,12 @@ import functools
 import sys
 import asyncio
 import time
+import os
 from ..api.main import call_dravid_api_with_pagination
 from ..utils.parser import extract_and_parse_xml
 from ..prompts.file_metada_desc_prompts import get_file_metadata_prompt
 from ..utils.utils import print_info, print_error, print_success, print_warning
-from .common_utils import generate_file_description, find_file_with_dravid
+from .common_utils import find_file_with_dravid
 
 MAX_CONCURRENT_REQUESTS = 10
 MAX_CALLS_PER_MINUTE = 100
@@ -40,12 +41,11 @@ def to_thread(func, *args, **kwargs):
 
 async def process_single_file(filename, content, project_context, folder_structure):
     try:
-        found_filename = find_file_with_dravid(filename, project_context, folder_structure)
-        if not found_filename:
-            print_warning(f"Could not find file: {filename}")
-            return filename, "unknown", "File not found", "", ""
+        if 'CLAUDE_API_KEY' not in os.environ:
+            print_error("CLAUDE_API_KEY is not found in the environment variables")
+            return filename, "unknown", "CLAUDE_API_KEY not found", "", ""
 
-        metadata_query = get_file_metadata_prompt(found_filename, content, project_context, folder_structure)
+        metadata_query = get_file_metadata_prompt(filename, content, project_context, folder_structure)
         async with rate_limiter.semaphore:
             await rate_limiter.acquire()
             response = await to_thread(call_dravid_api_with_pagination, metadata_query, include_context=True)
@@ -61,8 +61,8 @@ async def process_single_file(filename, content, project_context, folder_structu
         exports = exports_elem.text.strip() if exports_elem is not None and exports_elem.text else ""
         imports = imports_elem.text.strip() if imports_elem is not None and imports_elem.text else ""
 
-        print_success(f"Processed: {found_filename}")
-        return found_filename, file_type, summary, exports, imports
+        print_success(f"Processed: {filename}")
+        return filename, file_type, summary, exports, imports
     except Exception as e:
         print_error(f"Error processing {filename}: {str(e)}")
         return filename, "unknown", f"Error: {str(e)}", "", ""
