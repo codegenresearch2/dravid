@@ -35,10 +35,8 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
             f'Files identified for processing: {", ".join([file.find("path").text.strip() for file in files_to_process if file.find("path") is not None])}')
 
         for file in files_to_process:
-            path = file.find('path').text.strip() if file.find(
-                'path') is not None else ''
-            action = file.find('action').text.strip() if file.find(
-                'action') is not None else 'update'
+            path = file.find('path').text.strip() if file.find('path') is not None else ''
+            action = file.find('action').text.strip() if file.find('action') is not None else 'update'
 
             if not path:
                 print_warning('Skipping file with empty path')
@@ -49,8 +47,7 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
                 print_success(f'Removed metadata for file: {path}')
                 continue
 
-            found_filename = find_file_with_dravid(
-                path, project_context, folder_structure)
+            found_filename = find_file_with_dravid(path, project_context, folder_structure)
             if not found_filename:
                 print_warning(f'Could not find file: {path}')
                 continue
@@ -67,8 +64,7 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
                         file_info['exports'],
                         file_info['imports']
                     )
-                    print_success(
-                        f'Updated metadata for file: {found_filename}')
+                    print_success(f'Updated metadata for file: {found_filename}')
 
                     # Handle external dependencies
                     metadata = file.find('metadata')
@@ -76,7 +72,7 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
                         external_deps = metadata.find('external_dependencies')
                         if external_deps is not None:
                             for dep in external_deps.findall('dependency'):
-                                metadata_manager.add_external_dependency(dep.text)
+                                metadata_manager.add_external_dependency(dep.text.strip())
                 else:
                     print_warning(f'Could not analyze file: {found_filename}')
 
@@ -103,5 +99,4 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
         print_error(f'Raw response: {files_response}')
 
 def update_metadata_with_dravid(meta_description, current_dir):
-    asyncio.run(update_metadata_with_dravid_async(
-        meta_description, current_dir))
+    asyncio.run(update_metadata_with_dravid_async(meta_description, current_dir))
