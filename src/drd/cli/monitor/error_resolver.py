@@ -30,7 +30,7 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
         content = get_file_content(file)
         if content:
             file_contents[file] = content
-            print_info(f'  - Successfully read content of {file}')
+            print_info(f'Successfully read content of {file}')
 
     file_context = '\n'.join([f'Content of {file}:\n{content}' for file, content in file_contents.items()])
 
