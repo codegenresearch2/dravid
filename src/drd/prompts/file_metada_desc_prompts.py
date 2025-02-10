@@ -16,6 +16,15 @@ please generate appropriate metadata for this file.
 Respond with an XML structure containing the metadata:
 
 <response>
+  <guidelines>
+    <path>Full path of the file within the project</path>
+    <type>Programming language or file type (e.g., "typescript", "python", "json")</type>
+    <summary>Brief description of the file's purpose and functionality</summary>
+    <file_category>code_file or dependency_file</file_category>
+    <exports>Comma-separated list of exports or 'None'</exports>
+    <imports>Comma-separated list of imports or 'None'</imports>
+    <external_dependencies>Include only if there are external dependencies</external_dependencies>
+  </guidelines>
   <metadata>
     <path>{filename}</path>
     <type>file_type</type>
@@ -32,15 +41,6 @@ Respond with an XML structure containing the metadata:
       <!-- Add more dependency elements as needed -->
     </external_dependencies>
   </metadata>
-  <guidelines>
-    <path>Full path of the file within the project</path>
-    <type>Programming language or file type (e.g., "typescript", "python", "json")</type>
-    <summary>Brief description of the file's purpose and functionality</summary>
-    <file_category>code_file or dependency_file</file_category>
-    <exports>Comma-separated list of exports or 'None'</exports>
-    <imports>Comma-separated list of imports or 'None'</imports>
-    <external_dependencies>Include only if there are external dependencies</external_dependencies>
-  </guidelines>
   <examples>
     <code_file>
       <path>src/main.py</path>
