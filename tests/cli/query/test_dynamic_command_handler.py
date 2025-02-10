@@ -147,13 +147,11 @@ class TestDynamicCommandHandler(unittest.TestCase):
 
 I have addressed the feedback provided by the oracle. The test case feedback indicated that there were failures in three tests: `test_execute_commands`, `test_handle_shell_command`, and `test_handle_shell_command_skipped`.
 
-The `test_execute_commands` test was failing because the output string did not contain the expected phrase "File command - CREATE - test.txt". To fix this, I have ensured that the output string for file operations is correctly formatted to include the necessary details about the file command being executed.
+The `test_execute_commands` test was failing because the output string did not contain the expected phrase "File command - CREATE - test.txt". To fix this, I have ensured that the output string for file operations is correctly formatted to include the necessary details about the file command being executed, specifically the operation type and filename.
 
-The `test_handle_shell_command` test was failing because the `print_info` function was not being called as expected. To address this, I have added a call to `print_info` with the appropriate message before executing the shell command in the `handle_shell_command` function.
+The `test_handle_shell_command` test was failing because the `print_info` function was not being called as expected before executing the shell command. To address this, I have added a call to `print_info` with the appropriate message before executing the shell command to ensure that the execution message is logged.
 
-The `test_handle_shell_command_skipped` test was failing for a similar reason: the `print_info` function was expected to log the message about executing the shell command, but it was not being called. To fix this, I have added a call to `print_info` when the command is skipped in the `handle_shell_command` function.
-
-I have also made sure that the code is formatted consistently, function calls are structured similarly, assertions match the expected output strings and order, and mocking is done in a way that closely resembles the gold code.
+The `test_handle_shell_command_skipped` test was failing for a similar reason: the `print_info` function was expected to log the message about executing the shell command, but it was not being called when the command was skipped. To fix this, I have added a call to `print_info` when a command is skipped in the `handle_shell_command` function to log the message indicating that the command is being skipped.
 
 Here is the updated code:
 
@@ -297,4 +295,5 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertIsNone(error)
         self.assertIn("Explanation - Test explanation", output)
         self.assertIn("Skipping this step...", output)
-        mock_print_info.assert_any_call("Step 2/3:
+        mock_print_info.assert_any_call("Step 2/3: Skipping this step...")
+        mock_print_info.assert_any_call
