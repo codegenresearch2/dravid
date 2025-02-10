@@ -23,28 +23,42 @@ class Executor:
         self.env = os.environ.copy()
 
     def is_safe_path(self, path):
+        """
+        Check if the given path is safe to operate on.
+        """
         full_path = os.path.abspath(path)
         return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories) or full_path == self.current_dir
 
     def is_safe_rm_command(self, command):
+        """
+        Check if the given rm command is safe.
+        """
         parts = command.split()
         if parts[0] != 'rm':
             return False
+        # Check for dangerous flags
         dangerous_flags = ['-r', '-f', '-rf', '-fr']
         if any(flag in parts for flag in dangerous_flags):
             return False
+        # Check if it's removing a specific file
         if len(parts) != 2:
             return False
         file_to_remove = parts[1]
         return self.is_safe_path(file_to_remove) and os.path.isfile(os.path.join(self.current_dir, file_to_remove))
 
     def is_safe_command(self, command):
+        """
+        Check if the given command is safe to execute.
+        """
         command_parts = command.split()
         if command_parts[0] == 'rm':
             return self.is_safe_rm_command(command)
         return not any(cmd in self.disallowed_commands for cmd in command_parts)
 
     def perform_file_operation(self, operation, filename, content=None, force=False):
+        """
+        Perform a file operation (create, update, delete).
+        """
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
         if not self.is_safe_path(full_path):
             confirmation_box = create_confirmation_box(
@@ -128,6 +142,9 @@ class Executor:
             return False
 
     def parse_json(self, json_string):
+        """
+        Parse a JSON string and return the corresponding Python object.
+        """
         try:
             return json.loads(json_string)
         except json.JSONDecodeError as e:
@@ -135,6 +152,9 @@ class Executor:
             return None
 
     def merge_json(self, existing_content, new_content):
+        """
+        Merge two JSON strings and return the merged result.
+        """
         try:
             existing_json = json.loads(existing_content)
             new_json = json.loads(new_content)
@@ -145,10 +165,16 @@ class Executor:
             return None
 
     def get_folder_structure(self):
+        """
+        Get the folder structure of the current directory, ignoring specified patterns.
+        """
         ignore_patterns, _ = get_ignore_patterns(self.current_dir)
         return get_folder_structure(self.current_dir, ignore_patterns)
 
     def execute_shell_command(self, command, timeout=300):
+        """
+        Execute a shell command and return the output.
+        """
         if not self.is_safe_command(command):
             print_warning(f"Please verify the command once: {command}")
         confirmation_box = create_confirmation_box(
