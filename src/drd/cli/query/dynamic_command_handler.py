@@ -5,6 +5,10 @@ from ...utils import print_error, print_success, print_info, print_step
 from ...metadata.common_utils import generate_file_description
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 
+def print_debug(message):
+    # Implement the debug printing logic here
+    pass
+
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
     total_steps = len(commands)
@@ -30,7 +34,7 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 all_outputs.append(f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} - {output}")
 
             if debug:
-                print_info(f"Completed step {i}/{total_steps}")
+                print_debug(f"Completed step {i}/{total_steps}")
 
         except Exception as e:
             error_message = f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {str(e)}"
