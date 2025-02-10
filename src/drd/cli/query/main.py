@@ -10,7 +10,7 @@ from ...utils.parser import parse_dravid_response
 
 def analyze_files_info(files_info, debug):
     if debug:
-        print_info("Files and dependencies analysis:", indent=4)
+        print_info("ð Files and dependencies analysis:", indent=4)
         if files_info['main_file']:
             print_info(f"Main file to modify: {files_info['main_file']}", indent=6)
         print_info("Dependencies:", indent=6)
@@ -26,7 +26,7 @@ def analyze_files_info(files_info, debug):
             print_info(f"- {file}", indent=8)
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None, reference_files=None):
-    print_header("Starting Dravid AI ...")
+    print_header("ð Starting Dravid AI ...")
 
     if warn:
         print_warning("Please ensure you review and commit(git) changes")
@@ -119,8 +119,8 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
         full_query = f"{project_context}\n\n"
         full_query += f"Project Guidelines:\n{project_guidelines}\n\n"
 
-        if files_info:
-            if files_info['file_contents_to_load']:
+        if files_info and isinstance(files_info, dict):
+            if 'file_contents_to_load' in files_info:
                 file_contents = {}
                 for file in files_info['file_contents_to_load']:
                     content = get_file_content(file)
@@ -131,15 +131,15 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
                 file_context = "\n".join([f"Current content of {file}:\n{content}" for file, content in file_contents.items()])
                 full_query += f"Current file contents:\n{file_context}\n\n"
 
-            if files_info['dependencies']:
+            if 'dependencies' in files_info:
                 dependency_context = "\n".join([f"Dependency {dep['file']} exports: {', '.join(dep['imports'])}" for dep in files_info['dependencies']])
                 full_query += f"Dependencies:\n{dependency_context}\n\n"
 
-            if files_info['new_files']:
+            if 'new_files' in files_info:
                 new_files_context = "\n".join([f"New file to create: {new_file['file']}" for new_file in files_info['new_files']])
                 full_query += f"New files to create:\n{new_files_context}\n\n"
 
-            if files_info['main_file']:
+            if 'main_file' in files_info:
                 full_query += f"Main file to modify: {files_info['main_file']}\n\n"
 
         full_query += "Current directory is not empty.\n\n"
@@ -158,11 +158,3 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
         full_query += f"\n\nReference files:\n{reference_context}"
 
     return full_query
-
-I have made the following changes to address the feedback:
-
-1. **Syntax Error**: The line containing the text "I have made the following changes to address the feedback:" has been removed from the code. This resolves the syntax error that was causing the tests to fail.
-
-2. **Code Formatting**: The code formatting has been maintained consistently throughout, matching the style of the gold code. This includes spacing, indentation, and line breaks.
-
-These changes should allow the code to be executed without any syntax errors.
