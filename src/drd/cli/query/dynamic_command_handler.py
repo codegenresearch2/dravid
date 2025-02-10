@@ -17,8 +17,23 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
             all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
         else:
             try:
-                output = handle_command(cmd, executor, metadata_manager)
-                all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} command - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
+                if cmd['type'] == 'shell':
+                    output = handle_shell_command(cmd, executor)
+                elif cmd['type'] == 'file':
+                    output = handle_file_operation(cmd, executor, metadata_manager)
+                elif cmd['type'] == 'metadata':
+                    output = handle_metadata_operation(cmd, metadata_manager)
+                elif cmd['type'] == 'requires_restart':
+                    output = 'requires restart if the server is running'
+                else:
+                    raise ValueError(f"Unknown command type: {cmd['type']}")
+
+                if isinstance(output, str) and output.startswith("Skipping"):
+                    print_info(f"Step {i}/{total_steps}: {output}")
+                    all_outputs.append(f"Step {i}/{total_steps}: {output}")
+                else:
+                    all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} command - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
+
             except Exception as e:
                 error_message = f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {str(e)}"
                 print_error(error_message)
@@ -30,20 +45,11 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
 
     return True, total_steps, None, "\n".join(all_outputs)
 
-def handle_command(cmd, executor, metadata_manager):
-    if cmd['type'] == 'shell':
-        return handle_shell_command(cmd, executor)
-    elif cmd['type'] == 'file':
-        return handle_file_operation(cmd, executor, metadata_manager)
-    elif cmd['type'] == 'metadata':
-        return handle_metadata_operation(cmd, metadata_manager)
-    elif cmd['type'] == 'requires_restart':
-        return 'requires restart if the server is running'
-    else:
-        raise ValueError(f"Unknown command type: {cmd['type']}")
-
 def handle_shell_command(cmd, executor):
     output = executor.execute_shell_command(cmd['command'])
+    if isinstance(output, str) and output.startswith("Skipping"):
+        print_info(output)
+        return output
     if output is None:
         raise Exception(f"Command failed: {cmd['command']}")
     print_success(f"Successfully executed: {cmd['command']}")
@@ -53,8 +59,13 @@ def handle_shell_command(cmd, executor):
 
 def handle_file_operation(cmd, executor, metadata_manager):
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
-    if operation_performed:
+    if isinstance(operation_performed, str) and operation_performed.startswith("Skipping"):
+        print_info(operation_performed)
+        return operation_performed
+    elif operation_performed:
         print_success(f"Successfully performed {cmd['operation']} on file: {cmd['filename']}")
+        if cmd['operation'] == 'UPDATE_FILE':
+            update_file_metadata(cmd, metadata_manager)
         return "Success"
     else:
         raise Exception(f"File operation failed: {cmd['operation']} on {cmd['filename']}")
@@ -88,7 +99,7 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
     project_context = metadata_manager.get_project_context()
     error_query = get_error_resolution_prompt(previous_context, cmd, error_type, error_message, error_trace, project_context)
 
-    print_info("🏏 Sending error information to dravid for analysis(1 LLM call)...\n")
+    print_info("ðŸ Sending error information to dravid for analysis(1 LLM call)...\n")
 
     try:
         fix_commands = call_dravid_api(error_query, include_context=True)
@@ -96,8 +107,8 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
         print_error(f"Error parsing dravid's response: {str(e)}")
         return False
 
-    print_info("🩺 Dravid's suggested fix:", indent=2)
-    print_info("🔨 Applying dravid's suggested fix...", indent=2)
+    print_info("ðŸ©º Dravid's suggested fix:", indent=2)
+    print_info("ðŸ”¨ Applying dravid's suggested fix...", indent=2)
 
     fix_applied, step_completed, error_message, all_outputs = execute_commands(fix_commands, executor, metadata_manager, is_fix=True, debug=debug)
 
