@@ -8,9 +8,9 @@ from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
     total_steps = len(commands)
-    step_description = "fix" if is_fix else "command"
 
     for i, cmd in enumerate(commands, 1):
+        step_description = "fix" if is_fix else "command"
         print_step(i, total_steps, f"Processing {cmd['type']} {step_description}...")
 
         if cmd['type'] == 'explanation':
@@ -29,7 +29,7 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                     print_info(f"Step {i}/{total_steps}: {output}")
                     all_outputs.append(f"Step {i}/{total_steps}: {output}")
                 else:
-                    all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} command - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
+                    all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} {step_description} - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
 
             except Exception as e:
                 error_message = f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {str(e)}"
