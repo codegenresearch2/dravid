@@ -38,27 +38,34 @@ def to_thread(func, *args, **kwargs):
         loop = asyncio.get_event_loop()
         return loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
-async def process_single_file(filename, project_context, folder_structure):
+async def process_single_file(filename, content, project_context, folder_structure):
     try:
         found_filename = find_file_with_dravid(filename, project_context, folder_structure)
         if not found_filename:
             print_warning(f"Could not find file: {filename}")
-            return None
+            return filename, "unknown", "File not found", "", ""
 
-        with open(found_filename, 'r') as file:
-            content = file.read()
+        metadata_query = get_file_metadata_prompt(found_filename, content, project_context, folder_structure)
+        async with rate_limiter.semaphore:
+            await rate_limiter.acquire()
+            response = await to_thread(call_dravid_api_with_pagination, metadata_query, include_context=True)
 
-        file_type, summary, exports = generate_file_description(found_filename, content, project_context, folder_structure)
+        root = extract_and_parse_xml(response)
+        type_elem = root.find('.//type')
+        desc_elem = root.find('.//description')
+        exports_elem = root.find('.//exports')
+        imports_elem = root.find('.//imports')
 
-        return {
-            'path': found_filename,
-            'type': file_type,
-            'summary': summary,
-            'exports': exports
-        }
+        file_type = type_elem.text.strip() if type_elem is not None and type_elem.text else "unknown"
+        summary = desc_elem.text.strip() if desc_elem is not None and desc_elem.text else "No description available"
+        exports = exports_elem.text.strip() if exports_elem is not None and exports_elem.text else ""
+        imports = imports_elem.text.strip() if imports_elem is not None and imports_elem.text else ""
+
+        print_success(f"Processed: {found_filename}")
+        return found_filename, file_type, summary, exports, imports
     except Exception as e:
         print_error(f"Error processing {filename}: {str(e)}")
-        return None
+        return filename, "unknown", f"Error: {str(e)}", "", ""
 
 async def process_files(files, project_context, folder_structure):
     total_files = len(files)
@@ -66,7 +73,7 @@ async def process_files(files, project_context, folder_structure):
     print_info(f"LLM calls to be made: {total_files}")
 
     async def process_batch(batch):
-        tasks = [process_single_file(filename, project_context, folder_structure) for filename in batch]
+        tasks = [process_single_file(filename, content, project_context, folder_structure) for filename, content in batch]
         return await asyncio.gather(*tasks)
 
     batch_size = MAX_CONCURRENT_REQUESTS
@@ -74,7 +81,7 @@ async def process_files(files, project_context, folder_structure):
     for i in range(0, total_files, batch_size):
         batch = files[i:i+batch_size]
         batch_results = await process_batch(batch)
-        results.extend([result for result in batch_results if result is not None])
+        results.extend(batch_results)
         print_info(f"Progress: {len(results)}/{total_files} files processed")
 
     return results
