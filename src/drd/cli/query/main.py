@@ -9,10 +9,10 @@ from .file_operations import get_files_to_modify
 from ...utils.parser import parse_dravid_response
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None, reference_files=None):
-    print_header("Starting Dravid AI ...")
+    print_header("ð Starting Dravid AI ...")
 
     if warn:
-        print_warning("Please ensure you review and commit(git) changes")
+        print_warning("â ï¸ Please ensure you review and commit(git) changes")
         print("\n")
 
     executor = Executor()
