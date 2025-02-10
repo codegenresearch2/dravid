@@ -47,6 +47,7 @@ class InputHandler:
             self.monitor.processing_input.clear()
 
     def _handle_general_input(self, user_input):
+        # Define a regex pattern to extract image paths and instructions
         image_pattern = r"([a-zA-Z0-9._/-]+(?:/|\\)?)+\.(jpg|jpeg|png|bmp|gif)"
         match = re.search(image_pattern, user_input)
         instruction_prompt = get_instruction_prompt()
@@ -62,9 +63,21 @@ class InputHandler:
 
             print_info(f"Processing image: {image_path}")
             print_info(f"With instructions: {instructions}")
-            execute_dravid_command(instructions, image_path, False, instruction_prompt, warn=False)
+            execute_dravid_command(
+                instructions,
+                image_path,
+                False,
+                instruction_prompt,
+                warn=False
+            )
         else:
-            execute_dravid_command(user_input, None, False, instruction_prompt, warn=False)
+            execute_dravid_command(
+                user_input,
+                None,
+                False,
+                instruction_prompt,
+                warn=False
+            )
 
     def _get_input_with_autocomplete(self):
         current_input = ""
