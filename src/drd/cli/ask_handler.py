@@ -27,17 +27,12 @@ def handle_ask_command(ask, file, debug):
         if content is not None:
             context += f"Content of {file_path}:\n{content}\n\n"
         else:
-            print_info(f"File not found: {file_path}. Making a call to the LLM to suggest an alternative file.")
+            print_info(f"File not found: {file_path}. Finding similar or alternative file.")
             print_info("LLM call to be made: 1")
             suggestion = suggest_file_alternative(file_path, project_metadata)
             print_info(f"Suggestion: {suggestion}")
-            user_input = click.prompt(
-                "Do you want to proceed without this file? (y/n)", type=str)
+            user_input = click.prompt("Do you want to proceed without this file?", type=str)
             if user_input.lower() != 'y':
-                print_info("Proceeding without the missing file as per user's choice.")
-                continue
-            else:
-                print_error(f"Unable to proceed without the missing file '{file_path}'. Exiting.")
                 return
 
     if ask:
