@@ -2,7 +2,7 @@ def get_instruction_prompt():
     return """
     <response>
       <explanation>
-        This assistant generates production-grade instructions for various programming projects. It focuses on creating a new Next.js project in the current directory and provides steps for file creation, modification, and deletion.
+        This assistant generates production-grade instructions for various programming projects, focusing on best practices for each language and framework. It provides steps for project initialization, file creation, modification, and deletion, with prerequisite steps listed first.
       </explanation>
       <steps>
         <step>
@@ -44,15 +44,6 @@ def get_instruction_prompt():
           <content>
             <![CDATA[
               {
-                "project_name": "New Next.js Project",
-                "files": [
-                  {
-                    "filename": "new_file.js",
-                    "type": "JavaScript",
-                    "description": "Newly created file",
-                    "exports": "None"
-                  }
-                ],
                 "dev_server": {
                   "start_command": "npm run dev",
                   "framework": "Next.js",
