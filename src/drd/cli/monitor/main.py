@@ -31,18 +31,18 @@ def handle_module_not_found(error_msg, monitor):
         r"(?:Cannot find module|Module not found|ImportError|No module named).*['\"](.*?)['\"]", error_msg, re.IGNORECASE)
     if match:
         module_name = match.group(1)
-        error_msg = f"Module '{module_name}' not found"
-        print_error(f"🚨 {error_msg}")
-        monitoring_handle_error_with_dravid(ImportError(error_msg), error_msg, monitor)
+        error = ImportError(f"Module '{module_name}' not found")
+        print_error(f"🚨 {error.args[0]}")
+        monitoring_handle_error_with_dravid(error, error_msg, monitor)
 
 
 def handle_syntax_error(error_msg, monitor):
-    error_msg = f"Syntax error detected: {error_msg}"
-    print_error(f"🚨 {error_msg}")
-    monitoring_handle_error_with_dravid(SyntaxError(error_msg), error_msg, monitor)
+    error = SyntaxError(f"Syntax error detected: {error_msg}")
+    print_error(f"🚨 {error.args[0]}")
+    monitoring_handle_error_with_dravid(error, error_msg, monitor)
 
 
 def handle_general_error(error_msg, monitor):
-    error_msg = f"General error detected: {error_msg}"
-    print_error(f"🚨 {error_msg}")
-    monitoring_handle_error_with_dravid(Exception(error_msg), error_msg, monitor)
+    error = Exception(f"General error detected: {error_msg}")
+    print_error(f"🚨 {error.args[0]}")
+    monitoring_handle_error_with_dravid(error, error_msg, monitor)
