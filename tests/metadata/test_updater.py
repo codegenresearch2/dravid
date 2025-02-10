@@ -82,7 +82,10 @@ class TestMetadataUpdater(unittest.TestCase):
         mock_root = ET.fromstring(mock_call_api.return_value)
         mock_extract_xml.return_value = mock_root
 
-        mock_find_file.side_effect = ['/fake/project/dir/src/main.py', '/fake/project/dir/package.json']
+        mock_find_file.side_effect = [
+            '/fake/project/dir/src/main.py',
+            '/fake/project/dir/package.json'
+        ]
 
         # Mocking asynchronous function
         async def mock_analyze_file(filename):
