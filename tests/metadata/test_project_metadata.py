@@ -88,7 +88,7 @@ class TestProjectMetadataManager(unittest.TestCase):
     @patch('os.path.exists')
     @patch('builtins.open', new_callable=mock_open)
     @patch.object(ProjectMetadataManager, 'save_metadata')
-    def test_update_metadata_from_file(self, mock_save, mock_file, mock_exists):
+    def test_update_metadata_from_file_with_new_metadata(self, mock_save, mock_file, mock_exists):
         mock_exists.return_value = True
 
         # Initial metadata
