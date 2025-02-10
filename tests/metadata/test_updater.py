@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 import xml.etree.ElementTree as ET
+import asyncio
 
 from drd.metadata.updater import update_metadata_with_dravid
 
