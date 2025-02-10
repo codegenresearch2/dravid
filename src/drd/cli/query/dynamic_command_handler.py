@@ -5,7 +5,6 @@ from ...utils import print_error, print_success, print_info, print_debug
 from ...metadata.common_utils import generate_file_description
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 
-
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
     total_steps = len(commands)
@@ -13,7 +12,6 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
     for i, cmd in enumerate(commands, 1):
         step_description = "fix" if is_fix else "command"
         print_info(f"Processing {cmd['type']} {step_description}...")
-        print_debug(f"Completed step {i}/{total_steps}")
 
         if cmd['type'] == 'explanation':
             print_info(f"Explanation: {cmd['content']}")
@@ -35,6 +33,9 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                     print_info(formatted_output)
                     all_outputs.append(formatted_output)
 
+                if debug:
+                    print_debug(f"Completed step {i}/{total_steps}")
+
             except Exception as e:
                 error_message = f"Step {i}/{total_steps}: Error executing {step_description} command: {str(e)}"
                 print_error(error_message)
@@ -42,7 +43,6 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 return False, i, str(e), "\n".join(all_outputs)
 
     return True, total_steps, None, "\n".join(all_outputs)
-
 
 def handle_shell_command(cmd, executor):
     print_info(f"Executing shell command: {cmd['command']}")
@@ -56,7 +56,6 @@ def handle_shell_command(cmd, executor):
     if output:
         click.echo(f"Command output:\n{output}")
     return output
-
 
 def handle_file_operation(cmd, executor, metadata_manager):
     print_info(f"Performing file operation: {cmd['operation']} on {cmd['filename']}")
@@ -72,7 +71,6 @@ def handle_file_operation(cmd, executor, metadata_manager):
     else:
         raise Exception(f"File operation failed: {cmd['operation']} on {cmd['filename']}")
 
-
 def handle_metadata_operation(cmd, metadata_manager):
     if cmd['operation'] == 'UPDATE_FILE':
         if metadata_manager.update_metadata_from_file():
@@ -83,13 +81,11 @@ def handle_metadata_operation(cmd, metadata_manager):
     else:
         raise Exception(f"Unknown operation: {cmd['operation']}")
 
-
 def update_file_metadata(cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
     folder_structure = executor.get_folder_structure()
     file_type, description, exports = generate_file_description(cmd['filename'], cmd.get('content', ''), project_context, folder_structure)
     metadata_manager.update_file_metadata(cmd['filename'], file_type, cmd.get('content', ''), description, exports)
-
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context="", debug=False):
     if depth > 3:
