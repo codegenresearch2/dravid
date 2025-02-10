@@ -9,9 +9,10 @@ from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
     total_steps = len(commands)
+    step_description = "fix" if is_fix else "command"
 
     for i, cmd in enumerate(commands, 1):
-        step_message = f"Processing {cmd['type']} command..."
+        step_message = f"Processing {cmd['type']} {step_description}..."
         print_step(i, total_steps, step_message)
 
         if cmd['type'] == 'explanation':
