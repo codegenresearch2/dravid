@@ -18,7 +18,7 @@ class InputHandler:
 
     def _handle_input(self):
         while not self.monitor.should_stop.is_set():
-            user_input = input("> Enter command or 'exit' to quit: ").strip()
+            user_input = input("> ").strip()
             if user_input.lower() == 'exit':
                 print_info("Exiting server monitor...")
                 self.monitor.stop()
@@ -39,9 +39,12 @@ class InputHandler:
                 self.monitor.processing_input.clear()
 
     def _handle_vision_input(self):
-        user_input = self._get_input_with_autocomplete("Enter the image path and instructions: ")
+        user_input = self._get_input_with_autocomplete("Enter the image path and instructions (use Tab for autocomplete): ")
         self.monitor.processing_input.set()
-        self._handle_general_input(user_input)
+        try:
+            self._handle_general_input(user_input)
+        finally:
+            self.monitor.processing_input.clear()
 
     def _handle_general_input(self, user_input):
         # Regex to extract image path and instructions
@@ -83,6 +86,7 @@ class InputHandler:
                         click.echo(comp)
             elif char.isprintable():
                 current_input += char
+                click.echo(char, nl=False)
             elif char == '\x7f':  # Backspace
                 if current_input:
                     current_input = current_input[:-1]
