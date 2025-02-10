@@ -111,7 +111,7 @@ class TestMetadataUpdater(unittest.TestCase):
         # Check if metadata was correctly updated and removed
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
             '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", 'Main Python file', [
-                'os']
+                'main_function', 'os']
         )
         mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
             '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', 'Package configuration file', [
