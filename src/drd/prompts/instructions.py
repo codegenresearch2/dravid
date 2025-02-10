@@ -1,7 +1,7 @@
 def get_instruction_prompt():
     return """
     <response>
-      <explanation>This prompt provides detailed instructions for setting up a project, including creating new projects like Next.js, Rails, or Python apps, and updating project metadata.</explanation>
+      <explanation>This XML response provides detailed instructions for setting up a project, including creating a new project like Next.js or Rails, and updating project metadata.</explanation>
       <steps>
         <step>
           <type>shell</type>
