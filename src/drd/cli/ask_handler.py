@@ -28,11 +28,11 @@ def handle_ask_command(ask, file, debug):
             context += f"Content of {file_path}:\n{content}\n\n"
         else:
             print_error(f"File not found: {file_path}.")
-            print_info("Finding similar or alternative file...")
-            print_info("LLM call to be made: 1")
+            print_info("Finding a similar or alternative file...")
+            print_info("Making LLM call: 1")
             suggestion = suggest_file_alternative(file_path, project_metadata)
             print_info(f"Suggestion: {suggestion}")
-            user_input = click.prompt("Proceed without this file? (y/n)", type=str)
+            user_input = click.prompt("Do you want to proceed without this file? (y/n)", type=str)
             if user_input.lower() != 'y':
                 return
 
