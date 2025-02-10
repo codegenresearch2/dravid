@@ -1,5 +1,6 @@
-import asyncio
+import functools
 import sys
+import asyncio
 import time
 from ..api.main import call_dravid_api_with_pagination
 from ..utils.parser import extract_and_parse_xml
@@ -52,6 +53,7 @@ async def process_single_file(filename, content, project_context, folder_structu
         type_elem = root.find('.//type')
         summary_elem = root.find('.//summary')
         exports_elem = root.find('.//exports')
+        imports_elem = root.find('.//imports')
 
         file_type = type_elem.text.strip(
         ) if type_elem is not None and type_elem.text else "unknown"
@@ -59,12 +61,14 @@ async def process_single_file(filename, content, project_context, folder_structu
         ) if summary_elem is not None and summary_elem.text else "No summary available"
         exports = exports_elem.text.strip(
         ) if exports_elem is not None and exports_elem.text else ""
+        imports = imports_elem.text.strip(
+        ) if imports_elem is not None and imports_elem.text else ""
 
         print_success(f"Processed: {filename}")
-        return filename, file_type, summary, exports
+        return filename, file_type, summary, exports, imports
     except Exception as e:
         print_error(f"Error processing {filename}: {e}")
-        return filename, "unknown", f"Error: {e}", ""
+        return filename, "unknown", f"Error: {e}", "", ""
 
 
 async def process_files(files, project_context, folder_structure):
