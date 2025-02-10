@@ -1,3 +1,4 @@
+from .loader import Loader, run_with_loader
 from .utils import (
     print_error,
     print_success,
@@ -18,4 +19,6 @@ __all__ = [
     'print_warning',
     'print_header',
     'print_prompt',
+    'Loader',
+    'run_with_loader'
 ]
