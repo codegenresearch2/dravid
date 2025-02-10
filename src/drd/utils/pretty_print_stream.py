@@ -10,27 +10,28 @@ def pretty_print_xml_stream(chunk, state):
     while iteration_count < max_iterations:
         iteration_count += 1
 
-        # Process explanation tags
-        match = re.search(r'<\s*explanation\s*>(.*?)<\s*/\s*explanation\s*>', state['buffer'], re.DOTALL | re.IGNORECASE)
-        if match:
-            explanation = match.group(1).strip()
-            click.echo(click.style("\nExplanation:", fg="green", bold=True), nl=False)
-            click.echo(f" {explanation}")
-            state['buffer'] = state['buffer'][match.end():]
-            continue
+        # Process explanation tags only when not in a step
+        if not state.get('in_step'):
+            match = re.search(r'<\s*explanation\s*>(.*?)<\s*/\s*explanation\s*>', state['buffer'], re.DOTALL | re.IGNORECASE)
+            if match:
+                explanation = match.group(1).strip()
+                click.echo(click.style("\nExplanation:", fg="green", bold=True), nl=False)
+                click.echo(f" {explanation}")
+                state['buffer'] = state['buffer'][match.end():]
+                continue
 
         # Look for step start
-        step_start_match = re.search(r'<\s*step\s*>', state['buffer'], re.IGNORECASE)
-        if step_start_match:
+        step_start = re.search(r'<\s*step\s*>', state['buffer'], re.IGNORECASE)
+        if step_start:
             state['in_step'] = True
-            state['buffer'] = state['buffer'][step_start_match.end():]
+            state['buffer'] = state['buffer'][step_start.end():]
             continue
 
         if state['in_step']:
-            step_end_match = re.search(r'<\s*/\s*step\s*>', state['buffer'], re.IGNORECASE)
-            if step_end_match:
-                step_content = state['buffer'][:step_end_match.start()]
-                state['buffer'] = state['buffer'][step_end_match.end():]
+            step_end = re.search(r'<\s*/\s*step\s*>', state['buffer'], re.IGNORECASE)
+            if step_end:
+                step_content = state['buffer'][:step_end.start()]
+                state['buffer'] = state['buffer'][step_end.end():]
                 state['in_step'] = False
 
                 # Process step type
