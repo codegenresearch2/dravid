@@ -27,7 +27,7 @@ def handle_ask_command(ask, file, debug):
         if content is not None:
             context += f"Content of {file_path}:\n{content}\n\n"
         else:
-            print_info(f"File not found: {file_path}. Finding a similar or alternative file.")
+            print_error(f"File not found: {file_path}. Finding a similar or alternative file.")
             print_info("Making a call to the LLM to suggest an alternative file.")
             suggestion = suggest_file_alternative(file_path, project_metadata)
             print_info(f"Suggestion: {suggestion}")
