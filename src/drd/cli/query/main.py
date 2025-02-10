@@ -10,10 +10,10 @@ from .file_operations import get_files_to_modify
 from ...utils.parser import parse_dravid_response
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt):
-    print_info('Starting Dravid CLI tool..')
-    print_warning('Please make sure you are in a fresh directory.')
-    print_warning('If it is an existing project, please ensure you\'re in a git branch')
-    print_warning('Use Ctrl+C to exit if you\'re not')
+    print_info('Starting Dravid CLI tool...')
+    print_warning('Ensure you are in a fresh directory.')
+    print_warning('If it is an existing project, ensure you are in a git branch.')
+    print_warning('Press Ctrl+C to exit if you are not.')
 
     executor = Executor()
     metadata_manager = ProjectMetadataManager(executor.current_dir)
@@ -22,7 +22,7 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt):
         project_context = metadata_manager.get_project_context()
 
         if project_context:
-            print_info('Identifying related files to the query...')
+            print_info('Identifying relevant files for the query...')
             print_info('LLM calls to be made: 1')
             files_to_modify = run_with_loader(
                 lambda: get_files_to_modify(query, project_context),
@@ -49,10 +49,10 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt):
             )
             full_query = f'{project_context}\n\nProject Guidelines:\n{project_guidelines}\n\nCurrent file contents:\n{file_context}\n\nUser query: {query}'
         else:
-            print_info('No current project context found. Will create a new project in the current directory.')
+            print_info('No current project context found. Creating a new project in the current directory.')
             full_query = f'User query: {query}'
 
-        print_info('Preparing to send query to Claude API...')
+        print_info('Sending query to Claude API...')
         if image_path:
             print_info(f'Processing image: {image_path}')
             print_info('LLM calls to be made: 1')
