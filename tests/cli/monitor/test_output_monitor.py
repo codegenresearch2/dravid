@@ -21,6 +21,7 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor.process.poll.return_value = None
         self.mock_monitor.processing_input.is_set.return_value = False
         self.mock_monitor.process.stdout = MagicMock(spec=sys.stdout)
+        self.mock_monitor.process.stdout.fileno.return_value = 1  # Added to fix TypeError
         self.mock_monitor.process.stdout.readline.return_value = ""
         mock_select.return_value = ([self.mock_monitor.process.stdout], [], [])
         mock_time.side_effect = [0] + [6] * 10  # Simulate time passing
@@ -32,8 +33,10 @@ class TestOutputMonitor(unittest.TestCase):
         # Run
         self.output_monitor._monitor_output()
 
-        # Restore stdout
+        # Restore stdout and print captured output
         sys.stdout = sys.__stdout__
+        print("Captured output:")
+        print(captured_output.getvalue())
 
         # Assert
         mock_print_prompt.assert_called_once_with(
@@ -41,7 +44,7 @@ class TestOutputMonitor(unittest.TestCase):
         expected_calls = [
             call("\nAvailable actions:"),
             call("1. Give a coding instruction to perform"),
-            call("2. Process an image (type 'vision')"),
+            call("2. Process an image (type 'vision')"),  # Updated to match gold code
             call("3. Exit monitoring mode (type 'exit')"),
             call("\nType your choice or command:")
         ]
@@ -69,6 +72,7 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor.process.poll.return_value = None
         self.mock_monitor.processing_input.is_set.return_value = False
         self.mock_monitor.process.stdout = MagicMock(spec=sys.stdout)
+        self.mock_monitor.process.stdout.fileno.return_value = 1  # Added to fix TypeError
         self.mock_monitor.process.stdout.readline.return_value = "Test output\n"
 
         # Run
