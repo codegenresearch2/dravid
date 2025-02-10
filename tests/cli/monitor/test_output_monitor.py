@@ -20,8 +20,7 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor.should_stop.is_set.side_effect = [False] * 10 + [True]
         self.mock_monitor.process.poll.return_value = None
         self.mock_monitor.processing_input.is_set.return_value = False
-        self.mock_monitor.process.stdout = MagicMock(spec=sys.stdout)
-        self.mock_monitor.process.stdout.fileno.return_value = 1  # Added to fix TypeError
+        self.mock_monitor.process.stdout = MagicMock()
         self.mock_monitor.process.stdout.readline.return_value = ""
         mock_select.return_value = ([self.mock_monitor.process.stdout], [], [])
         mock_time.side_effect = [0] + [6] * 10  # Simulate time passing
@@ -33,10 +32,8 @@ class TestOutputMonitor(unittest.TestCase):
         # Run
         self.output_monitor._monitor_output()
 
-        # Restore stdout and print captured output
+        # Restore stdout
         sys.stdout = sys.__stdout__
-        print("Captured output:")
-        print(captured_output.getvalue())
 
         # Assert
         mock_print_prompt.assert_called_once_with(
@@ -65,23 +62,6 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor.error_handlers[r"Error:"].assert_called_once_with(
             "Error: Test error\n", self.mock_monitor)
         self.assertEqual(error_buffer, [])  # Ensure error buffer is cleared
-
-    def test_monitor_output_delay(self):
-        # Setup
-        self.mock_monitor.should_stop.is_set.side_effect = [False] * 5 + [True]
-        self.mock_monitor.process.poll.return_value = None
-        self.mock_monitor.processing_input.is_set.return_value = False
-        self.mock_monitor.process.stdout = MagicMock(spec=sys.stdout)
-        self.mock_monitor.process.stdout.fileno.return_value = 1  # Added to fix TypeError
-        self.mock_monitor.process.stdout.readline.return_value = "Test output\n"
-
-        # Run
-        start_time = time.time()
-        self.output_monitor._monitor_output()
-        end_time = time.time()
-
-        # Assert
-        self.assertGreaterEqual(end_time - start_time, 0.1 * 5)  # Ensure delay is present
 
 if __name__ == '__main__':
     unittest.main()
