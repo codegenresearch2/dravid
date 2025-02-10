@@ -42,7 +42,7 @@ def to_thread(func, *args, **kwargs):
 async def process_single_file(filename, content, project_context, folder_structure, testing=False):
     try:
         if not testing and 'CLAUDE_API_KEY' not in os.environ:
-            error_message = "Error: CLAUDE_API_KEY not found in the environment variables"
+            error_message = f"Error: CLAUDE_API_KEY not found in the environment variables for file {filename}"
             print_error(error_message)
             return filename, "unknown", error_message, "", ""
 
@@ -65,17 +65,17 @@ async def process_single_file(filename, content, project_context, folder_structu
         print_success(f"Processed: {filename}")
         return filename, file_type, summary, exports, imports
     except Exception as e:
-        error_message = f"Error: {str(e)}"
+        error_message = f"Error processing {filename}: {str(e)}"
         print_error(error_message)
         return filename, "unknown", error_message, "", ""
 
-async def process_files(files, project_context, folder_structure, testing=False):
+async def process_files(files, project_context, folder_structure):
     total_files = len(files)
     print_info(f"Processing {total_files} files to construct metadata per file")
     print_info(f"LLM calls to be made: {total_files}")
 
     async def process_batch(batch):
-        tasks = [process_single_file(filename, content, project_context, folder_structure, testing) for filename, content in batch]
+        tasks = [process_single_file(filename, content, project_context, folder_structure) for filename, content in batch]
         return await asyncio.gather(*tasks)
 
     batch_size = MAX_CONCURRENT_REQUESTS
