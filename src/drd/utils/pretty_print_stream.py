@@ -14,12 +14,13 @@ def pretty_print_xml_stream(chunk, state):
         # Check if we're currently processing a step
         if not state.get('in_step'):
             # Try to find and process an explanation tag
-            match = re.search(r'<\s*explanation\s*>(.*?)<\s*/\s*explanation\s*>', state['buffer'], re.DOTALL | re.IGNORECASE)
-            if match:
+            explanation_match = re.search(r'<\s*explanation\s*>(.*?)<\s*/\s*explanation\s*>', state['buffer'], re.DOTALL | re.IGNORECASE)
+            if explanation_match:
                 # Print the explanation and remove it from the buffer
+                explanation = explanation_match.group(1).strip()
                 click.echo(click.style("\nð Explanation:", fg="green", bold=True), nl=False)
-                click.echo(f" {match.group(1).strip()}")
-                state['buffer'] = state['buffer'][match.end():]
+                click.echo(f" {explanation}")
+                state['buffer'] = state['buffer'][explanation_match.end():]
                 continue
 
             # Look for the start of a step tag
@@ -48,22 +49,26 @@ def pretty_print_xml_stream(chunk, state):
                         operation_match = re.search(r'<\s*operation\s*>(.*?)<\s*/\s*operation\s*>', step_content, re.DOTALL | re.IGNORECASE)
                         filename_match = re.search(r'<\s*filename\s*>(.*?)<\s*/\s*filename\s*>', step_content, re.DOTALL | re.IGNORECASE)
                         if operation_match and filename_match:
+                            operation = operation_match.group(1).strip()
+                            filename = filename_match.group(1).strip()
                             click.echo(click.style("\nð File Operation:", fg="yellow", bold=True), nl=False)
-                            click.echo(f" {operation_match.group(1).strip()} {filename_match.group(1).strip()}")
+                            click.echo(f" {operation} {filename}")
 
                         # Try to find and print CDATA content
                         cdata_start = step_content.find("<![CDATA[")
                         if cdata_start != -1:
                             cdata_end = step_content.rfind("]]>")
                             if cdata_end != -1:
+                                cdata_content = step_content[cdata_start+9:cdata_end]
                                 click.echo(click.style("\nð File Content:", fg="cyan", bold=True))
-                                click.echo(step_content[cdata_start+9:cdata_end])
+                                click.echo(cdata_content)
                     elif step_type == 'shell':
                         # Extract and print the shell command
                         command_match = re.search(r'<\s*command\s*>(.*?)<\s*/\s*command\s*>', step_content, re.DOTALL | re.IGNORECASE)
                         if command_match:
+                            command = command_match.group(1).strip()
                             click.echo(click.style("\nð» Shell Command:", fg="blue", bold=True), nl=False)
-                            click.echo(f" {command_match.group(1).strip()}")
+                            click.echo(f" {command}")
                 continue
 
         # If we've reached this point, we couldn't process anything in this iteration
