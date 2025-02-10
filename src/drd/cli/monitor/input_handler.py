@@ -38,17 +38,13 @@ class InputHandler:
                 self.monitor.processing_input.clear()
 
     def _handle_vision_input(self):
-        print_info(
-            "Enter the image path and instructions (use Tab for autocomplete):")
-        self.monitor.processing_input.set()  # Set processing_input flag after printing the prompt
+        print_info("Enter the image path and instructions (use Tab for autocomplete):")
+        self.monitor.processing_input.set()
         user_input = self._get_input_with_autocomplete()
-        try:
-            self._handle_general_input(user_input)
-        finally:
-            self.monitor.processing_input.clear()
+        self._handle_general_input(user_input)
+        self.monitor.processing_input.clear()
 
     def _handle_general_input(self, user_input):
-        # Regex to extract image path and instructions
         image_pattern = r"([a-zA-Z0-9._/-]+(?:/|\\)?)+\.(jpg|jpeg|png|bmp|gif)"
         match = re.search(image_pattern, user_input)
         instruction_prompt = get_instruction_prompt()
@@ -62,25 +58,20 @@ class InputHandler:
                 print_error(f"Image file not found: {image_path}")
                 return
 
-            try:
-                print_info(f"Processing image: {image_path}")
-                print_info(f"With instructions: {instructions}")
-                execute_dravid_command(
-                    instructions, image_path, False, instruction_prompt, warn=False)
-            except Exception as e:
-                print_error(f"Error processing image input: {str(e)}")
+            print_info(f"Processing image: {image_path}")
+            print_info(f"With instructions: {instructions}")
+            execute_dravid_command(instructions, image_path, False, instruction_prompt, warn=False)
         else:
-            # If no image path is found, execute the command with the entire user input
             execute_dravid_command(user_input, None, False, instruction_prompt, warn=False)
 
     def _get_input_with_autocomplete(self):
         current_input = ""
         while True:
             char = click.getchar()
-            if char == '\r':  # Enter key
-                print()  # Move to next line
+            if char == '\r':
+                print()
                 return current_input
-            elif char == '\t':  # Tab key
+            elif char == '\t':
                 completions = self._autocomplete(current_input)
                 if len(completions) == 1:
                     current_input = completions[0]
@@ -93,7 +84,7 @@ class InputHandler:
             elif char.isprintable():
                 current_input += char
                 click.echo(char, nl=False)
-            elif char == '\x7f':  # Backspace
+            elif char == '\x7f':
                 if current_input:
                     current_input = current_input[:-1]
                     click.echo("\b \b", nl=False)
