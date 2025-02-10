@@ -36,8 +36,11 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
         logger.debug(f'Total time: {total_time:.4f} seconds')
         logger.debug(f'Acquire times: {acquire_times}')
 
+        # Assert that the first 3 calls were almost instantaneous
         self.assertLess(acquire_times[2] - acquire_times[0], 0.1)
+        # Assert that the 4th call was delayed
         self.assertGreater(acquire_times[3] - acquire_times[2], 0.9)
+        # Assert that the total time is at least 1 second
         self.assertGreater(total_time, 0.9)
 
     @patch('drd.metadata.rate_limit_handler.call_dravid_api_with_pagination')
@@ -49,6 +52,7 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         result = await process_single_file("test.py", "print('Hello')", "Test project", {"test.py": "file"})
 
+        # Assert that the result matches the expected format and content
         self.assertEqual(result, ("test.py", "python", "A test file", "test_function", "os, sys"))
         mock_call_api.assert_called_once()
         mock_extract_xml.assert_called_once_with(mock_call_api.return_value)
@@ -60,6 +64,7 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         result = await process_single_file("test.py", "print('Hello')", "Test project", {"test.py": "file"})
 
+        # Assert that the result matches the expected format and content in case of an error
         self.assertEqual(result[0], "test.py")
         self.assertEqual(result[1], "unknown")
         self.assertTrue(result[2].startswith("Error:"))
@@ -79,6 +84,7 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         results = await process_files(files, project_context, folder_structure)
 
+        # Assert that the results match the expected format and content
         self.assertEqual(len(results), 2)
         self.assertEqual(results[0], ("file1.py", "python", "File 1", "func1", "os"))
         self.assertEqual(results[1], ("file2.py", "python", "File 2", "func2", "sys"))
@@ -99,4 +105,5 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
         await process_files(files, project_context, folder_structure)
         end_time = time.time()
 
+        # Assert that the processing time is within the expected range
         self.assertLess(end_time - start_time, 0.3)
