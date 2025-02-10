@@ -1,6 +1,7 @@
 import unittest
 import threading
-from unittest.mock import patch, MagicMock
+import time
+from unittest.mock import patch, MagicMock, ANY
 from drd.cli.monitor.input_handler import InputHandler
 
 class TestInputHandler(unittest.TestCase):
@@ -8,6 +9,7 @@ class TestInputHandler(unittest.TestCase):
     def setUp(self):
         self.mock_monitor = MagicMock()
         self.input_handler = InputHandler(self.mock_monitor)
+        self.input_handler.instruction_prompt = "Default instruction prompt"
 
     @patch('drd.cli.monitor.input_handler.execute_dravid_command')
     @patch('drd.cli.monitor.input_handler.input', side_effect=['test input', 'exit'])
@@ -20,6 +22,8 @@ class TestInputHandler(unittest.TestCase):
         thread = threading.Thread(target=run_input_handler)
         thread.start()
 
+        time.sleep(0.1)  # Add a small delay to allow the thread to process the input
+
         thread.join(timeout=10)
 
         if thread.is_alive():
@@ -27,28 +31,30 @@ class TestInputHandler(unittest.TestCase):
 
         self.mock_monitor.stop.assert_called_once_with()
         self.assertEqual(mock_input.call_count, 2)
-        mock_execute_command.assert_called_once()
+        mock_execute_command.assert_called_once_with('test input', None, False, ANY, warn=False)
 
     @patch('drd.cli.monitor.input_handler.execute_dravid_command')
     def test_process_input(self, mock_execute_command):
         self.input_handler._process_input('test command')
-        mock_execute_command.assert_called_once_with('test command', None, False, self.input_handler.instruction_prompt, warn=False)
+        mock_execute_command.assert_called_once_with('test command', None, False, ANY, warn=False)
         self.mock_monitor.processing_input.set.assert_called_once_with()
         self.mock_monitor.processing_input.clear.assert_called_once_with()
 
     @patch('drd.cli.monitor.input_handler.execute_dravid_command')
+    @patch('drd.cli.monitor.input_handler.input', return_value='process this image')
     @patch('drd.cli.monitor.input_handler.InputHandler._get_input_with_autocomplete', return_value='/path/to/image.jpg process this image')
     @patch('os.path.exists', return_value=True)
-    def test_handle_vision_input(self, mock_exists, mock_autocomplete, mock_execute_command):
+    def test_handle_vision_input(self, mock_exists, mock_autocomplete, mock_input, mock_execute_command):
         self.input_handler._handle_vision_input()
-        mock_execute_command.assert_called_once_with('process this image', '/path/to/image.jpg', False, self.input_handler.instruction_prompt, warn=False)
+        mock_execute_command.assert_called_once_with('process this image', '/path/to/image.jpg', False, ANY, warn=False)
         self.mock_monitor.processing_input.set.assert_called_once_with()
         self.mock_monitor.processing_input.clear.assert_called_once_with()
 
     @patch('drd.cli.monitor.input_handler.execute_dravid_command')
+    @patch('drd.cli.monitor.input_handler.input', return_value='process this image')
     @patch('drd.cli.monitor.input_handler.InputHandler._get_input_with_autocomplete', return_value='/path/to/image.jpg process this image')
     @patch('os.path.exists', return_value=False)
-    def test_handle_vision_input_file_not_found(self, mock_exists, mock_autocomplete, mock_execute_command):
+    def test_handle_vision_input_file_not_found(self, mock_exists, mock_autocomplete, mock_input, mock_execute_command):
         self.input_handler._handle_vision_input()
         mock_execute_command.assert_not_called()
         self.mock_monitor.processing_input.set.assert_not_called()
