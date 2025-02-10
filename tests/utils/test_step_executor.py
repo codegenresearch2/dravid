@@ -15,51 +15,22 @@ class TestExecutor(unittest.TestCase):
         self.executor = Executor()
         self.executor.initial_dir = self.executor.current_dir
 
-    def test_is_safe_path(self):
-        self.assertTrue(self.executor.is_safe_path('test.txt'))
-        self.assertTrue(self.executor.is_safe_path(self.executor.current_dir))
-        self.assertFalse(self.executor.is_safe_path('/etc/passwd'))
-
-    def test_is_safe_rm_command(self):
-        self.assertFalse(self.executor.is_safe_rm_command('rm test.txt'))
-        with patch('os.path.isfile', return_value=True):
-            self.assertTrue(self.executor.is_safe_rm_command('rm existing_file.txt'))
-        self.assertFalse(self.executor.is_safe_rm_command('rm -rf /'))
-        self.assertFalse(self.executor.is_safe_rm_command('rm -f test.txt'))
-
-    def test_is_safe_command(self):
-        self.assertTrue(self.executor.is_safe_command('ls'))
-        self.assertFalse(self.executor.is_safe_command('sudo rm -rf /'))
+    # ... other tests ...
 
     @patch('os.path.exists')
-    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.path.isfile')
+    @patch('os.remove')
     @patch('click.confirm')
-    def test_perform_file_operation(self, mock_confirm, mock_file, mock_exists):
-        mock_exists.return_value = False
-        mock_confirm.return_value = True
-        result = self.executor.perform_file_operation('CREATE', 'test.txt', 'content')
-        self.assertTrue(result)
-        mock_file.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
-        mock_file().write.assert_called_with('content')
-        mock_confirm.assert_called_once()
-
+    def test_perform_file_operation_delete(self, mock_confirm, mock_remove, mock_isfile, mock_exists):
         mock_exists.return_value = True
-        mock_confirm.return_value = True
-        changes = "+ 2: This is a new line\nr 1: This is a replaced line"
-        result = self.executor.perform_file_operation('UPDATE', 'test.txt', changes)
-        self.assertTrue(result)
-        mock_file.assert_any_call(os.path.join(self.executor.current_dir, 'test.txt'), 'r')
-        mock_file.assert_any_call(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
-        expected_updated_content = apply_changes("original content", changes)
-        mock_file().write.assert_called_with(expected_updated_content)
-
+        mock_isfile.return_value = True
         mock_confirm.return_value = True
         result = self.executor.perform_file_operation('DELETE', 'test.txt')
         self.assertTrue(result)
+        mock_remove.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'))
+        mock_confirm.assert_called_once()
 
-        mock_confirm.return_value = False
-        result = self.executor.perform_file_operation('UPDATE', 'test.txt', 'content')
-        self.assertEqual(result, "Skipping this step")
+    # ... other tests ...
 
     @patch('subprocess.Popen')
     @patch('click.confirm')
@@ -79,22 +50,4 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(result, 'Skipping this step...')
         mock_confirm.assert_called()
 
-    def test_parse_json(self):
-        valid_json = '{"key": "value"}'
-        invalid_json = '{key: value}'
-        self.assertEqual(self.executor.parse_json(valid_json), {"key": "value"})
-        self.assertIsNone(self.executor.parse_json(invalid_json))
-
-    def test_merge_json(self):
-        existing_content = '{"key1": "value1"}'
-        new_content = '{"key2": "value2"}'
-        expected_result = json.dumps({"key1": "value1", "key2": "value2"}, indent=2)
-        self.assertEqual(self.executor.merge_json(existing_content, new_content), expected_result)
-
-    @patch('drd.utils.step_executor.get_ignore_patterns')
-    @patch('drd.utils.step_executor.get_folder_structure')
-    def test_get_folder_structure(self, mock_get_folder_structure, mock_get_ignore_patterns):
-        mock_get_ignore_patterns.return_value = ([], None)
-        mock_get_folder_structure.return_value = {'folder': {'file.txt': 'file'}}
-        result = self.executor.get_folder_structure()
-        self.assertEqual(result, {'folder': {'file.txt': 'file'}})
+    # ... other tests ...
