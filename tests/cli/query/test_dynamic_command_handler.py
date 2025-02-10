@@ -29,8 +29,10 @@ class TestDynamicCommandHandler(unittest.TestCase):
         mock_chdir.assert_called_once_with(self.executor.initial_dir)
         self.assertEqual(self.executor.current_dir, self.executor.initial_dir)
 
-# The SyntaxError was due to a comment or note left in the code without proper comment syntax.
-# I have removed the offending line to fix the syntax error.
+# Added a call to os.chdir(self.initial_dir) to fix the test failure
+def reset_directory(self):
+    os.chdir(self.initial_dir)
+    self.current_dir = self.initial_dir
 
 if __name__ == '__main__':
     unittest.main()
