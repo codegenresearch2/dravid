@@ -2,10 +2,8 @@ import traceback
 import click
 from ...api.main import call_dravid_api
 from ...utils import print_error, print_success, print_info, print_step, print_debug
-from ...metadata.common_utils import generate_file_description
+from ...metadata.common_utils import generate_file_description, analyze_file
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
-from unittest.mock import patch
-import xml.etree.ElementTree as ET
 
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
@@ -81,15 +79,17 @@ def handle_metadata_operation(cmd, metadata_manager, executor):
     else:
         raise Exception(f'Unknown operation: {cmd["operation"]}')
 
-@patch('drd.metadata.common_utils.analyze_file')
-def update_file_metadata(mock_analyze_file, cmd, metadata_manager, executor):
+def update_file_metadata(cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
     try:
-        mock_analyze_file.return_value = {'file_type': 'python', 'description': 'Test description', 'exports': []}
-        file_type, description, exports = generate_file_description(cmd['filename'], cmd.get('content', ''), project_context)
-        metadata_manager.update_file_metadata(cmd['filename'], file_type, cmd.get('content', ''), description, exports)
-    except ET.ParseError as e:
-        print_error(f'Error parsing XML response: {str(e)}')
+        file_info = analyze_file(cmd['filename'], cmd.get('content', ''), project_context)
+        if 'file_type' in file_info and 'description' in file_info and 'exports' in file_info:
+            metadata_manager.update_file_metadata(cmd['filename'], file_info['file_type'], cmd.get('content', ''), file_info['description'], file_info['exports'])
+        else:
+            print_error(f'Incomplete file information for {cmd["filename"]}')
+            return False
+    except Exception as e:
+        print_error(f'Error updating metadata for {cmd["filename"]}: {str(e)}')
         return False
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context='', debug=False):
