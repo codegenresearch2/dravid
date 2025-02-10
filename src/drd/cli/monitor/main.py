@@ -6,7 +6,7 @@ from ...utils import print_info, print_error, print_prompt
 
 
 def run_dev_server_with_monitoring(command: str):
-    print_info("Starting server monitor...")
+    print_info("🚀 Starting server monitor...")
     error_handlers = {
         r"(?:Cannot find module|Module not found|ImportError|No module named)": handle_module_not_found,
         r"(?:SyntaxError|Expected|Unexpected token)": handle_syntax_error,
@@ -16,12 +16,12 @@ def run_dev_server_with_monitoring(command: str):
     monitor = DevServerMonitor(current_dir, error_handlers, command)
     try:
         monitor.start()
-        print_prompt("Server monitor started. Press Ctrl+C to stop.")
+        print_prompt("🔄 Server monitor started. Press Ctrl+C to stop.")
         while not monitor.should_stop.is_set():
             pass
-        print_info("Server monitor has ended.")
+        print_info("✅ Server monitor has ended.")
     except KeyboardInterrupt:
-        print_prompt("Stopping server...")
+        print_prompt("⚠️ Stopping server...")
     finally:
         monitor.stop()
 
@@ -36,10 +36,10 @@ def handle_module_not_found(error_msg, monitor):
 
 
 def handle_syntax_error(error_msg, monitor):
-    error = SyntaxError("Syntax error detected")
+    error = SyntaxError(f"Syntax error detected: {error_msg}")
     monitoring_handle_error_with_dravid(error, error_msg, monitor)
 
 
 def handle_general_error(error_msg, monitor):
-    error = Exception("General error detected")
+    error = Exception(f"General error detected: {error_msg}")
     monitoring_handle_error_with_dravid(error, error_msg, monitor)
