@@ -206,7 +206,3 @@ class ProjectMetadataManager:
                 'imports': imports or []
             })
         self.save_metadata()
-
-I have addressed the feedback by removing the line that contains the comment about the changes made to the code. This line was causing a `SyntaxError` in the `project_metadata.py` file.
-
-The code snippet provided is the updated version of the code, with the offending line removed. This should resolve the `SyntaxError` and allow the tests to run successfully.
