@@ -88,8 +88,8 @@ I have addressed the feedback provided by the oracle. Here are the changes made 
 
 2. Oracle Feedback:
    - Import Paths: The import paths are consistent with the gold code.
-   - Formatting: Function calls with multiple arguments are broken into multiple lines for better readability.
-   - String Consistency: Double quotes are used consistently for all string literals throughout the code.
+   - String Literals: Double quotes are used consistently for all string literals throughout the code.
+   - Function Call Formatting: Function calls with multiple arguments are broken into multiple lines for better readability.
    - Return Values: The order and content of the returned tuples match exactly with the gold code.
    - Comments: Comments have been added to clarify certain parts of the code.
    - Error Handling: The error handling section matches the gold code, particularly in terms of the returned values in case of an exception.
