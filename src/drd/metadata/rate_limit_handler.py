@@ -2,10 +2,10 @@ import functools
 import sys
 import asyncio
 import time
-from drd.api.main import call_dravid_api_with_pagination
-from drd.utils.parser import extract_and_parse_xml
-from drd.prompts.file_metadata_desc_prompts import get_file_metadata_prompt
-from drd.utils.utils import print_info, print_error, print_success, print_warning
+from ..api.main import call_dravid_api_with_pagination
+from ..utils.parser import extract_and_parse_xml
+from ..prompts.file_metadata_desc_prompts import get_file_metadata_prompt
+from ..utils.utils import print_info, print_error, print_success, print_warning
 
 MAX_CONCURRENT_REQUESTS = 10
 MAX_CALLS_PER_MINUTE = 100
@@ -38,7 +38,8 @@ def to_thread(func, *args, **kwargs):
         return loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
 async def process_single_file(filename, content, project_context, folder_structure):
-    metadata_query = get_file_metadata_prompt(filename, content, project_context, folder_structure)
+    metadata_query = get_file_metadata_prompt(
+        filename, content, project_context, folder_structure)
     try:
         async with rate_limiter.semaphore:
             await rate_limiter.acquire()
@@ -51,7 +52,7 @@ async def process_single_file(filename, content, project_context, folder_structu
         imports_elem = root.find('.//imports')
 
         file_type = type_elem.text.strip() if type_elem is not None and type_elem.text else "unknown"
-        summary = summary_elem.text.strip() if summary_elem is not None and summary_elem.text else "No description available"
+        summary = summary_elem.text.strip() if summary_elem is not None and summary_elem.text else "No summary available"
         exports = exports_elem.text.strip() if exports_elem is not None and exports_elem.text else ""
         imports = imports_elem.text.strip() if imports_elem is not None and imports_elem.text else ""
 
@@ -67,7 +68,8 @@ async def process_files(files, project_context, folder_structure):
     print_info(f"LLM calls to be made: {total_files}")
 
     async def process_batch(batch):
-        tasks = [process_single_file(filename, content, project_context, folder_structure) for filename, content in batch]
+        tasks = [process_single_file(filename, content, project_context, folder_structure)
+                 for filename, content in batch]
         return await asyncio.gather(*tasks)
 
     batch_size = MAX_CONCURRENT_REQUESTS
