@@ -14,7 +14,6 @@ from drd.utils.utils import (
     print_step,
 )
 
-
 class TestUtilityFunctions(unittest.TestCase):
 
     def setUp(self):
@@ -26,26 +25,22 @@ class TestUtilityFunctions(unittest.TestCase):
     @patch('click.echo')
     def test_print_error(self, mock_echo):
         print_error("Test error message")
-        mock_echo.assert_called_with(
-            f"{Fore.RED}✘ Test error message{Style.RESET_ALL}")
+        mock_echo.assert_called_with(f"{Fore.RED}❌ Test error message{Style.RESET_ALL}")
 
     @patch('click.echo')
     def test_print_success(self, mock_echo):
         print_success("Test success message")
-        mock_echo.assert_called_with(
-            f"{Fore.GREEN}✔ Test success message{Style.RESET_ALL}")
+        mock_echo.assert_called_with(f"{Fore.GREEN}✅ Test success message{Style.RESET_ALL}")
 
     @patch('click.echo')
     def test_print_info(self, mock_echo):
         print_info("Test info message")
-        mock_echo.assert_called_with(
-            f"{Fore.BLUE} Test info message{Style.RESET_ALL}")
+        mock_echo.assert_called_with(f"{Fore.YELLOW}ℹ️ Test info message{Style.RESET_ALL}")
 
     @patch('click.echo')
     def test_print_warning(self, mock_echo):
         print_warning("Test warning message")
-        mock_echo.assert_called_with(
-            f"{Fore.YELLOW}⚠ Test warning message{Style.RESET_ALL}")
+        mock_echo.assert_called_with(f"{Fore.YELLOW}⚠️ Test warning message{Style.RESET_ALL}")
 
     @patch('click.echo')
     @patch('click.style')
@@ -57,5 +52,4 @@ class TestUtilityFunctions(unittest.TestCase):
     @patch('click.echo')
     def test_print_step(self, mock_echo):
         print_step(1, 5, "Test step message")
-        mock_echo.assert_called_with(
-            f"{Fore.CYAN}[1/5] Test step message{Style.RESET_ALL}")
+        mock_echo.assert_called_with(f"{Fore.CYAN}[1/5] 📝 Test step message{Style.RESET_ALL}")
