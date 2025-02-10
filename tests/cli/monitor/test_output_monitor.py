@@ -32,10 +32,8 @@ class TestOutputMonitor(unittest.TestCase):
         # Run
         self.output_monitor._monitor_output()
 
-        # Restore stdout and print captured output
+        # Restore stdout
         sys.stdout = sys.__stdout__
-        print("Captured output:")
-        print(captured_output.getvalue())
 
         # Assert
         mock_print_prompt.assert_called_once_with(
