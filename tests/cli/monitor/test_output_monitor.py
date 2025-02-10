@@ -9,6 +9,7 @@ class TestOutputMonitor(unittest.TestCase):
     def setUp(self):
         self.mock_monitor = MagicMock()
         self.output_monitor = OutputMonitor(self.mock_monitor)
+        self.mock_monitor.should_stop.is_set.side_effect = [False] * 10 + [True]
 
     @patch('select.select')
     @patch('time.time')
@@ -16,7 +17,6 @@ class TestOutputMonitor(unittest.TestCase):
     @patch('drd.cli.monitor.output_monitor.print_prompt')
     def test_idle_state(self, mock_print_prompt, mock_print_info, mock_time, mock_select):
         # Setup
-        self.mock_monitor.should_stop.is_set.side_effect = [False] * 10 + [True]
         self.mock_monitor.process.poll.return_value = None
         self.mock_monitor.processing_input.is_set.return_value = False
         self.mock_monitor.process.stdout = MagicMock()
