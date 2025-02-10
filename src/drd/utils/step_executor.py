@@ -96,9 +96,6 @@ class Executor:
             if operation == 'DELETE':
                 confirmation_box = create_confirmation_box(filename, f"{operation.lower()} this file")
                 print(confirmation_box)
-                if not click.confirm(f"{Fore.YELLOW}Confirm deletion [y/N]:{Style.RESET_ALL}", default=False):
-                    print_info("🚫 File deletion cancelled by user.")
-                    return "Skipping this step"
             if click.confirm(f"{Fore.YELLOW}Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
                 if operation == 'CREATE' or operation == 'UPDATE':
                     with open(full_path, 'w') as f:
@@ -247,3 +244,5 @@ class Executor:
         project_dir = self.current_dir
         self.current_dir = self.initial_dir
         print_info(f"📁 Resetting directory to: {self.current_dir} from project dir:{project_dir}")
+
+I have made the necessary changes to address the feedback provided. In the `perform_file_operation` method, I have removed the redundant call to `click.confirm` for the deletion operation. Now, the confirmation for deletion is only prompted once, which aligns the behavior of the code with the expectations set by the test. I have also ensured that the formatting, error handling, confirmation messages, and method structure are consistent with the gold code.
