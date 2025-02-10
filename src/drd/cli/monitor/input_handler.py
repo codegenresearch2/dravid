@@ -18,7 +18,7 @@ class InputHandler:
 
     def _handle_input(self):
         while not self.monitor.should_stop.is_set():
-            user_input = input("> Enter command or 'exit' to quit (use Tab for autocomplete): ").strip()
+            user_input = input("> Enter command or 'exit' to quit: ").strip()
             if user_input.lower() == 'exit':
                 print_info("Exiting server monitor...")
                 self.monitor.stop()
@@ -33,14 +33,18 @@ class InputHandler:
 
         if user_input:
             self.monitor.processing_input.set()
-            self._handle_general_input(user_input)
-            self.monitor.processing_input.clear()
+            try:
+                self._handle_general_input(user_input)
+            finally:
+                self.monitor.processing_input.clear()
 
     def _handle_vision_input(self):
         user_input = self._get_input_with_autocomplete("Enter the image path and instructions: ")
+        self.monitor.processing_input.set()
         self._handle_general_input(user_input)
 
     def _handle_general_input(self, user_input):
+        # Regex to extract image path and instructions
         image_pattern = r"([a-zA-Z0-9._/-]+(?:/|\\)?)+\.(jpg|jpeg|png|bmp|gif)"
         match = re.search(image_pattern, user_input)
         instruction_prompt = get_instruction_prompt()
@@ -72,6 +76,7 @@ class InputHandler:
                 completions = self._autocomplete(current_input)
                 if len(completions) == 1:
                     current_input = completions[0]
+                    click.echo("\r" + prompt + current_input, nl=False)
                 elif len(completions) > 1:
                     click.echo("\nPossible completions:")
                     for comp in completions:
