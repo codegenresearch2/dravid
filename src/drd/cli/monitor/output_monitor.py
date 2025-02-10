@@ -78,13 +78,13 @@ class OutputMonitor:
             not self.idle_prompt_shown and
                 not self.monitor.processing_input.is_set()):
             print_prompt("\nNo more tasks to auto-process. What can I do next?")
-            print_info("\nAvailable actions:")
-            print_info("1. Give a coding instruction to perform")
-            print_info("2. Process an image (type 'vision')")
-            print_info("3. Exit monitoring mode (type 'exit')")
-            print_prompt("\nType your choice or command:")
-            print("> ", end="", flush=True)
+            self._show_options()
             self.idle_prompt_shown = True
 
     def _show_options(self):
-        pass  # This method is not needed as the options are already shown in _check_idle_state
+        print_info("\nAvailable actions:")
+        print_info("1. Give a coding instruction to perform")
+        print_info("2. Process an image (type 'vision')")
+        print_info("3. Exit monitoring mode (type 'exit')")
+        print_prompt("\nType your choice or command:")
+        print("> ", end="", flush=True)
