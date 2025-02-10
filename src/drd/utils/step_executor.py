@@ -10,12 +10,10 @@ from .diff import preview_file_changes
 from .apply_file_changes import apply_changes
 from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
 
-
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
         self.allowed_directories = [self.current_dir, '/fake/path']
-
         self.initial_dir = self.current_dir
         self.disallowed_commands = [
             'rmdir', 'del', 'format', 'mkfs',
@@ -32,16 +30,11 @@ class Executor:
         parts = command.split()
         if parts[0] != 'rm':
             return False
-
-        # Check for dangerous flags
         dangerous_flags = ['-r', '-f', '-rf', '-fr']
         if any(flag in parts for flag in dangerous_flags):
             return False
-
-        # Check if it's removing a specific file
         if len(parts) != 2:
             return False
-
         file_to_remove = parts[1]
         return self.is_safe_path(file_to_remove) and os.path.isfile(os.path.join(self.current_dir, file_to_remove))
 
@@ -58,7 +51,7 @@ class Executor:
             confirmation_box = create_confirmation_box(
                 filename, f"File operation is being carried out outside of the project directory. {operation.lower()} this file")
             print(confirmation_box)
-            if not click.confirm(f"{Fore.YELLOW}Confirm {operation.lower()} :{Style.RESET_ALL}", default=False):
+            if not click.confirm(f"{Fore.BLUE}Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
                 print_info(f"File {operation.lower()} cancelled by user.")
                 return "Skipping this step"
 
@@ -73,7 +66,7 @@ class Executor:
                 preview = preview_file_changes(
                     operation, filename, new_content=content)
                 print(preview)
-                if click.confirm(f"{Fore.YELLOW}Confirm creation {Style.RESET_ALL}", default=False):
+                if click.confirm(f"{Fore.BLUE}Confirm creation [y/N]:{Style.RESET_ALL}", default=False):
                     with open(full_path, 'w') as f:
                         f.write(content)
                     print_success(f"File created successfully: {filename}")
@@ -102,7 +95,7 @@ class Executor:
                         filename, f"{operation.lower()} this file")
                     print(confirmation_box)
 
-                    if click.confirm(f"{Fore.YELLOW}Confirm update {Style.RESET_ALL}", default=False):
+                    if click.confirm(f"{Fore.BLUE}Confirm update [y/N]:{Style.RESET_ALL}", default=False):
                         with open(full_path, 'w') as f:
                             f.write(updated_content)
                         print_success(f"File updated successfully: {filename}")
@@ -126,7 +119,7 @@ class Executor:
             confirmation_box = create_confirmation_box(
                 filename, f"{operation.lower()} this file")
             print(confirmation_box)
-            if click.confirm(f"{Fore.YELLOW}Confirm deletion {Style.RESET_ALL}", default=False):
+            if click.confirm(f"{Fore.BLUE}Confirm deletion [y/N]:{Style.RESET_ALL}", default=False):
                 try:
                     os.remove(full_path)
                     print_success(f"File deleted successfully: {filename}")
@@ -163,7 +156,7 @@ class Executor:
         ignore_patterns, _ = get_ignore_patterns(self.current_dir)
         return get_folder_structure(self.current_dir, ignore_patterns)
 
-    def execute_shell_command(self, command, timeout=300):  # 5 minutes timeout
+    def execute_shell_command(self, command, timeout=300):
         if not self.is_safe_command(command):
             print_warning(f"Please verify the command once: {command}")
 
@@ -171,9 +164,12 @@ class Executor:
             command, "execute this command")
         print(confirmation_box)
 
-        if not click.confirm(f"{Fore.YELLOW}Confirm execution {Style.RESET_ALL}", default=False):
+        if not click.confirm(f"{Fore.BLUE}Confirm execution [y/N]:{Style.RESET_ALL}", default=False):
             print_info("Command execution cancelled by user.")
             return 'Skipping this step...'
+
+        click.echo(
+            f"{Fore.BLUE}Executing shell command: {command}{Style.RESET_ALL}")
 
         if command.strip().startswith(('cd', 'chdir')):
             return self._handle_cd_command(command)
@@ -232,7 +228,6 @@ class Executor:
             raise Exception(error_message)
 
     def _handle_source_command(self, command):
-        # Extract the file path from the source command
         _, file_path = command.split(None, 1)
         file_path = os.path.expandvars(os.path.expanduser(file_path))
 
@@ -241,7 +236,6 @@ class Executor:
             print_error(error_message)
             raise Exception(error_message)
 
-        # Execute the source command in a subshell and capture the environment changes
         try:
             result = subprocess.run(
                 f'source {file_path} && env',
@@ -252,7 +246,6 @@ class Executor:
                 executable='/bin/bash'
             )
 
-            # Update the environment with any changes
             for line in result.stdout.splitlines():
                 if '=' in line:
                     key, value = line.split('=', 1)
@@ -268,17 +261,14 @@ class Executor:
     def _update_env_from_command(self, command):
         if '=' in command:
             if command.startswith('export '):
-                # Handle export command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
             elif command.startswith('set '):
-                # Handle set command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
             else:
-                # Handle simple assignment
                 key, value = command.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
 
