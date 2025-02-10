@@ -215,7 +215,7 @@ class ProjectMetadataManager:
         })
         self.save_metadata()
 
-    def update_file_metadata(self, filename, file_type, content, description=None, exports=None, imports=None):
+    def update_file_metadata(self, filename, file_type, content, summary=None, exports=None, imports=None):
         self.metadata['project_info']['last_updated'] = datetime.now().isoformat()
         file_entry = next(
             (f for f in self.metadata['key_files'] if f['path'] == filename), None)
@@ -224,7 +224,7 @@ class ProjectMetadataManager:
             self.metadata['key_files'].append(file_entry)
         file_entry.update({
             'type': file_type,
-            'summary': description or file_entry.get('summary', ''),
+            'summary': summary or file_entry.get('summary', ''),
             'exports': exports or [],
             'imports': imports or []
         })
