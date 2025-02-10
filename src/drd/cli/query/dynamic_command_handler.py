@@ -46,28 +46,30 @@ def format_error_message(i, total_steps, step_description, cmd, error_details):
 def handle_shell_command(i, total_steps, cmd, executor):
     output = executor.execute_shell_command(cmd['command'])
     if isinstance(output, str) and output.startswith("Skipping"):
+        print_info(f"Step {i}/{total_steps}: {output}")
         return f"Step {i}/{total_steps}: {output}"
     if output is None:
-        raise Exception(f"Command failed: {cmd['command']}")
+        output = "Command failed"
     return f"Step {i}/{total_steps}: Shell command - {cmd['command']}\nOutput: {output}"
 
 def handle_file_operation(i, total_steps, cmd, executor, metadata_manager):
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
     if isinstance(operation_performed, str) and operation_performed.startswith("Skipping"):
+        print_info(f"Step {i}/{total_steps}: {operation_performed}")
         return f"Step {i}/{total_steps}: {operation_performed}"
     elif operation_performed:
         if cmd['operation'] in ['CREATE', 'UPDATE']:
             update_file_metadata(cmd, metadata_manager, executor)
         return f"Step {i}/{total_steps}: File operation - {cmd['operation']} on {cmd['filename']}\nOutput: Success"
     else:
-        raise Exception(f"File operation failed: {cmd['operation']} on {cmd['filename']}")
+        return f"Step {i}/{total_steps}: File operation - {cmd['operation']} on {cmd['filename']}\nOutput: Failed"
 
 def handle_metadata_operation(i, total_steps, cmd, metadata_manager):
     if cmd['operation'] in ['CREATE', 'UPDATE']:
         update_file_metadata(cmd, metadata_manager)
         return f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} on {cmd['filename']}\nOutput: Success"
     else:
-        raise Exception(f"Unknown operation: {cmd['operation']}")
+        return f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} on {cmd['filename']}\nOutput: Unknown operation"
 
 def update_file_metadata(cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
