@@ -4,6 +4,7 @@ import json
 import click
 from colorama import Fore, Style
 import time
+import re
 from .utils import print_error, print_success, print_info, print_warning, create_confirmation_box
 from .diff import preview_file_changes
 from .apply_file_changes import apply_changes
@@ -51,14 +52,14 @@ class Executor:
             print(confirmation_box)
             if not click.confirm(f"{Fore.YELLOW}Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
                 print_info(f"File {operation.lower()} cancelled by user.")
-                return False
+                return "Operation cancelled"
 
         print_info(f"File: {filename}")
 
         if operation == 'CREATE':
             if os.path.exists(full_path) and not force:
                 print_info(f"File already exists: {filename}")
-                return False
+                return "File already exists"
             try:
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
                 preview = preview_file_changes(operation, filename, new_content=content)
@@ -67,18 +68,18 @@ class Executor:
                     with open(full_path, 'w') as f:
                         f.write(content)
                     print_success(f"File created successfully: {filename}")
-                    return True
+                    return "File created"
                 else:
                     print_info("File creation cancelled by user.")
-                    return False
+                    return "Operation cancelled"
             except Exception as e:
                 print_error(f"Error creating file: {str(e)}")
-                return False
+                return "Error creating file"
 
         elif operation == 'UPDATE':
             if not os.path.exists(full_path):
                 print_info(f"File does not exist: {filename}")
-                return False
+                return "File does not exist"
             try:
                 with open(full_path, 'r') as f:
                     original_content = f.read()
@@ -94,38 +95,38 @@ class Executor:
                         with open(full_path, 'w') as f:
                             f.write(updated_content)
                         print_success(f"File updated successfully: {filename}")
-                        return True
+                        return "File updated"
                     else:
                         print_info(f"File update cancelled by user.")
-                        return False
+                        return "Operation cancelled"
                 else:
                     print_error("No content or changes provided for update operation")
-                    return False
+                    return "No changes provided"
             except Exception as e:
                 print_error(f"Error updating file: {str(e)}")
-                return False
+                return "Error updating file"
 
         elif operation == 'DELETE':
             if not os.path.isfile(full_path):
                 print_info(f"Delete operation is only allowed for files: {filename}")
-                return False
+                return "Delete operation is only allowed for files"
             confirmation_box = create_confirmation_box(filename, f"{operation.lower()} this file")
             print(confirmation_box)
             if click.confirm(f"{Fore.YELLOW}Confirm deletion [y/N]:{Style.RESET_ALL}", default=False):
                 try:
                     os.remove(full_path)
                     print_success(f"File deleted successfully: {filename}")
-                    return True
+                    return "File deleted"
                 except Exception as e:
                     print_error(f"Error deleting file: {str(e)}")
-                    return False
+                    return "Error deleting file"
             else:
                 print_info("File deletion cancelled by user.")
-                return False
+                return "Operation cancelled"
 
         else:
             print_error(f"Unknown file operation: {operation}")
-            return False
+            return "Unknown file operation"
 
     def parse_json(self, json_string):
         try:
@@ -157,7 +158,7 @@ class Executor:
 
         if not click.confirm(f"{Fore.YELLOW}Confirm execution [y/N]:{Style.RESET_ALL}", default=False):
             print_info("Command execution cancelled by user.")
-            return 'Skipping this step...'
+            return "Command execution cancelled"
 
         click.echo(f"{Fore.YELLOW}Executing shell command: {command}{Style.RESET_ALL}")
 
@@ -190,7 +191,7 @@ class Executor:
                     process.terminate()
                     error_message = f"Command timed out after {timeout} seconds: {command}"
                     print_error(error_message)
-                    raise Exception(error_message)
+                    return "Command timed out"
 
                 line = process.stdout.readline()
                 if line:
@@ -205,7 +206,7 @@ class Executor:
             if return_code != 0:
                 error_message = f"Command failed with return code {return_code}\nError output: {stderr}"
                 print_error(error_message)
-                raise Exception(error_message)
+                return "Command failed"
 
             self._update_env_from_command(command)
 
@@ -215,7 +216,7 @@ class Executor:
         except Exception as e:
             error_message = f"Error executing command '{command}': {str(e)}"
             print_error(error_message)
-            raise Exception(error_message)
+            return "Error executing command"
 
     def _handle_source_command(self, command):
         _, file_path = command.split(None, 1)
@@ -224,7 +225,7 @@ class Executor:
         if not os.path.isfile(file_path):
             error_message = f"Source file not found: {file_path}"
             print_error(error_message)
-            raise Exception(error_message)
+            return "Source file not found"
 
         try:
             result = subprocess.run(
@@ -246,7 +247,7 @@ class Executor:
         except subprocess.CalledProcessError as e:
             error_message = f"Error executing source command: {str(e)}"
             print_error(error_message)
-            raise Exception(error_message)
+            return "Error executing source command"
 
     def _update_env_from_command(self, command):
         if '=' in command:
