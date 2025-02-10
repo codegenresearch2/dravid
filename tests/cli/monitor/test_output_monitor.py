@@ -4,16 +4,17 @@ import logging
 from unittest.mock import patch, MagicMock, call
 from io import StringIO
 from drd.cli.monitor.output_monitor import OutputMonitor
+from drd.utils import print_info, print_prompt
 
 def setup_logger():
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
 def print_command_details():
-    logging.info("\nAvailable actions:")
-    logging.info("1. Give a coding instruction to perform")
-    logging.info("2. Process an image (type 'vision')")
-    logging.info("3. Exit monitoring mode (type 'exit')")
-    logging.info("\nType your choice or command:")
+    print_info("\nAvailable actions:")
+    print_info("1. Give a coding instruction to perform")
+    print_info("2. Process an image (type 'vision')")
+    print_info("3. Exit monitoring mode (type 'exit')")
+    print_prompt("\nType your choice or command:")
 
 class TestOutputMonitor(unittest.TestCase):
 
@@ -24,7 +25,9 @@ class TestOutputMonitor(unittest.TestCase):
 
     @patch('select.select')
     @patch('time.time')
-    def test_idle_state(self, mock_time, mock_select):
+    @patch('drd.utils.print_info')
+    @patch('drd.utils.print_prompt')
+    def test_idle_state(self, mock_print_prompt, mock_print_info, mock_time, mock_select):
         # Setup
         self.mock_monitor.should_stop.is_set.side_effect = [False] * 10 + [True]
         self.mock_monitor.process.poll.return_value = None
@@ -34,19 +37,19 @@ class TestOutputMonitor(unittest.TestCase):
         mock_select.return_value = ([self.mock_monitor.process.stdout], [], [])
         mock_time.side_effect = [0] + [6] * 10  # Simulate time passing
 
-        # Capture stdout
-        captured_output = StringIO()
-        sys.stdout = captured_output
-
         # Run
         self.output_monitor._monitor_output()
 
-        # Restore stdout
-        sys.stdout = sys.__stdout__
-
         # Assert
-        self.assertIn("\nNo more tasks to auto-process. What can I do next?", captured_output.getvalue())
-        print_command_details()
+        expected_calls = [
+            call("\nNo more tasks to auto-process. What can I do next?"),
+            call("\nAvailable actions:"),
+            call("1. Give a coding instruction to perform"),
+            call("2. Process an image (type 'vision')"),
+            call("3. Exit monitoring mode (type 'exit')"),
+        ]
+        mock_print_info.assert_has_calls(expected_calls, any_order=True)
+        mock_print_prompt.assert_called_once_with("\nType your choice or command:")
 
     def test_check_for_errors(self):
         # Setup
