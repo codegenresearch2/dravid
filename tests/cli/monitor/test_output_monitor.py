@@ -46,9 +46,10 @@ class TestOutputMonitor(unittest.TestCase):
             call("1. Give a coding instruction to perform"),
             call("2. Process an image (type 'vision')"),
             call("3. Exit monitoring mode (type 'exit')"),
+            call("\nType your choice or command:")
         ]
         mock_print_prompt.assert_called_once_with("\nType your choice or command:")
-        mock_print_info.assert_has_calls(expected_calls, any_order=True)
+        mock_print_info.assert_has_calls(expected_calls, any_order=False)
 
     def test_check_for_errors(self):
         # Setup
