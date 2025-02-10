@@ -5,13 +5,7 @@ import fnmatch
 import xml.etree.ElementTree as ET
 import mimetypes
 from ..utils.utils import print_info, print_warning
-
-# Conditionally import the get_file_metadata_prompt function
-try:
-    from ..prompts.file_metadata_desc_prompts import get_file_metadata_prompt
-except ModuleNotFoundError:
-    get_file_metadata_prompt = None
-
+from ..prompts.file_metadata_desc_prompts import get_file_metadata_prompt
 from ..api import call_dravid_api_with_pagination
 
 class ProjectMetadataManager:
@@ -22,6 +16,35 @@ class ProjectMetadataManager:
         self.ignore_patterns = self.get_ignore_patterns()
         self.binary_extensions = {'.pyc', '.pyo', '.so', '.dll', '.exe', '.bin'}
         self.image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.ico'}
+
+    def load_metadata(self):
+        try:
+            with open(self.metadata_file, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return self.create_default_metadata()
+
+    def create_default_metadata(self):
+        return {
+            "project_info": {
+                "name": os.path.basename(self.project_dir),
+                "version": "1.0.0",
+                "description": "",
+                "last_updated": datetime.now().isoformat()
+            },
+            "environment": {
+                "primary_language": "",
+                "other_languages": [],
+                "primary_framework": "",
+                "runtime_version": ""
+            },
+            "directory_structure": {},
+            "key_files": [],
+            "external_dependencies": [],
+            "dev_server": {
+                "start_command": ""
+            }
+        }
 
     # ... rest of the code remains the same ...
 
@@ -44,36 +67,25 @@ class ProjectMetadataManager:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read()
 
-            # Check if get_file_metadata_prompt is available before using it
-            if get_file_metadata_prompt:
-                prompt = get_file_metadata_prompt(rel_path, content, json.dumps(self.metadata), json.dumps(self.metadata['directory_structure']))
-                response = call_dravid_api_with_pagination(prompt, include_context=True)
+            prompt = get_file_metadata_prompt(rel_path, content, json.dumps(self.metadata), json.dumps(self.metadata['directory_structure']))
+            response = call_dravid_api_with_pagination(prompt, include_context=True)
 
-                root = ET.fromstring(response)
-                metadata = root.find('metadata')
+            root = ET.fromstring(response)
+            metadata = root.find('metadata')
 
-                imports = metadata.find('imports').text.split(',') if metadata.find('imports').text != 'None' else []
-                file_info = {
-                    "path": rel_path,
-                    "type": metadata.find('type').text,
-                    "summary": metadata.find('description').text,
-                    "exports": metadata.find('exports').text.split(',') if metadata.find('exports').text != 'None' else [],
-                    "imports": imports
-                }
+            imports = metadata.find('imports').text.split(',') if metadata.find('imports').text != 'None' else []
+            file_info = {
+                "path": rel_path,
+                "type": metadata.find('type').text,
+                "summary": metadata.find('description').text,
+                "exports": metadata.find('exports').text.split(',') if metadata.find('exports').text != 'None' else [],
+                "imports": imports
+            }
 
-                dependencies = metadata.find('external_dependencies')
-                if dependencies is not None:
-                    for dep in dependencies.findall('dependency'):
-                        self.metadata['external_dependencies'].append(dep.text)
-            else:
-                print_warning(f"get_file_metadata_prompt function not available. Skipping analysis for file: {file_path}")
-                file_info = {
-                    "path": rel_path,
-                    "type": "unknown",
-                    "summary": "Analysis skipped due to missing function",
-                    "exports": [],
-                    "imports": []
-                }
+            dependencies = metadata.find('external_dependencies')
+            if dependencies is not None:
+                for dep in dependencies.findall('dependency'):
+                    self.metadata['external_dependencies'].append(dep.text)
 
         except Exception as e:
             print_warning(f"Error analyzing file {file_path}: {str(e)}")
