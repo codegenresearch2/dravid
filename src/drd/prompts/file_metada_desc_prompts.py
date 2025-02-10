@@ -48,9 +48,6 @@ def format_metadata_as_xml(metadata):
                 for dependency in value:
                     ET.SubElement(dependencies_element, "dependency").text = dependency
         else:
-            ET.SubElement(metadata_element, key).text = value
+            ET.SubElement(metadata_element, key).text = str(value)
 
     return ET.tostring(root, encoding='unicode')
-
-
-In the updated code, I have added a new function `format_metadata_as_xml` to format the metadata as an XML response. This function creates an XML tree with the metadata fields as elements and returns the XML string representation of the tree. This addresses the feedback received from the oracle regarding the output format and metadata structure.
