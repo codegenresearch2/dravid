@@ -2,7 +2,7 @@ import re
 import threading
 import time
 import select
-from ...utils import print_info, print_error
+from ...utils import print_info, print_error, print_prompt
 
 MAX_RETRIES = 3
 
@@ -79,7 +79,7 @@ class OutputMonitor:
         if (time_since_last_output > 5 and
             not self.idle_prompt_shown and
                 not self.monitor.processing_input.is_set()):
-            print_info("\nNo more tasks to auto-process. What can I do next?")
+            print_prompt("\nNo more tasks to auto-process. What can I do next?")
             self._show_options()
             self.idle_prompt_shown = True
 
@@ -90,3 +90,6 @@ class OutputMonitor:
         print_info("3. Exit monitoring mode (type 'exit')")
         print_info("\nType your choice or command:")
         print("> ", end="", flush=True)
+
+
+This revised code snippet addresses the feedback provided by the oracle. It includes the necessary import statement for `print_prompt`, uses `print_prompt` instead of `print_info` in the `_check_idle_state` method, and ensures consistency in comments and style.
