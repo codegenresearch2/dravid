@@ -22,7 +22,7 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
 
         if project_context:
             print_info("ð Identifying related files to the query...")
-            print_info("ð¡ LLM calls to be made: (1)", indent=2)
+            print_info("ð¡ LLM calls to be made: (1)")
             files_to_modify = run_with_loader(
                 lambda: get_files_to_modify(query, project_context),
                 "Analyzing project files"
@@ -53,8 +53,8 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
 
         print_info("ð¤ Preparing to send query to LLM...")
         if image_path:
-            print_info(f"ð· Processing image: {image_path}", indent=4)
-            print_info("ð¡ LLM calls to be made: (1)", indent=4)
+            print_info(f"ð· Processing image: {image_path}")
+            print_info("ð¡ LLM calls to be made: (1)")
             commands = run_with_loader(
                 lambda: call_dravid_vision_api(
                     full_query, image_path, include_context=True, instruction_prompt=instruction_prompt),
@@ -62,12 +62,12 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
             )
         else:
             print_info("ð¡ Streaming response from LLM...")
-            print_info("ð¡ LLM calls to be made: (1)", indent=4)
+            print_info("ð¡ LLM calls to be made: (1)")
             xml_result = stream_dravid_api(
                 full_query, include_context=True, instruction_prompt=instruction_prompt, print_chunk=False)
             commands = parse_dravid_response(xml_result)
             if debug:
-                print_debug(f"Received {len(commands)} new command(s)", indent=4)
+                print_debug(f"Received {len(commands)} new command(s)")
 
         if not commands:
             print_error("ð« Failed to parse Claude's response or no commands to execute.")
