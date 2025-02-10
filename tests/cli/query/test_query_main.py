@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 import requests
 
 from drd.cli.query.main import execute_dravid_command
@@ -26,7 +26,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
     def test_execute_dravid_command_debug_mode(self, mock_run_with_loader, mock_get_files, mock_print_error,
                                                mock_print_debug, mock_execute_commands, mock_stream_api,
                                                mock_metadata_manager, mock_executor):
-        import unittest.mock as mock
+        self.debug = True
         mock_executor.return_value = self.executor
         mock_metadata_manager.return_value = self.metadata_manager
         self.metadata_manager.get_project_context.return_value = "Test project context"
