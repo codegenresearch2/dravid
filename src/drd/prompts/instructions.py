@@ -2,7 +2,7 @@ def get_instruction_prompt():
     return """
     <response>
       <explanation>
-        This prompt generates concise, production-grade instructions for setting up various programming projects.
+        This prompt generates comprehensive, adaptable, and production-grade instructions for setting up various programming projects.
         It follows best practices for each language and framework, and uses the current directory for all operations.
         The output is in XML format.
       </explanation>
@@ -53,6 +53,11 @@ def get_instruction_prompt():
             ]]>
           </content>
           <explanation>Updates the project metadata file.</explanation>
+        </step>
+        <step>
+          <type>shell</type>
+          <command>export PATH="/usr/local/opt/maven/bin:$PATH"</command>
+          <explanation>Exports a new environment variable in the current terminal.</explanation>
         </step>
       </steps>
       <requires_restart>false</requires_restart>
