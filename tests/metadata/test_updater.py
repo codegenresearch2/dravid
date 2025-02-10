@@ -52,7 +52,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     <action>update</action>
                     <metadata>
                         <type>python</type>
-                        <description>Main Python file</description>
+                        <summary>Main Python file</summary>
                         <exports>main_function</exports>
                         <imports>os</imports>
                         <external_dependencies>
@@ -69,7 +69,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     <action>update</action>
                     <metadata>
                         <type>json</type>
-                        <description>Package configuration file</description>
+                        <summary>Package configuration file</summary>
                         <exports>None</exports>
                         <imports>None</imports>
                         <external_dependencies>
@@ -109,11 +109,11 @@ class TestMetadataUpdater(unittest.TestCase):
         mock_extract_xml.assert_called_once_with(mock_call_api.return_value)
 
         # Check if metadata was correctly updated and removed
-        mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
+        mock_metadata_manager.return_value.update_file_metadata.assert_called_once_with(
             '/fake/project/dir/src/main.py', 'python', "print('Hello, World!')", 'Main Python file', [
                 'os']
         )
-        mock_metadata_manager.return_value.update_file_metadata.assert_any_call(
+        mock_metadata_manager.return_value.update_file_metadata.assert_called_with(
             '/fake/project/dir/package.json', 'json', '{"name": "test-project"}', 'Package configuration file', [
             ], []
         )
