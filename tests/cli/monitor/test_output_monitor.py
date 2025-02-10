@@ -24,7 +24,7 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor.process.stdout = MagicMock()
         self.mock_monitor.process.stdout.readline.return_value = ""
         mock_select.return_value = ([self.mock_monitor.process.stdout], [], [])
-        mock_time.side_effect = [0] + [6] * 10  # Simulate time passing
+        mock_time.side_effect = [0] * 10 + [6]  # Simulate time passing
 
         # Capture stdout
         captured_output = StringIO()
@@ -46,7 +46,7 @@ class TestOutputMonitor(unittest.TestCase):
         expected_calls = [
             call("\nAvailable actions:"),
             call("1. Give a coding instruction to perform"),
-            call("2. Process an image (type 'vision')"),  # Corrected the expected call
+            call("2. Process an image (type 'vision')"),  # Ensured the correct call
             call("3. Exit monitoring mode (type 'exit')"),
             call("\nType your choice or command:")
         ]
