@@ -2,7 +2,6 @@ import functools
 import sys
 import asyncio
 import time
-import os
 from ..api.main import call_dravid_api_with_pagination
 from ..utils.parser import extract_and_parse_xml
 from ..prompts.file_metada_desc_prompts import get_file_metadata_prompt
@@ -39,17 +38,12 @@ def to_thread(func, *args, **kwargs):
         loop = asyncio.get_event_loop()
         return loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
-async def process_single_file(filename, content, project_context, folder_structure, testing=False):
+async def process_single_file(filename, content, project_context, folder_structure):
     try:
         found_filename = find_file_with_dravid(filename, project_context, folder_structure)
         if not found_filename:
             print_warning(f"Could not find file: {filename}")
             return filename, "unknown", "File not found", "", ""
-
-        # Check if CLAUDE_API_KEY is set in the environment variables unless testing
-        if not testing and 'CLAUDE_API_KEY' not in os.environ:
-            print_error("CLAUDE_API_KEY is not found in the environment variables")
-            return filename, "unknown", "CLAUDE_API_KEY not found", "", ""
 
         metadata_query = get_file_metadata_prompt(found_filename, content, project_context, folder_structure)
         async with rate_limiter.semaphore:
@@ -73,13 +67,13 @@ async def process_single_file(filename, content, project_context, folder_structu
         print_error(f"Error processing {filename}: {str(e)}")
         return filename, "unknown", f"Error: {str(e)}", "", ""
 
-async def process_files(files, project_context, folder_structure, testing=False):
+async def process_files(files, project_context, folder_structure):
     total_files = len(files)
     print_info(f"Processing {total_files} files to construct metadata per file")
     print_info(f"LLM calls to be made: {total_files}")
 
     async def process_batch(batch):
-        tasks = [process_single_file(filename, content, project_context, folder_structure, testing) for filename, content in batch]
+        tasks = [process_single_file(filename, content, project_context, folder_structure) for filename, content in batch]
         return await asyncio.gather(*tasks)
 
     batch_size = MAX_CONCURRENT_REQUESTS
