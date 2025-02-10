@@ -6,7 +6,7 @@ from .dynamic_command_handler import handle_error_with_dravid, execute_commands
 from ...utils import print_error, print_success, print_info, print_debug, print_warning, print_step, print_header, run_with_loader
 from ...utils.file_utils import get_file_content, fetch_project_guidelines, is_directory_empty
 from .file_operations import get_files_to_modify
-from ...utils.xml_parser import parse_dravid_xml_response
+from ...utils.parser import parse_dravid_response
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None, reference_files=None):
     print_header("Starting Dravid AI ...")
@@ -19,11 +19,11 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
     metadata_manager = ProjectMetadataManager(executor.current_dir)
 
     try:
-        project_context = metadata_manager.extract_project_metadata()
+        project_context = metadata_manager.get_project_context()
 
         files_info = None
         if project_context:
-            print_info("🔍 Identifying related files to the query...", indent=2)
+            print_info("ð Identifying related files to the query...", indent=2)
             print_info("(1 LLM call)", indent=4)
             files_info = run_with_loader(
                 lambda: get_files_to_modify(query, project_context),
@@ -31,12 +31,24 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
             )
 
             if debug:
-                print_debug("Files and dependencies analysis:", files_info)
+                print_debug("Files and dependencies analysis:")
+                print_debug(f"Main file to modify: {files_info.get('main_file', 'None')}")
+                print_debug("Dependencies:")
+                for dep in files_info.get('dependencies', []):
+                    print_debug(f"- {dep['file']}")
+                    for imp in dep['imports']:
+                        print_debug(f"  Imports: {imp}", indent=2)
+                print_debug("New files to create:")
+                for new_file in files_info.get('new_files', []):
+                    print_debug(f"- {new_file['file']}")
+                print_debug("File contents to load:")
+                for file in files_info.get('file_contents_to_load', []):
+                    print_debug(f"- {file}")
 
         full_query = construct_full_query(
             query, executor, project_context, files_info, reference_files)
 
-        print_info("💡 Preparing to send query to LLM...", indent=2)
+        print_info("ð¡ Preparing to send query to LLM...", indent=2)
         if image_path:
             print_info(f"Processing image: {image_path}", indent=4)
             print_info("(1 LLM call)", indent=4)
@@ -46,11 +58,11 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
                 "Analyzing image and generating response"
             )
         else:
-            print_info("💬 Streaming response from LLM...", indent=2)
+            print_info("ð¬ Streaming response from LLM...", indent=2)
             print_info("(1 LLM call)", indent=4)
             xml_result = stream_dravid_api(
                 full_query, include_context=True, instruction_prompt=instruction_prompt, print_chunk=False)
-            commands = parse_dravid_xml_response(xml_result)
+            commands = parse_dravid_response(xml_result)
             if debug:
                 print_debug(f"Received {len(commands)} new command(s)")
 
@@ -116,8 +128,8 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
         full_query += f"User query: {query}"
 
     if reference_files:
-        print_info("📄 Reading reference file contents...", indent=2)
-        reference_contents = {file: get_file_content(file) for file in reference_files}
+        print_info("ð Reading reference file contents...", indent=2)
+        reference_contents = {file: get_file_content(file) for file in reference_files if get_file_content(file)}
         reference_context = "\n\n".join(
             [f"Reference file {file}:\n{content}" for file, content in reference_contents.items()])
         full_query += f"\n\nReference files:\n{reference_context}"
@@ -126,23 +138,23 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
 
 def construct_file_info_query(files_info):
     file_query = ""
-    if files_info['file_contents_to_load']:
-        file_contents = {file: get_file_content(file) for file in files_info['file_contents_to_load']}
+    if 'file_contents_to_load' in files_info:
+        file_contents = {file: get_file_content(file) for file in files_info['file_contents_to_load'] if get_file_content(file)}
         file_context = "\n".join(
             [f"Current content of {file}:\n{content}" for file, content in file_contents.items()])
         file_query += f"Current file contents:\n{file_context}\n\n"
 
-    if files_info['dependencies']:
+    if 'dependencies' in files_info:
         dependency_context = "\n".join(
             [f"Dependency {dep['file']} exports: {', '.join(dep['imports'])}" for dep in files_info['dependencies']])
         file_query += f"Dependencies:\n{dependency_context}\n\n"
 
-    if files_info['new_files']:
+    if 'new_files' in files_info:
         new_files_context = "\n".join(
             [f"New file to create: {new_file['file']}" for new_file in files_info['new_files']])
         file_query += f"New files to create:\n{new_files_context}\n\n"
 
-    if files_info['main_file']:
+    if 'main_file' in files_info:
         file_query += f"Main file to modify: {files_info['main_file']}\n\n"
 
     return file_query
