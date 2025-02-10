@@ -17,9 +17,10 @@ Respond with an XML structure containing the metadata:
 
 <response>
   <guidelines>
-    <instruction>Ensure all fields are included in the XML response.</instruction>
-    <instruction>Use 'None' for exports, imports, and external_dependencies if there are none.</instruction>
-    <instruction>Respond strictly with the XML structure; no additional text.</instruction>
+    <instruction>1. Ensure all fields are included in the XML response.</instruction>
+    <instruction>2. Use 'None' for exports, imports, and external_dependencies if there are none.</instruction>
+    <instruction>3. Omit the external_dependencies tag if there are no external dependencies.</instruction>
+    <instruction>4. Respond strictly with the XML structure; no additional text.</instruction>
   </guidelines>
   <metadata>
     <path>{filename}</path>
@@ -28,8 +29,8 @@ Respond with an XML structure containing the metadata:
     <file_category>code_file or dependency_file</file_category>
     <exports>Comma-separated list of exports or 'None'</exports>
     <imports>Comma-separated list of imports or 'None'</imports>
+    <!-- Include external_dependencies tag only if there are external dependencies -->
     <external_dependencies>
-      <!-- Include dependency elements only if there are external dependencies -->
       <dependency>
         <name>name1</name>
         <version>version1</version>
