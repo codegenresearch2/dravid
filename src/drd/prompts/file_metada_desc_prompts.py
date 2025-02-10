@@ -36,8 +36,8 @@ Respond with an XML structure containing the metadata:
 </response>
 
 Respond strictly only with the XML response as it will be used for parsing, no other extra words.
-If there are no exports, use <exports>None</exports> instead of an empty tag.
-If there are no imports, use <imports>None</imports> instead of an empty tag.
+If there are no exports, use <exports>[]</exports> instead of an empty tag.
+If there are no imports, use <imports>[]</imports> instead of an empty tag.
 If there are no external dependencies, omit the <external_dependencies> tag entirely.
 Ensure that all other tags (type, summary, file_category, exports, imports) are always present and non-empty.
 """
