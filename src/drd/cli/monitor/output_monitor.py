@@ -15,10 +15,12 @@ class OutputMonitor:
         self.retry_count = 0
 
     def start(self):
+        # Start the output monitoring thread
         self.thread = threading.Thread(target=self._monitor_output, daemon=True)
         self.thread.start()
 
     def _check_for_errors(self, line, error_buffer):
+        # Check for errors in the output line and handle them
         for error_pattern, handler in self.monitor.error_handlers.items():
             if re.search(error_pattern, line, re.IGNORECASE):
                 full_error = ''.join(error_buffer)
@@ -34,8 +36,8 @@ class OutputMonitor:
         while not self.monitor.should_stop.is_set():
             iteration += 1
 
-            if (self.monitor.process.poll() is not None and
-                    not self.monitor.processing_input.is_set()):
+            # Check if the process has ended unexpectedly
+            if self.monitor.process.poll() is not None and not self.monitor.processing_input.is_set():
                 if not self.monitor.restart_requested.is_set():
                     print_info("Server process ended unexpectedly.")
                     if self.retry_count < MAX_RETRIES:
@@ -48,6 +50,7 @@ class OutputMonitor:
                         break
                 continue
 
+            # Check if there is output to read
             ready, _, _ = select.select([self.monitor.process.stdout], [], [], 0.1)
 
             if self.monitor.process.stdout in ready:
@@ -61,6 +64,7 @@ class OutputMonitor:
                     self.idle_prompt_shown = False
                     self.retry_count = 0  # Reset retry count on successful output
 
+                    # Check for errors in the output line
                     if not self.monitor.processing_input.is_set():
                         self._check_for_errors(line, error_buffer)
                 else:
@@ -68,11 +72,12 @@ class OutputMonitor:
             else:
                 self._check_idle_state()
 
-            if (self.monitor.restart_requested.is_set() and
-                    not self.monitor.processing_input.is_set()):
+            # Check if a restart is requested
+            if self.monitor.restart_requested.is_set() and not self.monitor.processing_input.is_set():
                 self.monitor.perform_restart()
 
     def _check_idle_state(self):
+        # Check if the server is idle and show options
         current_time = time.time()
         time_since_last_output = current_time - self.last_output_time
 
@@ -84,6 +89,7 @@ class OutputMonitor:
             self.idle_prompt_shown = True
 
     def _show_options(self):
+        # Show available options to the user
         print_info("\nAvailable actions:")
         print_info("1. Give a coding instruction to perform")
         print_info("2. Process an image (type 'vision')")
