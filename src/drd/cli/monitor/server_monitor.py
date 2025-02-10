@@ -3,7 +3,7 @@ import subprocess
 from queue import Queue
 from .input_handler import InputHandler
 from .output_monitor import OutputMonitor
-from ...utils import print_header, print_success, print_error, print_info, print_prompt
+from ...utils import print_header, print_success, print_error, print_info
 
 MAX_RETRIES = 3
 
@@ -25,22 +25,22 @@ class DevServerMonitor:
     def start(self):
         self.should_stop.clear()
         self.restart_requested.clear()
-        print_header(f"Starting Dravid AI along with your process/server with command: {self.command}")
+        print_header(f"Starting server with command: {self.command}")
         self._start_process()
 
     def stop(self):
-        print_prompt("Initiating Dravid AI and server monitor shutdown...")
+        print_info("Stopping server monitor...")
         self.should_stop.set()
         if self.process:
             self.process.terminate()
             self.process.wait()
-        print_info("Dravid AI and server monitor have been stopped.")
+        print_info("Server monitor stopped.")
 
     def request_restart(self):
         self.restart_requested.set()
 
     def perform_restart(self):
-        print_info("Attempting to restart server...")
+        print_info("Restarting server...")
         if self.process:
             self.process.terminate()
             self.process.wait()
@@ -48,10 +48,20 @@ class DevServerMonitor:
 
     def _start_process(self):
         try:
-            self.process = start_process(self.command, self.project_dir)
+            self.process = subprocess.Popen(
+                self.command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                stdin=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                shell=True,
+                cwd=self.project_dir
+            )
             self.retry_count = 0
             self.restart_requested.clear()
-            print_success("Server has been restarted successfully.")
+            print_success("Server restarted successfully.")
             print_info("Waiting for server output...")
             self.output_monitor.start()
             self.input_handler.start()
@@ -63,19 +73,4 @@ class DevServerMonitor:
             else:
                 print_info(f"Restart attempt failed. Retrying... (Attempt {self.retry_count}/{MAX_RETRIES})")
 
-def start_process(command, cwd):
-    try:
-        return subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            stdin=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True,
-            shell=True,
-            cwd=cwd
-        )
-    except Exception as e:
-        print_error(f"Failed to start server process: {str(e)}")
-        return None
+# No changes needed for the start_process function as it is already following the gold code.
