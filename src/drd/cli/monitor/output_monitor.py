@@ -59,7 +59,6 @@ class OutputMonitor:
                     if len(error_buffer) > 10:
                         error_buffer.pop(0)
                     self.last_output_time = time.time()
-                    self.idle_prompt_shown = False
                     self.retry_count = 0  # Reset retry count on successful output
 
                     if not self.monitor.processing_input.is_set():
@@ -78,7 +77,7 @@ class OutputMonitor:
         if (time_since_last_output > 5 and
             not self.idle_prompt_shown and
                 not self.monitor.processing_input.is_set()):
-            print_info("No more tasks to auto-process. Here are your options:")
+            print_prompt("\nNo more tasks to auto-process. What can I do next?")
             self._show_options()
             self.idle_prompt_shown = True
 
