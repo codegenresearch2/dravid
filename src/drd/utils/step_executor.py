@@ -13,7 +13,7 @@ class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
         self.initial_dir = self.current_dir
-        self.allowed_directories = [self.current_dir, '/example/path']  # Add example path
+        self.allowed_directories = [self.current_dir, '/fake/path']  # Update example path
         self.disallowed_commands = ['rmdir', 'del', 'format', 'mkfs', 'dd', 'fsck', 'mkswap', 'mount', 'umount', 'sudo', 'su', 'chown', 'chmod']
         self.env = os.environ.copy()
 
@@ -47,18 +47,21 @@ class Executor:
             print(confirmation_box)
             if not click.confirm(f"{Fore.YELLOW}Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
                 print_info(f"File {operation.lower()} cancelled by user.")
-                return "Skipping this step"
+                return False
 
         print_info(f"File: {filename}")
 
         if operation == 'CREATE':
             # Implement file creation logic here
+            # Return True if successful, False otherwise
             pass
         elif operation == 'UPDATE':
             # Implement file update logic here
+            # Return True if successful, False otherwise
             pass
         elif operation == 'DELETE':
             # Implement file deletion logic here
+            # Return True if successful, False otherwise
             pass
         else:
             print_error(f"Unknown file operation: {operation}")
@@ -96,15 +99,22 @@ class Executor:
             print_info("Command execution cancelled by user.")
             return 'Skipping this step...'
 
-        # Implement shell command execution logic here
+        if command.strip().startswith(('cd', 'chdir')):
+            return self._handle_cd_command(command)
+        elif command.strip().startswith(('source', '.')):
+            return self._handle_source_command(command)
+        else:
+            return self._execute_single_command(command, timeout)
 
     def _execute_single_command(self, command, timeout):
         # Implement single command execution logic here
+        # Return the output of the command if successful, raise an exception otherwise
         pass
 
     def _handle_source_command(self, command):
         # Implement source command handling logic here
-        pass  # Added to resolve the IndentationError
+        # Return a success message if successful, raise an exception otherwise
+        pass
 
     def _update_env_from_command(self, command):
         if '=' in command:
