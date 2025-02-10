@@ -27,7 +27,7 @@ class DevServerMonitor:
         self.restart_requested.clear()
         print_header(f"Starting server process with command: {self.command}")
         try:
-            self.process = self._start_process(self.command)
+            self.process = start_process(self.command, self.project_dir)
             self.output_monitor.start()
             self.input_handler.start()
         except Exception as e:
@@ -52,7 +52,7 @@ class DevServerMonitor:
             self.process.wait()
 
         try:
-            self.process = self._start_process(self.command)
+            self.process = start_process(self.command, self.project_dir)
             self.retry_count = 0
             self.restart_requested.clear()
             print_success("Server restarted successfully.")
@@ -60,26 +60,21 @@ class DevServerMonitor:
         except Exception as e:
             self.retry_count += 1
             if self.retry_count >= MAX_RETRIES:
-                print_error(f"Server failed to start after {MAX_RETRIES} attempts. Exiting.")
+                print_error(f"Server failed to restart after {MAX_RETRIES} attempts. Exiting.")
                 self.stop()
             else:
                 print_info(f"Retrying... (Attempt {self.retry_count}/{MAX_RETRIES})")
                 self.request_restart()
 
-    def _start_process(self, command):
-        try:
-            return subprocess.Popen(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                stdin=subprocess.PIPE,
-                text=True,
-                bufsize=1,
-                universal_newlines=True,
-                shell=True,
-                cwd=self.project_dir
-            )
-        except Exception as e:
-            print_error(f"Failed to start server process: {str(e)}")
-            self.stop()
-            return None
+def start_process(command, cwd):
+    return subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+        universal_newlines=True,
+        shell=True,
+        cwd=cwd
+    )
