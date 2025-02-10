@@ -1,13 +1,11 @@
 import unittest
 from unittest.mock import patch, mock_open, MagicMock
 import os
-import sys
-import json
-from datetime import datetime
+import re
+import xml.etree.ElementTree as ET
 
 # Assuming the project structure, adjust the import path as necessary
 from src.drd.metadata.project_metadata import ProjectMetadataManager
-
 
 class TestProjectMetadataManager(unittest.TestCase):
 
@@ -26,27 +24,24 @@ class TestProjectMetadataManager(unittest.TestCase):
             mock_open(read_data="*.tmp\n").return_value
         ]
         with patch('builtins.open', side_effect=mock_open_calls):
-            patterns = self.manager.get_ignore_patterns()
+            patterns, message = self.manager.get_ignore_patterns()
 
-        self.assertIn('*.log', patterns)
-        self.assertIn('node_modules/', patterns)
-        self.assertIn('subfolder/*.tmp', patterns)
+        self.assertIn(re.compile(r'\.log$'), patterns)
+        self.assertIn(re.compile(r'node_modules/'), patterns)
+        self.assertIn(re.compile(r'subfolder/.*\.tmp$'), patterns)
 
     def test_should_ignore(self):
         self.manager.ignore_patterns = [
-            '*.log', 'node_modules/', 'subfolder/*.tmp']
-        self.assertTrue(self.manager.should_ignore(
-            '/fake/project/dir/test.log'))
-        self.assertTrue(self.manager.should_ignore(
-            '/fake/project/dir/node_modules/package.json'))
-        self.assertTrue(self.manager.should_ignore(
-            '/fake/project/dir/node_modules/subfolder/file.js'))
-        self.assertTrue(self.manager.should_ignore(
-            '/fake/project/dir/subfolder/test.tmp'))
-        self.assertFalse(self.manager.should_ignore(
-            '/fake/project/dir/src/main.py'))
-        self.assertFalse(self.manager.should_ignore(
-            '/fake/project/dir/package.json'))
+            re.compile(r'\.log$'),
+            re.compile(r'node_modules/'),
+            re.compile(r'subfolder/.*\.tmp$')
+        ]
+        self.assertTrue(self.manager.should_ignore('/fake/project/dir/test.log'))
+        self.assertTrue(self.manager.should_ignore('/fake/project/dir/node_modules/package.json'))
+        self.assertTrue(self.manager.should_ignore('/fake/project/dir/node_modules/subfolder/file.js'))
+        self.assertTrue(self.manager.should_ignore('/fake/project/dir/subfolder/test.tmp'))
+        self.assertFalse(self.manager.should_ignore('/fake/project/dir/src/main.py'))
+        self.assertFalse(self.manager.should_ignore('/fake/project/dir/package.json'))
 
     @patch('os.walk')
     def test_get_directory_structure(self, mock_walk):
@@ -56,10 +51,13 @@ class TestProjectMetadataManager(unittest.TestCase):
         ]
         structure = self.manager.get_directory_structure(self.project_dir)
         expected_structure = {
-            'files': ['README.md'],
-            'directories': ['src'],
-            'src': {
-                'files': ['main.py', 'utils.py']
+            'project_dir': {
+                'files': ['README.md'],
+                'directories': {
+                    'src': {
+                        'files': ['main.py', 'utils.py']
+                    }
+                }
             }
         }
         self.assertEqual(structure, expected_structure)
@@ -77,13 +75,14 @@ class TestProjectMetadataManager(unittest.TestCase):
         <response>
           <metadata>
             <type>python</type>
-            <summary>A simple Python script</summary>
+            <description>A simple Python script</description>
             <exports>None</exports>
             <imports>None</imports>
           </metadata>
         </response>
         '''
-        file_info = await self.manager.analyze_file('/fake/project/dir/script.py')
+        mock_root = ET.fromstring(mock_api_call.return_value)
+        file_info = await self.manager.analyze_file('/fake/project/dir/script.py', mock_root)
         self.assertEqual(file_info['path'], 'script.py')
         self.assertEqual(file_info['type'], 'python')
         self.assertEqual(file_info['summary'], 'A simple Python script')
@@ -107,6 +106,6 @@ class TestProjectMetadataManager(unittest.TestCase):
         loader = MagicMock()
         metadata = await self.manager.build_metadata(loader)
 
-        self.assertEqual(metadata['environment']['primary_language'], 'python')
-        self.assertEqual(len(metadata['key_files']), 1)
-        self.assertEqual(metadata['key_files'][0]['path'], 'main.py')
+        self.assertEqual(metadata['project_info']['primary_language'], 'python')
+        self.assertEqual(len(metadata['files']), 1)
+        self.assertEqual(metadata['files'][0]['path'], 'main.py')
