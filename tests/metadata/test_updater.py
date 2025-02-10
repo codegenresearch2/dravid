@@ -52,7 +52,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     <action>update</action>
                     <metadata>
                         <type>python</type>
-                        <description>Main Python file</description>
+                        <summary>Main Python file</summary>
                         <exports>main_function</exports>
                         <imports>os</imports>
                         <external_dependencies>
@@ -69,7 +69,7 @@ class TestMetadataUpdater(unittest.TestCase):
                     <action>update</action>
                     <metadata>
                         <type>json</type>
-                        <description>Package configuration file</description>
+                        <summary>Package configuration file</summary>
                         <exports>None</exports>
                         <imports>None</imports>
                         <external_dependencies>
