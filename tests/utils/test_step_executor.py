@@ -19,6 +19,7 @@ class TestExecutor(unittest.TestCase):
     @patch('builtins.open', new_callable=mock_open)
     @patch('click.confirm', return_value=True)
     def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
+        mock_exists.return_value = False
         result = self.executor.perform_file_operation('CREATE', 'test.txt', 'content')
         self.assertTrue(result)
         mock_file.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
