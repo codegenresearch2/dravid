@@ -108,8 +108,7 @@ class TestMetadataUpdater(unittest.TestCase):
         mock_metadata_manager.return_value.analyze_file = mock_analyze_file
 
         # Call the function
-        with patch('builtins.open', mock_open(read_data="print('Hello, World!')")) as mock_file:
-            update_metadata_with_dravid(self.meta_description, self.current_dir)
+        update_metadata_with_dravid(self.meta_description, self.current_dir)
 
         # Assertions
         mock_metadata_manager.assert_called_once_with(self.current_dir)
