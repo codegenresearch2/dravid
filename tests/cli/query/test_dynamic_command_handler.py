@@ -40,7 +40,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertEqual(steps_completed, 3)
         self.assertIsNone(error)
         self.assertIn("Explanation - Test explanation", output)
-        self.assertIn("Shell command - echo \"Hello\"", output)
+        self.assertIn("Shell command - echo \"Hello\" - Shell output", output)
         self.assertIn("File command - CREATE - test.txt - File operation success", output)
         mock_print_debug.assert_called_with("Completed step 3/3")
         self.executor.reset_directory.assert_called()
