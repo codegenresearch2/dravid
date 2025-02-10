@@ -15,7 +15,34 @@ class TestExecutor(unittest.TestCase):
         self.executor = Executor()
         self.executor.initial_dir = self.executor.current_dir
 
-    # ... other tests ...
+    # Additional test cases for is_safe_path, is_safe_command, and parse_json
+    def test_is_safe_path(self):
+        self.assertTrue(self.executor.is_safe_path('test.txt'))
+        self.assertTrue(self.executor.is_safe_path(self.executor.current_dir))
+        self.assertFalse(self.executor.is_safe_path('/etc/passwd'))
+
+    def test_is_safe_command(self):
+        self.assertTrue(self.executor.is_safe_command('ls'))
+        self.assertFalse(self.executor.is_safe_command('sudo rm -rf /'))
+
+    def test_parse_json(self):
+        valid_json = '{"key": "value"}'
+        invalid_json = '{key: value}'
+        self.assertEqual(self.executor.parse_json(valid_json), {"key": "value"})
+        self.assertIsNone(self.executor.parse_json(invalid_json))
+
+    # Existing tests with added confirmations and improved assertions
+    @patch('os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('click.confirm')
+    def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
+        mock_exists.return_value = False
+        mock_confirm.return_value = True
+        result = self.executor.perform_file_operation('CREATE', 'test.txt', 'content')
+        self.assertTrue(result)
+        mock_file.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'), 'w')
+        mock_file().write.assert_called_with('content')
+        mock_confirm.assert_called_once()
 
     @patch('os.path.exists')
     @patch('os.path.isfile')
@@ -29,8 +56,6 @@ class TestExecutor(unittest.TestCase):
         self.assertTrue(result)
         mock_remove.assert_called_with(os.path.join(self.executor.current_dir, 'test.txt'))
         mock_confirm.assert_called_once()
-
-    # ... other tests ...
 
     @patch('subprocess.Popen')
     @patch('click.confirm')
