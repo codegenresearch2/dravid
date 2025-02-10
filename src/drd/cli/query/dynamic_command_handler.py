@@ -10,7 +10,7 @@ STEP_START = "ðŸ”„ Step {current_step}/{total_steps}: Processing {cmd_type
 SHELL_CMD_EXEC = "ðŸ’» Executing shell command: {command}"
 FILE_OP_EXEC = "ðŸ“ Performing file operation: {operation} on {filename}"
 METADATA_OP_EXEC = "ðŸ“‚ Updating metadata for file: {filename}"
-EXPLANATION = "ðŸ’¡ Explanation: {content}"
+EXPLANATION = "Explanation - {content}"
 ERROR_EXEC = "ðŸš« Error executing {step_description}: {cmd}\nError details: {error_details}"
 ERROR_MAX_DEPTH = "ðŸš« Max error handling depth reached. Unable to resolve the issue."
 ERROR_PARSE = "ðŸš« Error parsing dravid's response: {error_details}"
@@ -56,16 +56,19 @@ def handle_shell_command(cmd, executor):
     print_info(SHELL_CMD_EXEC.format(command=cmd['command']))
     output = executor.execute_shell_command(cmd['command'])
     if isinstance(output, str) and output.startswith("Skipping"):
+        print_info("Skipping this step...")
         return output
     if output is None:
         raise Exception(f"Command failed: {cmd['command']}")
     print_success(f"Successfully executed: {cmd['command']}")
+    click.echo(f"Command output:\n{output}")
     return output
 
 def handle_file_operation(cmd, executor, metadata_manager):
     print_info(FILE_OP_EXEC.format(operation=cmd['operation'], filename=cmd['filename']))
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
     if isinstance(operation_performed, str) and operation_performed.startswith("Skipping"):
+        print_info("Skipping this step...")
         return operation_performed
     elif operation_performed:
         print_success(f"Successfully performed {cmd['operation']} on file: {cmd['filename']}")
@@ -93,7 +96,10 @@ def update_file_metadata(cmd, metadata_manager, executor):
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context="", debug=False):
     if depth > 3:
-        return False, ERROR_MAX_DEPTH
+        print_error(ERROR_MAX_DEPTH)
+        return False
+
+    print_error(f"ðŸš« Error executing command: {error}")
 
     error_message = str(error)
     error_type = type(error).__name__
@@ -108,7 +114,8 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
     try:
         fix_commands = call_dravid_api(error_query, include_context=True)
     except ValueError as e:
-        return False, ERROR_PARSE.format(error_details=str(e))
+        print_error(ERROR_PARSE.format(error_details=str(e)))
+        return False
 
     print_info("ðŸ’¡ dravid's suggested fix:")
     print_info(FIX_APPLY)
@@ -119,6 +126,10 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
         print_success(FIX_SUCCESS)
         print_info("Fix application details:")
         click.echo(all_outputs)
-        return True, None
+        return True
     else:
-        return False, FIX_FAIL.format(step_completed=step_completed, error_message=error_message)
+        print_error(FIX_FAIL.format(step_completed=step_completed, error_message=error_message))
+        print_info("Fix application details:")
+        click.echo(all_outputs)
+
+        return handle_error_with_dravid(Exception(error_message), {"type": "fix", "command": f"apply fix step {step_completed}"}, executor, metadata_manager, depth + 1, all_outputs, debug)
