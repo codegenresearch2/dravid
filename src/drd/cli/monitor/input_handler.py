@@ -51,6 +51,8 @@ class InputHandler:
         # Extract image path and instructions using regex
         image_pattern = r"([a-zA-Z0-9._/-]+(?:/|\\)?)+\.(jpg|jpeg|png|bmp|gif)"
         match = re.search(image_pattern, user_input)
+        instruction_prompt = get_instruction_prompt()  # Retrieve instruction prompt at the beginning
+
         if match:
             image_path = match.group(0)
             instructions = user_input.replace(image_path, "").strip()
@@ -61,9 +63,6 @@ class InputHandler:
                 print_error(f"Image file not found: {image_path}")
                 return
 
-            # Get instruction prompt
-            instruction_prompt = get_instruction_prompt()
-
             # Execute command with image and instructions
             try:
                 print_info(f"Processing image: {image_path}")
@@ -72,9 +71,6 @@ class InputHandler:
             except Exception as e:
                 print_error(f"Error processing image input: {str(e)}")
         else:
-            # Get instruction prompt
-            instruction_prompt = get_instruction_prompt()
-
             # Execute command with general input
             try:
                 print_info(f"Processing command: {user_input}")
