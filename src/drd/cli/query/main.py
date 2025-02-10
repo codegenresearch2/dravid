@@ -34,20 +34,24 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
 
             if debug:
                 print_info("Files and dependencies analysis:", indent=4)
-                if files_info['main_file']:
+                if files_info and isinstance(files_info, dict) and 'main_file' in files_info:
                     print_info(
                         f"Main file to modify: {files_info['main_file']}", indent=6)
-                print_info("Dependencies:", indent=6)
-                for dep in files_info['dependencies']:
-                    print_info(f"- {dep['file']}", indent=8)
-                    for imp in dep['imports']:
-                        print_info(f"  Imports: {imp}", indent=10)
-                print_info("New files to create:", indent=6)
-                for new_file in files_info['new_files']:
-                    print_info(f"- {new_file['file']}", indent=8)
-                print_info("File contents to load:", indent=6)
-                for file in files_info['file_contents_to_load']:
-                    print_info(f"- {file}", indent=8)
+                if 'dependencies' in files_info:
+                    print_info("Dependencies:", indent=6)
+                    for dep in files_info['dependencies']:
+                        print_info(f"- {dep['file']}", indent=8)
+                        if 'imports' in dep:
+                            for imp in dep['imports']:
+                                print_info(f"  Imports: {imp}", indent=10)
+                if 'new_files' in files_info:
+                    print_info("New files to create:", indent=6)
+                    for new_file in files_info['new_files']:
+                        print_info(f"- {new_file['file']}", indent=8)
+                if 'file_contents_to_load' in files_info:
+                    print_info("File contents to load:", indent=6)
+                    for file in files_info['file_contents_to_load']:
+                        print_info(f"- {file}", indent=8)
 
         full_query = construct_full_query(
             query, executor, project_context, files_info, reference_files)
@@ -130,7 +134,7 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
         full_query += f"Project Guidelines:\n{project_guidelines}\n\n"
 
         if files_info:
-            if files_info['file_contents_to_load']:
+            if 'file_contents_to_load' in files_info:
                 file_contents = {}
                 for file in files_info['file_contents_to_load']:
                     content = get_file_content(file)
@@ -142,17 +146,17 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
                     [f"Current content of {file}:\n{content}" for file, content in file_contents.items()])
                 full_query += f"Current file contents:\n{file_context}\n\n"
 
-            if files_info['dependencies']:
+            if 'dependencies' in files_info:
                 dependency_context = "\n".join(
                     [f"Dependency {dep['file']} exports: {', '.join(dep['imports'])}" for dep in files_info['dependencies']])
                 full_query += f"Dependencies:\n{dependency_context}\n\n"
 
-            if files_info['new_files']:
+            if 'new_files' in files_info:
                 new_files_context = "\n".join(
                     [f"New file to create: {new_file['file']}" for new_file in files_info['new_files']])
                 full_query += f"New files to create:\n{new_files_context}\n\n"
 
-            if files_info['main_file']:
+            if 'main_file' in files_info:
                 full_query += f"Main file to modify: {files_info['main_file']}\n\n"
 
         full_query += "Current directory is not empty.\n\n"
