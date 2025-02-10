@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, mock_open, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock
 import xml.etree.ElementTree as ET
 
 from drd.metadata.updater import update_metadata_with_dravid
@@ -85,24 +85,14 @@ class TestMetadataUpdater(unittest.TestCase):
         mock_find_file.side_effect = [
             '/fake/project/dir/src/main.py', '/fake/project/dir/package.json']
 
-        # Mock file contents
-        mock_file_contents = {
-            '/fake/project/dir/src/main.py': "print('Hello, World!')",
-            '/fake/project/dir/package.json': '{"name": "test-project"}'
-        }
-
-        def mock_open_file(filename, *args, **kwargs):
-            return mock_open(read_data=mock_file_contents.get(filename, ""))()
-
         # Mock analyze_file method
         mock_metadata_manager.return_value.analyze_file = AsyncMock(side_effect=[
             {'path': '/fake/project/dir/src/main.py', 'type': 'python', 'summary': "print('Hello, World!')", 'exports': ['main_function'], 'imports': ['os']},
             {'path': '/fake/project/dir/package.json', 'type': 'json', 'summary': '{"name": "test-project"}', 'exports': [], 'imports': []}
         ])
 
-        with patch('builtins.open', mock_open_file):
-            # Call the function
-            update_metadata_with_dravid(self.meta_description, self.current_dir)
+        # Call the function
+        update_metadata_with_dravid(self.meta_description, self.current_dir)
 
         # Assertions
         mock_metadata_manager.assert_called_once_with(self.current_dir)
