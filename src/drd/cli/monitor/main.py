@@ -15,7 +15,7 @@ def run_dev_server_with_monitoring(command: str):
 
     try:
         monitor.start()
-        print_info("ðŸ”Ž Server monitor started. Press Ctrl+C to stop.")
+        print_info("ðŸš€ Server monitor started. Press Ctrl+C to stop.")
         while not monitor.should_stop.is_set():
             pass
         print_info("Server monitor has ended.")
