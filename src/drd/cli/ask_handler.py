@@ -4,6 +4,10 @@ from ..api import stream_dravid_api, call_dravid_api_with_pagination
 from ..utils.utils import print_error, print_info
 from ..metadata.project_metadata import ProjectMetadataManager
 import os
+import logging
+
+def log_info(message, indent=0):
+    logging.info(' ' * indent + message)
 
 def read_file_content(file_path):
     try:
@@ -14,6 +18,7 @@ def read_file_content(file_path):
 
 def suggest_file_alternative(file_path, project_metadata):
     query = f"The file '{file_path}' doesn't exist. Can you suggest similar existing files or interpret what the user might have meant? Use the following project metadata as context:\n\n{project_metadata}"
+    log_info("Starting suggestion process")
     response = call_dravid_api_with_pagination(query)
     return response
 
@@ -27,7 +32,7 @@ def handle_ask_command(ask, file, debug):
         if content is not None:
             context += f"Content of {file_path}:\n{content}\n\n"
         else:
-            print_error(f"File not found: {file_path}")
+            print_error(f"File not found: {file_path}.")
             print_info("Finding similar or alternative file")
             suggestion = suggest_file_alternative(file_path, project_metadata)
             print_info(f"Suggestion: {suggestion}")
