@@ -13,12 +13,12 @@ class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
         self.initial_dir = self.current_dir
-        self.allowed_directories = [self.current_dir, '/example/path']  # Add example path
+        self.allowed_directories = [self.current_dir]  # Update example path
         self.disallowed_commands = ['rmdir', 'del', 'format', 'mkfs', 'dd', 'fsck', 'mkswap', 'mount', 'umount', 'sudo', 'su', 'chown', 'chmod']
         self.env = os.environ.copy()
 
     def is_safe_path(self, path):
-        full_path = os.path.abspath(os.path.join(self.current_dir, path))
+        full_path = os.path.abspath(path)
         return full_path == self.current_dir or any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories)
 
     def is_safe_rm_command(self, command):
@@ -31,6 +31,77 @@ class Executor:
         if len(parts) != 2:
             return False
         file_to_remove = parts[1]
-        return self.is_safe_path(file_to_remove) and os.path.isfile(os.path.join(self.current_dir, file_to_remove))
+        return self.is_safe_path(file_to_remove) and os.path.isfile(file_to_remove)
 
-    # Rest of the code remains the same
+    def is_safe_command(self, command):
+        command_parts = command.split()
+        if command_parts[0] == 'rm':
+            return self.is_safe_rm_command(command)
+        return not any(cmd in self.disallowed_commands for cmd in command_parts)
+
+    def perform_file_operation(self, operation, filename, content=None, force=False):
+        full_path = os.path.abspath(os.path.join(self.current_dir, filename))
+        # Implement file operation logic here
+
+    def parse_json(self, json_string):
+        try:
+            return json.loads(json_string)
+        except json.JSONDecodeError as e:
+            print_error(f"JSON parsing error: {str(e)}")
+            return None
+
+    def merge_json(self, existing_content, new_content):
+        try:
+            existing_json = json.loads(existing_content)
+            new_json = json.loads(new_content)
+            merged_json = {**existing_json, **new_json}
+            return json.dumps(merged_json, indent=2)
+        except json.JSONDecodeError as e:
+            print_error(f"Error merging JSON content: {str(e)}")
+            return None
+
+    def get_folder_structure(self):
+        ignore_patterns, _ = get_ignore_patterns(self.current_dir)
+        return get_folder_structure(self.current_dir, ignore_patterns)
+
+    def execute_shell_command(self, command, timeout=300):
+        if not self.is_safe_command(command):
+            print_warning(f"Please verify the command once: {command}")
+        # Implement shell command execution logic here
+
+    def _execute_single_command(self, command, timeout):
+        # Implement single command execution logic here
+
+    def _handle_source_command(self, command):
+        # Implement source command handling logic here
+
+    def _update_env_from_command(self, command):
+        if '=' in command:
+            if command.startswith('export '):
+                _, var_assignment = command.split(None, 1)
+                key, value = var_assignment.split('=', 1)
+                self.env[key.strip()] = value.strip().strip('"\'')
+            elif command.startswith('set '):
+                _, var_assignment = command.split(None, 1)
+                key, value = var_assignment.split('=', 1)
+                self.env[key.strip()] = value.strip().strip('"\'')
+            else:
+                key, value = command.split('=', 1)
+                self.env[key.strip()] = value.strip().strip('"\'')
+
+    def _handle_cd_command(self, command):
+        _, path = command.split(None, 1)
+        new_dir = os.path.abspath(os.path.join(self.current_dir, path))
+        if self.is_safe_path(new_dir):
+            os.chdir(new_dir)
+            self.current_dir = new_dir
+            print_info(f"Changed directory to: {self.current_dir}")
+            return f"Changed directory to: {self.current_dir}"
+        else:
+            print_error(f"Cannot change to directory: {new_dir}")
+            return f"Failed to change directory to: {new_dir}"
+
+    def reset_directory(self):
+        os.chdir(self.initial_dir)
+        self.current_dir = self.initial_dir
+        print_info(f"Reset directory to: {self.current_dir}")
