@@ -41,6 +41,7 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
                 [f"Current content of {file}:\n{content}" for file, content in file_contents.items()])
             full_query = f"{project_context}\nProject Guidelines:\n{project_guidelines}\nCurrent file contents:\n{file_context}\nUser query: {query}"
         else:
+            is_empty = is_directory_empty(executor.current_dir)
             print_info("ð Creating new project in the current directory.")
             full_query = f"User query: {query}"
 
@@ -57,21 +58,27 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
             if debug:
                 print_debug(f"ð¥ Received {len(commands)} new command(s)")
 
-        assert commands, "â Failed to parse LLM's response or no commands to execute."
+        if not commands:
+            print_error("â Failed to parse LLM's response or no commands to execute.")
+            print("Actual result:", xml_result)
+            return
+
         print_info(f"â
  Parsed {len(commands)} commands from LLM's response.")
 
         success, step_completed, error_message, all_outputs = execute_commands(commands, executor, metadata_manager, debug=debug)
         if not success:
             print_error(f"â Failed to execute command at step {step_completed}.")
+            print_error(f"Error message: {error_message}")
             print_info("ð§ Attempting to fix the error...")
             if handle_error_with_dravid(Exception(error_message), commands[step_completed-1], executor, metadata_manager, debug=debug):
                 print_info("â
- Fix applied. Continuing with the remaining commands.")
-                success, _, error_message, additional_outputs = execute_commands(commands[step_completed:], executor, metadata_manager, debug=debug)
+ Fix applied successfully. Continuing with the remaining commands.")
+                remaining_commands = commands[step_completed:]
+                success, _, error_message, additional_outputs = execute_commands(remaining_commands, executor, metadata_manager, debug=debug)
                 all_outputs += "\n" + additional_outputs
             else:
-                print_error("â Unable to fix error. Skipping this command.")
+                print_error("â Unable to fix the error. Skipping this command and continuing with the next.")
 
         print_info("ð Execution details:")
         click.echo(all_outputs)
