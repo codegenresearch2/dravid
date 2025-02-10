@@ -32,9 +32,9 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
                 "Analyzing project files"
             )
 
-            if debug:
+            if debug and files_info:
                 print_info("Files and dependencies analysis:", indent=4)
-                if files_info and 'main_file' in files_info:
+                if 'main_file' in files_info:
                     print_info(
                         f"Main file to modify: {files_info['main_file']}", indent=6)
                 if 'dependencies' in files_info:
@@ -86,11 +86,10 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
 
         print("no scucess", success)
         if not success:
-            print("called")
             print_error(
                 f"Failed to execute command at step {step_completed}.")
             print_error(f"Error message: {error_message}")
-            print_info("Attempting to fix the error...")
+            print_info("Attempting to fix the error...", indent=2)
             if handle_error_with_dravid(Exception(error_message), commands[step_completed-1], executor, metadata_manager, debug=debug):
                 print_info(
                     "Fix applied successfully. Continuing with the remaining commands.", indent=2)
@@ -133,30 +132,31 @@ def construct_full_query(query, executor, project_context, files_info=None, refe
         full_query = f"{project_context}\n\n"
         full_query += f"Project Guidelines:\n{project_guidelines}\n\n"
 
-        if files_info and 'file_contents_to_load' in files_info:
-            file_contents = {}
-            for file in files_info['file_contents_to_load']:
-                content = get_file_content(file)
-                if content:
-                    file_contents[file] = content
-                    print_info(f"  - Read content of {file}", indent=4)
+        if files_info and isinstance(files_info, dict):
+            if 'file_contents_to_load' in files_info:
+                file_contents = {}
+                for file in files_info['file_contents_to_load']:
+                    content = get_file_content(file)
+                    if content:
+                        file_contents[file] = content
+                        print_info(f"  - Read content of {file}", indent=4)
 
-            file_context = "\n".join(
-                [f"Current content of {file}:\n{content}" for file, content in file_contents.items()])
-            full_query += f"Current file contents:\n{file_context}\n\n"
+                file_context = "\n".join(
+                    [f"Current content of {file}:\n{content}" for file, content in file_contents.items()])
+                full_query += f"Current file contents:\n{file_context}\n\n"
 
-        if files_info and 'dependencies' in files_info:
-            dependency_context = "\n".join(
-                [f"Dependency {dep['file']} exports: {', '.join(dep['imports'])}" for dep in files_info['dependencies']])
-            full_query += f"Dependencies:\n{dependency_context}\n\n"
+            if 'dependencies' in files_info:
+                dependency_context = "\n".join(
+                    [f"Dependency {dep['file']} exports: {', '.join(dep['imports'])}" for dep in files_info['dependencies']])
+                full_query += f"Dependencies:\n{dependency_context}\n\n"
 
-        if files_info and 'new_files' in files_info:
-            new_files_context = "\n".join(
-                [f"New file to create: {new_file['file']}" for new_file in files_info['new_files']])
-            full_query += f"New files to create:\n{new_files_context}\n\n"
+            if 'new_files' in files_info:
+                new_files_context = "\n".join(
+                    [f"New file to create: {new_file['file']}" for new_file in files_info['new_files']])
+                full_query += f"New files to create:\n{new_files_context}\n\n"
 
-        if files_info and 'main_file' in files_info:
-            full_query += f"Main file to modify: {files_info['main_file']}\n\n"
+            if 'main_file' in files_info:
+                full_query += f"Main file to modify: {files_info['main_file']}\n\n"
 
         full_query += "Current directory is not empty.\n\n"
         full_query += f"User query: {query}"
