@@ -19,14 +19,11 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 if cmd['type'] == 'shell':
                     output = handle_shell_command(cmd, executor)
                 elif cmd['type'] == 'file':
-                    output = handle_file_operation(cmd, executor, metadata_manager, confirm_operation=False)
+                    output = handle_file_operation(cmd, executor, metadata_manager, confirm='y')
                 elif cmd['type'] == 'metadata':
                     output = handle_metadata_operation(cmd, metadata_manager)
 
-                if isinstance(output, str) and output.startswith("Skipping"):
-                    print_info(f"Step {i}/{total_steps}: {output}")
-                else:
-                    all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} {step_description} - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
+                all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} {step_description} - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
 
             except Exception as e:
                 error_message = f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {str(e)}"
@@ -44,7 +41,6 @@ def handle_shell_command(cmd, executor):
     output = executor.execute_shell_command(cmd['command'])
     if isinstance(output, str) and output.startswith("Skipping"):
         print_info(output)
-        return output
     if output is None:
         raise Exception(f"Command failed: {cmd['command']}")
     print_success(f"Successfully executed: {cmd['command']}")
@@ -52,13 +48,11 @@ def handle_shell_command(cmd, executor):
         click.echo(f"Command output:\n{output}")
     return output
 
-def handle_file_operation(cmd, executor, metadata_manager, confirm_operation=True):
+def handle_file_operation(cmd, executor, metadata_manager, confirm='n'):
     print_info(f"Performing file operation: {cmd['operation']} on {cmd['filename']}")
-    if confirm_operation:
-        confirm = input(f"Are you sure you want to perform this operation? (y/n): ")
-        if confirm.lower() != 'y':
-            print_info(f"Skipping file operation: {cmd['operation']} on {cmd['filename']}")
-            return f"Skipping file operation: {cmd['operation']} on {cmd['filename']}"
+    if confirm.lower() != 'y':
+        print_info(f"Skipping file operation: {cmd['operation']} on {cmd['filename']}")
+        return f"Skipping file operation: {cmd['operation']} on {cmd['filename']}"
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
     if operation_performed:
         print_success(f"Successfully performed {cmd['operation']} on file: {cmd['filename']}")
