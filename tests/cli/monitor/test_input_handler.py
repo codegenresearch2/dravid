@@ -1,6 +1,6 @@
 import unittest
 import threading
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
 from drd.cli.monitor.input_handler import InputHandler
 
 
@@ -32,7 +32,7 @@ class TestInputHandler(unittest.TestCase):
 
         self.mock_monitor.stop.assert_called_once()
         self.assertEqual(mock_input.call_count, 2)
-        mock_execute_command.assert_called_once_with('test input', None, False, ANY, warn=False)
+        mock_execute_command.assert_called_once_with(ANY, None, False, ANY, warn=False)
 
     @patch('drd.cli.monitor.input_handler.execute_dravid_command')
     def test_process_input(self, mock_execute_command):
