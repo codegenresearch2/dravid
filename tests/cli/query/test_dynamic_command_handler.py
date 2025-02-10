@@ -41,7 +41,11 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertIn("Explanation - Test explanation", output)
         self.assertIn("Shell command - echo \"Hello\"", output)
         self.assertIn("File command - CREATE - test.txt", output)
-        mock_print_debug.assert_called_with("Completed step 3/3")
+        mock_print_debug.assert_has_calls([
+            call("Completed step 1/3"),
+            call("Completed step 2/3"),
+            call("Completed step 3/3")
+        ])
 
     @patch('drd.cli.query.dynamic_command_handler.print_info')
     @patch('drd.cli.query.dynamic_command_handler.print_success')
