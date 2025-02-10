@@ -26,7 +26,7 @@ class TestUtilityFunctions(unittest.TestCase):
     def test_print_error(self, mock_echo):
         print_error("Test error message")
         mock_echo.assert_called_with(
-            f"{Fore.RED}✘ Test error message. Please check the context for more details.{Style.RESET_ALL}")
+            f"{Fore.RED}✘ Test error message{Style.RESET_ALL}")
 
     @patch('click.echo')
     def test_print_success(self, mock_echo):
@@ -44,7 +44,7 @@ class TestUtilityFunctions(unittest.TestCase):
     def test_print_warning(self, mock_echo):
         print_warning("Test warning message")
         mock_echo.assert_called_with(
-            f"{Fore.YELLOW}⚠ Test warning message. Proceed with caution.{Style.RESET_ALL}")
+            f"{Fore.YELLOW}⚠ Test warning message{Style.RESET_ALL}")
 
     @patch('click.echo')
     @patch('click.style')
