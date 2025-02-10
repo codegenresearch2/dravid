@@ -1,8 +1,6 @@
 import traceback
-import click
 from ...api.main import call_dravid_api
-from ...utils import print_error, print_success, print_info, print_step, print_debug
-from ...metadata.common_utils import generate_file_description
+from ...utils import print_error, print_success, print_info, print_command_details
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 
 
@@ -12,14 +10,7 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
 
     for i, cmd in enumerate(commands, 1):
         step_description = "fix" if is_fix else "command"
-        print_step(i, total_steps,
-                   f"Processing {cmd['type']} {step_description}...")
-
-        if cmd['type'] == 'explanation':
-            print_info(f"Explanation: {cmd['content']}")
-            all_outputs.append(
-                f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
-            continue
+        print_info(f"Processing {cmd['type']} {step_description}...")
 
         try:
             if cmd['type'] == 'shell':
@@ -31,13 +22,12 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 all_outputs.append(
                     f"Step {i}/{total_steps}: File operation - {cmd['operation']} - {cmd['filename']} - {output}")
             elif cmd['type'] == 'metadata':
-                print(cmd, "---")
                 output = handle_metadata_operation(cmd, metadata_manager)
                 all_outputs.append(
                     f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} - {output}")
 
             if debug:
-                print_debug(f"Completed step {i}/{total_steps}")
+                print_info(f"Completed step {i}/{total_steps}")
 
         except Exception as e:
             error_message = f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {str(e)}"
@@ -55,7 +45,7 @@ def handle_shell_command(cmd, executor):
         raise Exception(f"Command failed: {cmd['command']}")
     print_success(f"Successfully executed: {cmd['command']}")
     if output:
-        click.echo(f"Command output:\n{output}")
+        print_command_details(output)
     return output
 
 
@@ -81,7 +71,7 @@ def handle_file_operation(cmd, executor, metadata_manager):
 
 def handle_metadata_operation(cmd, metadata_manager):
     if cmd['operation'] == 'UPDATE_FILE':
-        if metadata_manager.update_metadata_from_file():
+        if metadata_manager.update_metadata_from_file(cmd['filename']):
             print_success(f"Updated metadata for file: {cmd['filename']}")
             return f"Updated metadata for {cmd['filename']}"
         else:
@@ -94,7 +84,7 @@ def handle_metadata_operation(cmd, metadata_manager):
 def update_file_metadata(cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
     folder_structure = executor.get_folder_structure()
-    file_type, description, exports = generate_file_description(
+    file_type, description, exports = metadata_manager.generate_file_description(
         cmd['filename'],
         cmd.get('content', ''),
         project_context,
@@ -147,13 +137,13 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
     if fix_applied:
         print_success("All fix steps successfully applied.")
         print_info("Fix application details:")
-        click.echo(all_outputs)
+        print_command_details("\n".join(all_outputs))
         return True
     else:
         print_error(f"Failed to apply the fix at step {step_completed}.")
         print_error(f"Error message: {error_message}")
         print_info("Fix application details:")
-        click.echo(all_outputs)
+        print_command_details("\n".join(all_outputs))
 
         return handle_error_with_dravid(
             Exception(error_message),
