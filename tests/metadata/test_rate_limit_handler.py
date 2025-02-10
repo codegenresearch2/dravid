@@ -43,18 +43,13 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
     @patch('drd.metadata.rate_limit_handler.call_dravid_api_with_pagination')
     @patch('drd.metadata.rate_limit_handler.extract_and_parse_xml')
     async def test_process_single_file(self, mock_extract_xml, mock_call_api):
-        mock_call_api.return_value = "<response><type>python</type><summary>A test file</summary><exports>test_function</exports><imports>os, sys</imports></response>"
+        mock_call_api.return_value = "<response><metadata><type>python</type><summary>A test file</summary><exports>test_function</exports><imports>os, sys</imports></metadata></response>"
         mock_root = ET.fromstring(mock_call_api.return_value)
         mock_extract_xml.return_value = mock_root
 
         result = await process_single_file("test.py", "print('Hello')", "Test project", {"test.py": "file"})
 
-        self.assertEqual(len(result), 5)
-        self.assertEqual(result[0], "test.py")
-        self.assertEqual(result[1], "python")
-        self.assertEqual(result[2], "A test file")
-        self.assertEqual(result[3], "test_function")
-        self.assertEqual(result[4], "os, sys")
+        self.assertEqual(result, ("test.py", "python", "A test file", "test_function", "os, sys"))
         mock_call_api.assert_called_once()
         mock_extract_xml.assert_called_once_with(mock_call_api.return_value)
 
@@ -65,7 +60,6 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         result = await process_single_file("test.py", "print('Hello')", "Test project", {"test.py": "file"})
 
-        self.assertEqual(len(result), 5)
         self.assertEqual(result[0], "test.py")
         self.assertEqual(result[1], "unknown")
         self.assertTrue(result[2].startswith("Error:"))
