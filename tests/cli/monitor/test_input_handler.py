@@ -21,6 +21,10 @@ class TestInputHandler(unittest.TestCase):
         thread = threading.Thread(target=run_input_handler)
         thread.start()
 
+        # Adding a small delay to allow the thread to process the input
+        import time
+        time.sleep(0.1)
+
         thread.join(timeout=10)
 
         if thread.is_alive():
@@ -33,7 +37,7 @@ class TestInputHandler(unittest.TestCase):
     @patch('drd.cli.monitor.input_handler.execute_dravid_command')
     def test_process_input(self, mock_execute_command):
         self.input_handler._process_input('test command')
-        mock_execute_command.assert_called_once()
+        mock_execute_command.assert_called_once_with('test command', None, False, ANY, warn=False)
         self.mock_monitor.processing_input.set.assert_called_once()
         self.mock_monitor.processing_input.clear.assert_called_once()
 
@@ -43,7 +47,7 @@ class TestInputHandler(unittest.TestCase):
     @patch('os.path.exists', return_value=True)
     def test_handle_vision_input(self, mock_exists, mock_input, mock_autocomplete, mock_execute_command):
         self.input_handler._handle_vision_input()
-        mock_execute_command.assert_called_once()
+        mock_execute_command.assert_called_once_with('/path/to/image.jpg process this image', '/path/to/image.jpg', False, ANY, warn=False)
         self.mock_monitor.processing_input.set.assert_called_once()
         self.mock_monitor.processing_input.clear.assert_called_once()
 
@@ -63,7 +67,7 @@ class TestInputHandler(unittest.TestCase):
     def test_get_input_with_autocomplete(self, mock_echo, mock_autocomplete, mock_getchar):
         result = self.input_handler._get_input_with_autocomplete()
         self.assertEqual(result, '/path/to/file.txt')
-        mock_autocomplete.assert_called_once()
+        mock_autocomplete.assert_called_once_with('/path/to/file.txt')
 
     @patch('glob.glob', return_value=['/path/to/file.txt'])
     def test_autocomplete(self, mock_glob):
