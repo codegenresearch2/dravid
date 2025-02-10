@@ -10,14 +10,14 @@ from ...utils.file_utils import get_file_content
 def monitoring_handle_error_with_dravid(error, line, monitor):
     print_error(f'Error detected: {error}')
 
-    error_msg = str(error)
+    error_message = str(error)
     error_type = type(error).__name__
     error_trace = ''.join(traceback.format_exception(type(error), error, error.__traceback__))
 
     project_context = monitor.metadata_manager.get_project_context()
 
     print_info('Identifying relevant files for error context...')
-    error_details = f'Error Message: {error_msg}\nError Type: {error_type}\nError Trace: {error_trace}'
+    error_details = f'Error Message: {error_message}\nError Type: {error_type}\nError Trace: {error_trace}'
     files_to_check = run_with_loader(
         lambda: get_files_to_modify(error_details, project_context),
         'Analyzing project files'
@@ -32,10 +32,10 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
             file_contents[file] = content
             print_info(f'  - Read content of {file}')
 
-    file_context = '\n'.join([f'Content of {file}:\n{content}' for file, content in file_contents.items()])
+    file_context = '\n\n'.join([f'Content of {file}:\n{content}' for file, content in file_contents.items()])
 
     error_query = get_error_resolution_prompt(
-        error_type, error_msg, error_trace, line, project_context, file_context
+        error_type, error_message, error_trace, line, project_context, file_context
     )
 
     print_info('Sending error information to Dravid for analysis...')
