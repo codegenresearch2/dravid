@@ -3,7 +3,7 @@ import sys
 from unittest.mock import patch, MagicMock, call
 from io import StringIO
 from drd.cli.monitor.output_monitor import OutputMonitor
-from drd.utils import print_info, print_prompt
+from drd.cli.monitor.output_monitor import print_info, print_prompt
 
 class TestOutputMonitor(unittest.TestCase):
 
@@ -13,8 +13,8 @@ class TestOutputMonitor(unittest.TestCase):
 
     @patch('select.select')
     @patch('time.time')
-    @patch('drd.utils.print_info')
-    @patch('drd.utils.print_prompt')
+    @patch('drd.cli.monitor.output_monitor.print_info')
+    @patch('drd.cli.monitor.output_monitor.print_prompt')
     def test_idle_state(self, mock_print_prompt, mock_print_info, mock_time, mock_select):
         # Setup
         self.mock_monitor.should_stop.is_set.side_effect = [False] * 10 + [True]
@@ -47,8 +47,8 @@ class TestOutputMonitor(unittest.TestCase):
             call("2. Process an image (type 'vision')"),
             call("3. Exit monitoring mode (type 'exit')"),
         ]
-        mock_print_info.assert_has_calls(expected_calls, any_order=True)
         mock_print_prompt.assert_called_once_with("\nType your choice or command:")
+        mock_print_info.assert_has_calls(expected_calls, any_order=True)
 
     def test_check_for_errors(self):
         # Setup
