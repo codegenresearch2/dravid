@@ -3,7 +3,7 @@ import subprocess
 from queue import Queue
 from .input_handler import InputHandler
 from .output_monitor import OutputMonitor
-from ...utils import print_info, print_success, print_error
+from ...utils import print_header, print_success, print_error
 
 MAX_RETRIES = 3
 
@@ -24,66 +24,64 @@ class DevServerMonitor:
         self.retry_count = 0
 
     def start(self):
-        self.should_stop.clear()
-        self.restart_requested.clear()
-        print_info(f"Starting server with command: {self.command}")
+        print_header("Starting server with command: {}".format(self.command))
         try:
-            self.process = start_process(self.command, self.project_dir)
+            self.process = self._start_process(self.command)
             self.output_monitor.start()
             self.input_handler.start()
         except Exception as e:
-            print_error(f"Failed to start server process: {str(e)}")
+            print_error("Failed to start server process: {}".format(str(e)))
             self.stop()
 
     def stop(self):
-        print_info("Stopping server monitor...")
+        print_header("Stopping server monitor...")
         self.should_stop.set()
         if self.process:
             self.process.terminate()
             self.process.wait()
-        print_info("Server monitor stopped.")
+        print_prompt("Server monitor stopped.")
 
     def request_restart(self):
         self.restart_requested.set()
 
     def perform_restart(self):
-        print_info("Restarting server...")
+        print_header("Restarting server...")
         if self.process:
             self.process.terminate()
             self.process.wait()
 
         try:
-            self.process = start_process(self.command, self.project_dir)
+            self.process = self._start_process(self.command)
             self.retry_count = 0
             self.restart_requested.clear()
             print_success("Server restarted successfully.")
-            print_info("Waiting for server output...")
+            print_header("Waiting for server output...")
         except Exception as e:
-            print_error(f"Failed to restart server process: {str(e)}")
+            print_error("Failed to restart server process: {}".format(str(e)))
             self.retry_count += 1
             if self.retry_count >= MAX_RETRIES:
                 print_error(
-                    f"Server failed to start after {MAX_RETRIES} attempts. Exiting.")
+                    "Server failed to start after {} attempts. Exiting.".format(MAX_RETRIES))
                 self.stop()
             else:
-                print_info(
-                    f"Retrying... (Attempt {self.retry_count + 1}/{MAX_RETRIES})")
+                print_header(
+                    "Retrying... (Attempt {}/{})".format(self.retry_count + 1, MAX_RETRIES))
                 self.request_restart()
 
-
-def start_process(command, cwd):
-    try:
-        return subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            stdin=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True,
-            shell=True,
-            cwd=cwd
-        )
-    except Exception as e:
-        print_error(f"Failed to start server process: {str(e)}")
-        return None
+    def _start_process(self, command):
+        try:
+            return subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                stdin=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                shell=True,
+                cwd=self.project_dir
+            )
+        except Exception as e:
+            print_error("Failed to start server process: {}".format(str(e)))
+            self.stop()
+            return None
