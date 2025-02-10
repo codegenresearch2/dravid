@@ -7,14 +7,12 @@ from ...prompts.monitor_error_resolution import get_error_resolution_prompt
 from ..query.file_operations import get_files_to_modify
 from ...utils.file_utils import get_file_content
 
-
 def monitoring_handle_error_with_dravid(error, line, monitor):
-    print_error(f"Error detected: {error}")
+    print_error(f"An error has been detected: {error}")
 
     error_message = str(error)
     error_type = type(error).__name__
-    error_trace = ''.join(traceback.format_exception(
-        type(error), error, error.__traceback__))
+    error_trace = ''.join(traceback.format_exception(type(error), error, error.__traceback__))
 
     project_context = monitor.metadata_manager.get_project_context()
 
@@ -32,12 +30,9 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
         content = get_file_content(file)
         if content:
             file_contents[file] = content
-            print_info(f"  - Read content of {file}")
+            print_info(f"  - Successfully read content of {file}")
 
-    file_context = "\n".join(
-        [f"Content of {file}:\n{content}" for file,
-            content in file_contents.items()]
-    )
+    file_context = "\n".join([f"Content of {file}:\n{content}" for file, content in file_contents.items()])
 
     error_query = get_error_resolution_prompt(
         error_type, error_message, error_trace, line, project_context, file_context
@@ -47,7 +42,7 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
     try:
         commands = call_dravid_api(error_query, include_context=True)
     except ValueError as e:
-        print_error(f"Error parsing dravid's response: {str(e)}")
+        print_error(f"There was an error parsing Dravid's response: {str(e)}")
         return False
 
     requires_restart = False
@@ -62,23 +57,21 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
     print_command_details(fix_commands)
 
     user_input = monitor.get_user_input(
-        "Do you want to proceed with this fix? You will be able to stop anytime during the step. "
+        "Do you want to proceed with this fix? You can stop at any time during the process. [y/N]: "
     )
 
     if user_input.lower() == 'y':
-        print_info("Applying dravid's suggested fix...")
+        print_info("Applying Dravid's suggested fix...")
         executor = Executor()
         for cmd in fix_commands:
             if cmd['type'] == 'shell':
                 print_info(f"Executing: {cmd['command']}")
                 executor.execute_shell_command(cmd['command'])
             elif cmd['type'] == 'file':
-                print_info(
-                    f"Performing file operation: {cmd['operation']} on {cmd['filename']}")
-                executor.perform_file_operation(
-                    cmd['operation'], cmd['filename'], cmd.get('content'))
+                print_info(f"Performing file operation: {cmd['operation']} on {cmd['filename']}")
+                executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'))
 
-        print_success("Fix applied.")
+        print_success("The fix has been successfully applied.")
 
         if requires_restart:
             print_info("The applied fix requires a server restart.")
@@ -89,12 +82,11 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
                 print_info("Requesting server restart...")
                 monitor.request_restart()
             else:
-                print_info(
-                    "Server restart postponed. You may need to restart manually if issues persist.")
+                print_info("Server restart has been postponed. You may need to restart manually if issues persist.")
         else:
             print_info("The applied fix does not require a server restart.")
 
         return True
     else:
-        print_info("Fix not applied. Continuing with current state.")
+        print_info("The fix has not been applied. Continuing with the current state.")
         return False
