@@ -1,7 +1,7 @@
 import traceback
 from ...api.main import call_dravid_api
 from ...utils.step_executor import Executor
-from ...utils.utils import print_error, print_success, print_info
+from ...utils.utils import print_error, print_success, print_info, print_command_details
 from ...utils.loader import run_with_loader
 from ...prompts.monitor_error_resolution import get_error_resolution_prompt
 from ..query.file_operations import get_files_to_modify
