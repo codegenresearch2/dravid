@@ -1,7 +1,7 @@
 import click
 import sys
 from ..api import stream_dravid_api, call_dravid_api_with_pagination
-from ..utils.utils import print_error, print_info
+from ..utils import print_error, print_info
 from ..metadata.project_metadata import ProjectMetadataManager
 import os
 
@@ -36,7 +36,7 @@ def handle_ask_command(ask, file, debug):
             suggestion = suggest_file_alternative(file_path, project_metadata)
             print_info(f"Suggestion: {suggestion}")
             user_input = click.prompt(
-                "Do you want to proceed without this file?", type=str)
+                "Do you want to proceed without this file? (y/n)", type=str)
             if user_input.lower() != 'y':
                 return
 
