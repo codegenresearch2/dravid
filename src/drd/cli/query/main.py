@@ -8,6 +8,8 @@ from ...utils.file_utils import get_file_content, fetch_project_guidelines, is_d
 from .file_operations import get_files_to_modify
 from ...utils.parser import parse_dravid_response
 
+def print_header(message):
+    print_info(f"🌟 {message}")
 
 def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=None):
     print_header("Starting Dravid AI tool...")
