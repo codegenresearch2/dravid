@@ -13,7 +13,7 @@ def read_file_content(file_path):
         return None
 
 def suggest_file_alternative(file_path, project_metadata):
-    query = f"The file '{file_path}' does not exist. Can you suggest a similar existing file or interpret what the user might have meant? Use the following project metadata as context:\n\n{project_metadata}"
+    query = f"The file '{file_path}' doesn't exist. Can you suggest similar existing files or interpret what the user might have meant? Use the following project metadata as context:\n\n{project_metadata}"
     response = call_dravid_api_with_pagination(query)
     return response
 
@@ -28,11 +28,11 @@ def handle_ask_command(ask, file, debug):
             context += f"Content of {file_path}:\n{content}\n\n"
         else:
             print_error(f"File not found: {file_path}.")
-            print_info("Finding a similar or alternative file...")
-            print_info("Making LLM call: 1")
+            print_info("Finding similar or alternative file...")
+            print_info("LLM call to be made: 1")
             suggestion = suggest_file_alternative(file_path, project_metadata)
             print_info(f"Suggestion: {suggestion}")
-            user_input = click.prompt("Do you want to proceed without this file? (y/n)", type=str)
+            user_input = click.prompt("Proceed without this file? (y/n)", type=str)
             if user_input.lower() != 'y':
                 return
 
