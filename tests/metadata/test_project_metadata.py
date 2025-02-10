@@ -154,11 +154,26 @@ class TestProjectMetadataManager(unittest.TestCase):
         self.assertEqual(requirements_txt['description'], "Project dependencies")
         self.assertTrue(requirements_txt['content_preview'].startswith("Flask==2.3.2"))
 
-# Updated ProjectMetadataManager class with the __init__ method
+# Updated ProjectMetadataManager class with the load_metadata method
 class ProjectMetadataManager:
     def __init__(self, project_dir):
         self.project_dir = project_dir
         self.metadata_file = os.path.join(self.project_dir, 'drd.json')
         self.metadata = self.load_metadata()
+
+    def load_metadata(self):
+        if os.path.exists(self.metadata_file):
+            with open(self.metadata_file, 'r') as f:
+                return json.load(f)
+        return {
+            "project_name": os.path.basename(self.project_dir),
+            "last_updated": "",
+            "files": [],
+            "dev_server": {
+                "start_command": "",
+                "framework": "",
+                "language": ""
+            }
+        }
 
     # ... other methods ...
