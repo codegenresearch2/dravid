@@ -28,7 +28,7 @@ class DevServerMonitor:
         self.should_stop.clear()
         self.restart_requested.clear()
         try:
-            self.process = self.start_process(self.command)
+            self.process = self._start_process(self.command, self.project_dir)
             self.output_monitor.start()
             self.input_handler.start()
         except Exception as e:
@@ -53,7 +53,7 @@ class DevServerMonitor:
             self.process.wait()
 
         try:
-            self.process = self.start_process(self.command)
+            self.process = self._start_process(self.command, self.project_dir)
             self.retry_count = 0
             self.restart_requested.clear()
             print_success("Server restarted successfully.")
@@ -70,7 +70,7 @@ class DevServerMonitor:
                     f"Retrying... (Attempt {self.retry_count + 1}/{MAX_RETRIES})")
                 self.request_restart()
 
-    def start_process(self, command):
+    def _start_process(self, command, cwd):
         try:
             return subprocess.Popen(
                 command,
@@ -81,9 +81,23 @@ class DevServerMonitor:
                 bufsize=1,
                 universal_newlines=True,
                 shell=True,
-                cwd=self.project_dir
+                cwd=cwd
             )
         except Exception as e:
             print_error(f"Failed to start server process: {str(e)}")
             self.stop()
             return None
+
+
+def start_process(command, cwd):
+    return subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+        universal_newlines=True,
+        shell=True,
+        cwd=cwd
+    )
