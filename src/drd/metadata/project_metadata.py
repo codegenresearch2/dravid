@@ -5,6 +5,8 @@ import fnmatch
 import xml.etree.ElementTree as ET
 import mimetypes
 from ..utils.utils import print_info, print_warning
+
+# Import the get_file_metadata_prompt function
 from ..prompts.file_metadata_desc_prompts import get_file_metadata_prompt
 from ..api import call_dravid_api_with_pagination
 
@@ -18,11 +20,10 @@ class ProjectMetadataManager:
         self.image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.ico'}
 
     def load_metadata(self):
-        try:
+        if os.path.exists(self.metadata_file):
             with open(self.metadata_file, 'r') as f:
                 return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            return self.create_default_metadata()
+        return self.create_default_metadata()
 
     def create_default_metadata(self):
         return {
@@ -46,57 +47,65 @@ class ProjectMetadataManager:
             }
         }
 
-    # ... rest of the code remains the same ...
+    def save_metadata(self):
+        with open(self.metadata_file, 'w') as f:
+            json.dump(self.metadata, f, indent=2)
 
-    async def analyze_file(self, file_path):
-        rel_path = os.path.relpath(file_path, self.project_dir)
+    def get_ignore_patterns(self):
+        patterns = [
+            '**/.git/**', '**/node_modules/**', '**/dist/**', '**/build/**',
+            '**/__pycache__/**', '**/.venv/**', '**/.idea/**', '**/.vscode/**'
+        ]
 
-        if self.is_binary_file(file_path):
-            return {
-                "path": rel_path,
-                "type": "binary",
-                "summary": "Binary or non-text file",
-                "exports": [],
-                "imports": []
-            }
+        for root, _, files in os.walk(self.project_dir):
+            if '.gitignore' in files:
+                gitignore_path = os.path.join(root, '.gitignore')
+                rel_root = os.path.relpath(root, self.project_dir)
+                with open(gitignore_path, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            if rel_root == '.':
+                                patterns.append(line)
+                            else:
+                                patterns.append(os.path.join(rel_root, line))
 
-        if file_path.endswith('.md'):
-            return None  # Skip markdown files
+        return patterns
 
+    def should_ignore(self, path):
         try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
+            path_str = str(path)
+            abs_path = os.path.abspath(path_str)
+            rel_path = os.path.relpath(abs_path, self.project_dir)
 
-            prompt = get_file_metadata_prompt(rel_path, content, json.dumps(self.metadata), json.dumps(self.metadata['directory_structure']))
-            response = call_dravid_api_with_pagination(prompt, include_context=True)
+            if rel_path.startswith('..'):
+                return True
 
-            root = ET.fromstring(response)
-            metadata = root.find('metadata')
-
-            imports = metadata.find('imports').text.split(',') if metadata.find('imports').text != 'None' else []
-            file_info = {
-                "path": rel_path,
-                "type": metadata.find('type').text,
-                "summary": metadata.find('description').text,
-                "exports": metadata.find('exports').text.split(',') if metadata.find('exports').text != 'None' else [],
-                "imports": imports
-            }
-
-            dependencies = metadata.find('external_dependencies')
-            if dependencies is not None:
-                for dep in dependencies.findall('dependency'):
-                    self.metadata['external_dependencies'].append(dep.text)
-
+            for pattern in self.ignore_patterns:
+                if pattern.endswith('/'):
+                    if rel_path.startswith(pattern) or rel_path.startswith(pattern[:-1]):
+                        return True
+                elif fnmatch.fnmatch(rel_path, pattern):
+                    return True
+            return False
         except Exception as e:
-            print_warning(f"Error analyzing file {file_path}: {str(e)}")
-            file_info = {
-                "path": rel_path,
-                "type": "unknown",
-                "summary": "Error occurred during analysis",
-                "exports": [],
-                "imports": []
-            }
-
-        return file_info
+            print_warning(f"Error in should_ignore for path {path}: {str(e)}")
+            return True
 
     # ... rest of the code remains the same ...
+
+    def update_file_metadata(self, filename, file_type, content, description=None, exports=None, imports=None):
+        self.metadata['project_info']['last_updated'] = datetime.now().isoformat()
+        file_entry = next((f for f in self.metadata['key_files'] if f['path'] == filename), None)
+        if file_entry is None:
+            file_entry = {'path': filename}
+            self.metadata['key_files'].append(file_entry)
+        file_entry.update({
+            'type': file_type,
+            'summary': description or file_entry.get('summary', ''),
+            'exports': exports or [],
+            'imports': imports or []
+        })
+        self.save_metadata()
+
+    # ... additional methods as needed ...
