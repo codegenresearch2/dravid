@@ -39,18 +39,32 @@ def to_thread(func, *args, **kwargs):
         return loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
 
 async def process_single_file(filename, content, project_context, folder_structure):
+    metadata_query = get_file_metadata_prompt(filename, content, project_context, folder_structure)
     try:
-        file_type, description, exports = await to_thread(generate_file_description, filename, content, project_context, folder_structure)
+        async with rate_limiter.semaphore:
+            await rate_limiter.acquire()
+            response = await to_thread(call_dravid_api_with_pagination, metadata_query, include_context=True)
+
+        root = extract_and_parse_xml(response)
+        type_elem = root.find('.//type')
+        desc_elem = root.find('.//description')
+        exports_elem = root.find('.//exports')
+        imports_elem = root.find('.//imports')
+
+        file_type = type_elem.text.strip() if type_elem is not None and type_elem.text else "unknown"
+        description = desc_elem.text.strip() if desc_elem is not None and desc_elem.text else "No description available"
+        exports = exports_elem.text.strip() if exports_elem is not None and exports_elem.text else ""
+        imports = imports_elem.text.strip() if imports_elem is not None and imports_elem.text else ""
+
         print_success(f"Processed: {filename}")
-        return filename, file_type, description, exports
+        return filename, file_type, description, exports, imports
     except Exception as e:
         print_error(f"Error processing {filename}: {e}")
-        return filename, "unknown", f"Error: {e}", ""
+        return filename, "unknown", f"Error: {e}", "", ""
 
 async def process_files(files, project_context, folder_structure):
     total_files = len(files)
-    print_info(
-        f"Processing {total_files} files to construct metadata per file")
+    print_info(f"Processing {total_files} files to construct metadata per file")
     print_info(f"LLM calls to be made: {total_files}")
 
     async def process_batch(batch):
@@ -67,10 +81,3 @@ async def process_files(files, project_context, folder_structure):
         print_info(f"Progress: {len(results)}/{total_files} files processed")
 
     return results
-
-
-In the rewritten code, I have improved XML response handling by using the `generate_file_description` function from `common_utils.py` to parse the XML response and extract the file type, description, and exports. This function is called in the `process_single_file` function using `asyncio.to_thread` to run it in a separate thread and avoid blocking the event loop.
-
-I have also improved metadata structure and clarity by returning a tuple of `(filename, file_type, description, exports)` from the `process_single_file` function, which makes it easier to handle the metadata for each file.
-
-Finally, I have streamlined dependency management in code by using the `RateLimiter` class to limit the number of API calls per minute and the `MAX_CONCURRENT_REQUESTS` constant to limit the number of concurrent requests. This should help to avoid hitting the API rate limit and improve performance.
