@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 import requests
 
 from drd.cli.query.main import execute_dravid_command
@@ -26,7 +26,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
     def test_execute_dravid_command_debug_mode(self, mock_run_with_loader, mock_get_files, mock_print_error,
                                                mock_print_debug, mock_execute_commands, mock_stream_api,
                                                mock_metadata_manager, mock_executor):
-        self.debug = True
+        import unittest.mock as mock
         mock_executor.return_value = self.executor
         mock_metadata_manager.return_value = self.metadata_manager
         self.metadata_manager.get_project_context.return_value = "Test project context"
@@ -56,7 +56,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
                                self.debug, self.instruction_prompt)
 
         mock_print_debug.assert_has_calls([
-            call("Received 2 new command(s)")
+            call("Received 2 new command(s)", indent=4)
         ])
 
     @patch('drd.cli.query.main.Executor')
@@ -95,10 +95,10 @@ class TestExecuteDravidCommand(unittest.TestCase):
                                self.debug, self.instruction_prompt)
 
         mock_print_error.assert_any_call(
-            "Failed to execute command at step 1.")
+            "Failed to execute command at step 1.", indent=4)
         mock_handle_error.assert_called_once()
         mock_print_info.assert_called_once_with(
-            "Fix applied successfully. Continuing with the remaining commands.")
+            "Fix applied successfully. Continuing with the remaining commands.", indent=4)
 
     @patch('drd.cli.query.main.Executor')
     @patch('drd.cli.query.main.ProjectMetadataManager')
@@ -127,7 +127,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
                                self.debug, self.instruction_prompt)
 
         mock_call_vision_api.assert_called_once()
-        mock_print_info.assert_called_once_with(f"Processing image: {self.image_path}")
+        mock_print_info.assert_called_once_with(f"Processing image: {self.image_path}", indent=4)
 
     @patch('drd.cli.query.main.Executor')
     @patch('drd.cli.query.main.ProjectMetadataManager')
@@ -147,7 +147,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
                                self.debug, self.instruction_prompt)
 
         mock_print_error.assert_called_with(
-            "An unexpected error occurred: API connection error")
+            "An unexpected error occurred: API connection error", indent=4)
 
 
 if __name__ == '__main__':
