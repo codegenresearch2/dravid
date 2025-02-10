@@ -5,6 +5,7 @@ from ...utils import print_error, print_success, print_info, print_step, print_d
 from ...metadata.common_utils import generate_file_description
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 from unittest.mock import patch
+import xml.etree.ElementTree as ET
 
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
@@ -64,22 +65,22 @@ def handle_file_operation(cmd, executor, metadata_manager):
         return operation_performed
     elif operation_performed:
         print_success(f"Successfully performed {cmd['operation']} on file: {cmd['filename']}")
-        if cmd['operation'] == 'UPDATE_FILE':
-            update_file_metadata(cmd, metadata_manager)
+        if cmd['operation'] in ['CREATE', 'UPDATE']:
+            update_file_metadata(cmd, metadata_manager, executor)
         return "Success"
     else:
         raise Exception(f"File operation failed: {cmd['operation']} on {cmd['filename']}")
 
 def handle_metadata_operation(cmd, metadata_manager):
     if cmd['operation'] == 'UPDATE_FILE':
-        update_file_metadata(cmd, metadata_manager)
+        update_file_metadata(cmd, metadata_manager, executor)
         print_success(f"Updated metadata for file: {cmd['filename']}")
         return f"Updated metadata for {cmd['filename']}"
     else:
         raise Exception(f"Unknown operation: {cmd['operation']}")
 
 @patch('drd.metadata.common_utils.analyze_file')
-def update_file_metadata(mock_analyze_file, cmd, metadata_manager):
+def update_file_metadata(mock_analyze_file, cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
     mock_analyze_file.return_value = {"file_type": "python", "description": "Test description", "exports": []}
     file_type, description, exports = generate_file_description(cmd['filename'], cmd.get('content', ''), project_context)
