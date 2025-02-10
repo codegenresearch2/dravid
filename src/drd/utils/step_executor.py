@@ -10,6 +10,19 @@ from .diff import preview_file_changes
 from .apply_file_changes import apply_changes
 from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
 
+# Define constants for messages and operations
+OPERATION_MESSAGES = {
+    'CREATE': 'File created successfully',
+    'UPDATE': 'File updated successfully',
+    'DELETE': 'File deleted successfully'
+}
+
+ERROR_MESSAGES = {
+    'CREATE': 'Error creating file',
+    'UPDATE': 'Error updating file',
+    'DELETE': 'Error deleting file'
+}
+
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
@@ -53,71 +66,50 @@ class Executor:
                 print_info(f"🚫 File {operation.lower()} cancelled by user.")
                 return "Skipping this step"
         print_info(f"📁 File: {filename}")
-        if operation == 'CREATE':
-            if os.path.exists(full_path) and not force:
-                print_info(f"📝 File already exists: {filename}")
-                return False
-            try:
+        if operation not in ['CREATE', 'UPDATE', 'DELETE']:
+            print_error(f"🚨 Unknown file operation: {operation}")
+            return False
+        try:
+            if operation == 'CREATE':
+                if os.path.exists(full_path) and not force:
+                    print_info(f"📝 File already exists: {filename}")
+                    return False
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
-                preview = preview_file_changes(operation, filename, new_content=content)
-                print(preview)
-                if click.confirm(f"{Fore.YELLOW}Confirm creation [y/N]:{Style.RESET_ALL}", default=False):
-                    with open(full_path, 'w') as f:
-                        f.write(content)
-                    print_success(f"🎉 File created successfully: {filename}")
-                    return True
-                else:
-                    print_info("🚫 File creation cancelled by user.")
-                    return "Skipping this step"
-            except Exception as e:
-                print_error(f"🚨 Error creating file: {str(e)}")
-                return False
-        elif operation == 'UPDATE':
-            if not os.path.exists(full_path):
-                print_info(f"📝 File does not exist: {filename}")
-                return False
-            try:
+            elif operation == 'UPDATE':
+                if not os.path.exists(full_path):
+                    print_info(f"📝 File does not exist: {filename}")
+                    return False
                 with open(full_path, 'r') as f:
                     original_content = f.read()
                 if content:
                     updated_content = apply_changes(original_content, content)
-                    preview = preview_file_changes(operation, filename, new_content=updated_content, original_content=original_content)
-                    print(preview)
-                    confirmation_box = create_confirmation_box(filename, f"{operation.lower()} this file")
-                    print(confirmation_box)
-                    if click.confirm(f"{Fore.YELLOW}Confirm update [y/N]:{Style.RESET_ALL}", default=False):
-                        with open(full_path, 'w') as f:
-                            f.write(updated_content)
-                        print_success(f"🎉 File updated successfully: {filename}")
-                        return True
-                    else:
-                        print_info(f"🚫 File update cancelled by user.")
-                        return "Skipping this step"
                 else:
                     print_error("🚨 No content or changes provided for update operation")
                     return False
-            except Exception as e:
-                print_error(f"🚨 Error updating file: {str(e)}")
-                return False
-        elif operation == 'DELETE':
-            if not os.path.isfile(full_path):
-                print_info(f"🚫 Delete operation is only allowed for files: {filename}")
-                return False
-            confirmation_box = create_confirmation_box(filename, f"{operation.lower()} this file")
-            print(confirmation_box)
-            if click.confirm(f"{Fore.YELLOW}Confirm deletion [y/N]:{Style.RESET_ALL}", default=False):
-                try:
-                    os.remove(full_path)
-                    print_success(f"🎉 File deleted successfully: {filename}")
-                    return True
-                except Exception as e:
-                    print_error(f"🚨 Error deleting file: {str(e)}")
+            elif operation == 'DELETE':
+                if not os.path.isfile(full_path):
+                    print_info(f"🚫 Delete operation is only allowed for files: {filename}")
                     return False
+                confirmation_box = create_confirmation_box(filename, f"{operation.lower()} this file")
+                print(confirmation_box)
+                if not click.confirm(f"{Fore.YELLOW}Confirm deletion [y/N]:{Style.RESET_ALL}", default=False):
+                    print_info("🚫 File deletion cancelled by user.")
+                    return "Skipping this step"
+            preview = preview_file_changes(operation, filename, new_content=updated_content if operation != 'DELETE' else None, original_content=original_content if operation == 'UPDATE' else None)
+            print(preview)
+            if click.confirm(f"{Fore.YELLOW}Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
+                if operation == 'CREATE' or operation == 'UPDATE':
+                    with open(full_path, 'w') as f:
+                        f.write(content if operation == 'CREATE' else updated_content)
+                elif operation == 'DELETE':
+                    os.remove(full_path)
+                print_success(f"🎉 {OPERATION_MESSAGES[operation]}: {filename}")
+                return True
             else:
-                print_info("🚫 File deletion cancelled by user.")
+                print_info(f"🚫 File {operation.lower()} cancelled by user.")
                 return "Skipping this step"
-        else:
-            print_error(f"🚨 Unknown file operation: {operation}")
+        except Exception as e:
+            print_error(f"🚨 {ERROR_MESSAGES[operation]}: {str(e)}")
             return False
 
     def parse_json(self, json_string):
@@ -229,15 +221,12 @@ class Executor:
         if '=' in command:
             if command.startswith('export '):
                 _, var_assignment = command.split(None, 1)
-                key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
             elif command.startswith('set '):
                 _, var_assignment = command.split(None, 1)
-                key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
             else:
-                key, value = command.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
+                var_assignment = command
+            key, value = var_assignment.split('=', 1)
+            self.env[key.strip()] = value.strip().strip('"\'')
 
     def _handle_cd_command(self, command):
         _, path = command.split(None, 1)
