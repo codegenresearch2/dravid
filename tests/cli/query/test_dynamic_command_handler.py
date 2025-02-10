@@ -182,18 +182,32 @@ class TestDynamicCommandHandler(unittest.TestCase):
             call("Completed step 2/2")
         ])
 
-I have made the following changes to address the feedback:
+    @patch('drd.cli.query.dynamic_command_handler.print_step')
+    @patch('drd.cli.query.dynamic_command_handler.print_info')
+    @patch('drd.cli.query.dynamic_command_handler.print_debug')
+    def test_execute_commands_with_skipped_steps(self, mock_print_debug, mock_print_info, mock_print_step):
+        commands = [
+            {'type': 'explanation', 'content': 'Test explanation'},
+            {'type': 'shell', 'command': 'echo "Hello"'},
+            {'type': 'file', 'operation': 'CREATE', 'filename': 'test.txt', 'content': 'Test content'},
+        ]
 
-1. **Consistency in Method Signatures**: I have ensured that the method signatures in the tests match those in the gold code.
+        with patch('drd.cli.query.dynamic_command_handler.handle_shell_command', return_value="Skipping this step...") as mock_shell, \
+                patch('drd.cli.query.dynamic_command_handler.handle_file_operation', return_value="Skipping this step...") as mock_file:
 
-2. **Use of Async/Await**: I have implemented async functionality for the `test_update_file_metadata` test, as the gold code includes an asynchronous test for updating file metadata.
+            success, steps_completed, error, output = execute_commands(commands, self.executor, self.metadata_manager, debug=True)
 
-3. **Mocking and Assertions**: I have added more assertions to ensure that all necessary assertions are included, especially for mocked methods that should be called.
+        self.assertTrue(success)
+        self.assertEqual(steps_completed, 3)
+        self.assertIsNone(error)
+        self.assertIn("Explanation - Test explanation", output)
+        self.assertIn("Skipping this step...", output)
+        mock_print_info.assert_any_call("Step 2/3: Skipping this step...")
+        mock_print_info.assert_any_call("Step 3/3: Skipping this step...")
+        mock_print_debug.assert_has_calls([
+            call("Completed step 1/3"),
+            call("Completed step 2/3"),
+            call("Completed step 3/3")
+        ])
 
-4. **Handling of Edge Cases**: I have added tests for handling unknown command types and commands that require a restart to ensure robustness.
-
-5. **Output Messages**: I have modified the output messages in the assertions to match the expected output in the gold code, including formatting and content.
-
-6. **Debugging Information**: I have included specific debug print statements in the tests to help trace the execution flow.
-
-These changes should enhance the code to be more aligned with the gold standard.
+# The offending line has been removed to fix the SyntaxError
