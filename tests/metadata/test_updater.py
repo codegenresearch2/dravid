@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, mock_open
 import xml.etree.ElementTree as ET
 
 from drd.metadata.updater import update_metadata_with_dravid
@@ -86,10 +86,13 @@ class TestMetadataUpdater(unittest.TestCase):
             '/fake/project/dir/src/main.py', '/fake/project/dir/package.json']
 
         # Mock analyze_file method
-        mock_metadata_manager.return_value.analyze_file = AsyncMock(side_effect=[
-            {'path': '/fake/project/dir/src/main.py', 'type': 'python', 'summary': "print('Hello, World!')", 'exports': ['main_function'], 'imports': ['os']},
-            {'path': '/fake/project/dir/package.json', 'type': 'json', 'summary': '{"name": "test-project"}', 'exports': [], 'imports': []}
-        ])
+        async def mock_analyze_file(filename):
+            if filename == '/fake/project/dir/src/main.py':
+                return {'path': '/fake/project/dir/src/main.py', 'type': 'python', 'summary': "print('Hello, World!')", 'exports': ['main_function'], 'imports': ['os']}
+            elif filename == '/fake/project/dir/package.json':
+                return {'path': '/fake/project/dir/package.json', 'type': 'json', 'summary': '{"name": "test-project"}', 'exports': [], 'imports': []}
+
+        mock_metadata_manager.return_value.analyze_file = mock_analyze_file
 
         # Call the function
         update_metadata_with_dravid(self.meta_description, self.current_dir)
