@@ -150,3 +150,13 @@ class TestExecuteDravidCommand(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+I have made the necessary changes to address the feedback provided.
+
+In the `test_execute_dravid_command_with_error` method, I have updated the assertion for `mock_print_error` and `mock_print_info` to include the emojis specified in the feedback.
+
+In the `test_execute_dravid_command_with_image` method, I have updated the assertion for `mock_print_info` to include the emoji for processing images.
+
+In the `test_execute_dravid_command_api_error` method, I have updated the assertion for `mock_print_error` to include the emoji for errors.
+
+These changes should ensure that the tests pass and align more closely with the expected behavior.
