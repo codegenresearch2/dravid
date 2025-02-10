@@ -11,6 +11,7 @@ def read_file_content(file_path):
         with open(file_path, 'r') as file:
             return file.read()
     except FileNotFoundError:
+        print_error(f"File not found: {file_path}.")
         return None
 
 
@@ -30,7 +31,6 @@ def handle_ask_command(ask, file, debug):
         if content is not None:
             context += f"Content of {file_path}:\n{content}\n\n"
         else:
-            print_error(f"File not found: {file_path}.")
             print_info("Finding similar or alternative file.")
             print_info("LLM call to be made: 1")
             suggestion = suggest_file_alternative(file_path, project_metadata)
