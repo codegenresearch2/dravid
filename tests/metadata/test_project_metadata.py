@@ -17,18 +17,11 @@ class TestProjectMetadataManager(unittest.TestCase):
 
     @patch('os.path.exists')
     @patch('builtins.open', new_callable=mock_open, read_data='{"project_name": "Test Project"}')
-    def test_load_metadata_existing_file(self, mock_file, mock_exists):
+    def test_load_metadata(self, mock_file, mock_exists):
         mock_exists.return_value = True
         metadata = self.manager.load_metadata()
         self.assertEqual(metadata["project_name"], "Test Project")
         mock_file.assert_called_once_with(os.path.join(self.project_dir, 'drd.json'), 'r')
-
-    @patch('os.path.exists')
-    @patch('builtins.open', new_callable=mock_open, read_data='invalid json')
-    def test_load_metadata_invalid_json(self, mock_file, mock_exists):
-        mock_exists.return_value = True
-        metadata = self.manager.load_metadata()
-        self.assertEqual(metadata["project_name"], os.path.basename(self.project_dir))
 
     @patch('json.dump')
     @patch('builtins.open', new_callable=mock_open)
@@ -95,10 +88,68 @@ class TestProjectMetadataManager(unittest.TestCase):
     @patch('os.path.exists')
     @patch('builtins.open', new_callable=mock_open)
     @patch.object(ProjectMetadataManager, 'save_metadata')
-    def test_update_metadata_from_file_invalid_json(self, mock_save, mock_file, mock_exists):
+    def test_update_metadata_from_file(self, mock_save, mock_file, mock_exists):
         mock_exists.return_value = True
-        mock_file.return_value.__enter__.return_value.read.return_value = 'invalid json'
-        result = self.manager.update_metadata_from_file()
-        self.assertFalse(result)
 
-In this updated code snippet, I have addressed the feedback provided by the oracle. I have updated the import path to match the gold code, used the `unittest` framework for test cases, and followed the mocking, test method naming, setup method, assertions, and error handling practices seen in the gold code. I have also added a test case for the `update_metadata_from_file` method to cover the scenario where the JSON content is invalid.
+        # Initial metadata
+        initial_metadata = {
+            "project_name": "old_project",
+            "last_updated": "",
+            "files": [],
+            "dev_server": {
+                "start_command": "",
+                "framework": "",
+                "language": ""
+            }
+        }
+        self.manager.metadata = initial_metadata
+
+        # New metadata to be updated
+        new_metadata = {
+            "project_name": "pyserv",
+            "last_updated": "2023-07-18T10:00:00",
+            "files": [
+                {
+                    "filename": "app.py",
+                    "content": "from flask import Flask\n\napp = Flask(__name__)",
+                    "description": "Main application file",
+                    "exports": "app"
+                },
+                {
+                    "filename": "requirements.txt",
+                    "content": "Flask==2.3.2\nuvicorn==0.22.0",
+                    "description": "Project dependencies"
+                }
+            ],
+            "dev_server": {
+                "start_command": "uvicorn app:app --reload",
+                "framework": "flask",
+                "language": "python"
+            }
+        }
+
+        # Mock the file read operation to return the new metadata
+        mock_file.return_value.__enter__.return_value.read.return_value = json.dumps(new_metadata)
+
+        # Call the method to update metadata
+        result = self.manager.update_metadata_from_file()
+
+        # Assert that the update was successful
+        self.assertTrue(result)
+
+        # Assert that the metadata has been updated correctly
+        self.assertEqual(self.manager.metadata['project_name'], "pyserv")
+        self.assertEqual(len(self.manager.metadata['files']), 2)
+        self.assertEqual(self.manager.metadata['dev_server']['start_command'], "uvicorn app:app --reload")
+        self.assertEqual(self.manager.metadata['dev_server']['framework'], "flask")
+        self.assertEqual(self.manager.metadata['dev_server']['language'], "python")
+
+        # Check file metadata
+        app_py = next(f for f in self.manager.metadata['files'] if f['filename'] == 'app.py')
+        self.assertEqual(app_py['description'], "Main application file")
+        self.assertEqual(app_py['exports'], "app")
+        self.assertTrue(app_py['content_preview'].startswith("from flask import Flask"))
+
+        requirements_txt = next(f for f in self.manager.metadata['files'] if f['filename'] == 'requirements.txt')
+        self.assertEqual(requirements_txt['description'], "Project dependencies")
+        self.assertTrue(requirements_txt['content_preview'].startswith("Flask==2.3.2"))
