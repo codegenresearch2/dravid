@@ -26,6 +26,7 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 output = handle_file_operation(cmd, executor, metadata_manager)
                 all_outputs.append(f'Step {i}/{total_steps}: File operation - {cmd["operation"]} - {cmd["filename"]} - {output}')
             elif cmd['type'] == 'metadata':
+                print(f'Processing metadata operation: {cmd}')
                 output = handle_metadata_operation(cmd, metadata_manager)
                 all_outputs.append(f'Step {i}/{total_steps}: Metadata operation - {cmd["operation"]} - {output}')
 
