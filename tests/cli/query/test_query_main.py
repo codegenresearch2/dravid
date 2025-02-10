@@ -94,10 +94,11 @@ class TestExecuteDravidCommand(unittest.TestCase):
                                self.debug, self.instruction_prompt)
 
         mock_print_error.assert_any_call(
-            "ðŸš« Failed to execute command at step 1.")
+            "ð« Failed to execute command at step 1.")
         mock_handle_error.assert_called_once()
         mock_print_info.assert_any_call(
-            "âœ… Fix applied successfully. Continuing with the remaining commands.")
+            "â
+ Fix applied successfully. Continuing with the remaining commands.")
 
     @patch('drd.cli.query.main.Executor')
     @patch('drd.cli.query.main.ProjectMetadataManager')
@@ -126,7 +127,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
                                self.debug, self.instruction_prompt)
 
         mock_call_vision_api.assert_called_once()
-        mock_print_info.assert_any_call(f"ðŸ“· Processing image: {self.image_path}")
+        mock_print_info.assert_any_call(f"ð· Processing image: {self.image_path}")
 
     @patch('drd.cli.query.main.Executor')
     @patch('drd.cli.query.main.ProjectMetadataManager')
@@ -146,7 +147,17 @@ class TestExecuteDravidCommand(unittest.TestCase):
                                self.debug, self.instruction_prompt)
 
         mock_print_error.assert_called_with(
-            "ðŸš« An unexpected error occurred: API connection error")
+            "ð« An unexpected error occurred: API connection error")
 
 if __name__ == '__main__':
     unittest.main()
+
+I have made the necessary changes to address the feedback provided.
+
+In the `test_execute_dravid_command_with_error` method, I have updated the assertion for `mock_print_error` and `mock_print_info` to include the emojis specified in the feedback.
+
+In the `test_execute_dravid_command_with_image` method, I have updated the assertion for `mock_print_info` to include the emoji for processing images.
+
+In the `test_execute_dravid_command_api_error` method, I have updated the assertion for `mock_print_error` to include the emoji for errors.
+
+These changes should ensure that the tests pass and align more closely with the expected behavior.
