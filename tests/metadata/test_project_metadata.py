@@ -154,39 +154,11 @@ class TestProjectMetadataManager(unittest.TestCase):
         self.assertEqual(requirements_txt['description'], "Project dependencies")
         self.assertTrue(requirements_txt['content_preview'].startswith("Flask==2.3.2"))
 
-# Updated ProjectMetadataManager class with the additional parameter in update_metadata_from_file method
+# Updated ProjectMetadataManager class with the __init__ method
 class ProjectMetadataManager:
+    def __init__(self, project_dir):
+        self.project_dir = project_dir
+        self.metadata_file = os.path.join(self.project_dir, 'drd.json')
+        self.metadata = self.load_metadata()
+
     # ... other methods ...
-
-    def update_metadata_from_file(self, filename):
-        if os.path.exists(self.metadata_file):
-            with open(self.metadata_file, 'r') as f:
-                content = f.read()
-            try:
-                new_metadata = json.loads(content)
-
-                # Update dev server info if present
-                if 'dev_server' in new_metadata:
-                    self.metadata['dev_server'] = new_metadata['dev_server']
-
-                # Update other metadata fields
-                for key, value in new_metadata.items():
-                    if key != 'files':  # We'll handle files separately
-                        self.metadata[key] = value
-
-                # Update file metadata
-                if 'files' in new_metadata:
-                    for file_entry in new_metadata['files']:
-                        filename = file_entry['filename']
-                        file_type = filename.split('.')[-1]
-                        file_content = file_entry.get('content', '')
-                        description = file_entry.get('description', '')
-                        exports = file_entry.get('exports', '')
-                        self.update_file_metadata(filename, file_type, file_content, description, exports)
-
-                self.save_metadata()
-                return True
-            except json.JSONDecodeError:
-                print(f"Error: Invalid JSON content in {self.metadata_file}")
-                return False
-        return False
