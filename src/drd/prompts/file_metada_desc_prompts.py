@@ -22,9 +22,11 @@ def get_file_metadata_prompt(filename, content, project_context, folder_structur
     if file_type == "code_file":
         for line in content.splitlines():
             if line.startswith("def "):
-                exports_info.append(f"fun:{line.split('def ')[1].split('(')[0]}")
+                func_name = line.split('def ')[1].split('(')[0]
+                exports_info.append(f"fun:{func_name}")
             elif line.startswith("class "):
-                exports_info.append(f"class:{line.split('class ')[1].split('(')[0]}")
+                class_name = line.split('class ')[1].split('(')[0]
+                exports_info.append(f"class:{class_name}")
             elif ":" in line and "import" in line:
                 import_parts = line.split("import ")
                 for part in import_parts:
