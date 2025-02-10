@@ -1,7 +1,7 @@
 import click
 import sys
 from ..api import stream_dravid_api, call_dravid_api_with_pagination
-from ..utils.utils import print_error, print_info, print_warning
+from ..utils.utils import print_error, print_info
 from ..metadata.project_metadata import ProjectMetadataManager
 import os
 
@@ -10,7 +10,6 @@ def read_file_content(file_path):
         with open(file_path, 'r') as file:
             return file.read()
     except FileNotFoundError:
-        print_warning(f"File not found: {file_path}.")
         return None
 
 def suggest_file_alternative(file_path, project_metadata):
@@ -35,8 +34,11 @@ def handle_ask_command(ask, file, debug):
             user_input = click.prompt(
                 "Do you want to proceed without this file? (y/n)", type=str)
             if user_input.lower() != 'y':
-                print_warning("Proceeding without the missing file as per user's choice.")
+                print_info("Proceeding without the missing file as per user's choice.")
                 continue
+            else:
+                print_error(f"Unable to proceed without the missing file '{file_path}'. Exiting.")
+                return
 
     if ask:
         context += f"User question: {ask}\n"
