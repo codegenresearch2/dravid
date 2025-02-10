@@ -42,11 +42,11 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
             project_guidelines = fetch_project_guidelines(executor.current_dir)
             file_context = '\n'.join(
                 [f'Current content of {file}:\n{content}' for file, content in file_contents.items()])
-            full_query = f'{project_context}\n\nProject Guidelines:\n{project_guidelines}\n\nCurrent file contents:\n{file_context}\n\nUser query: {query}'
+            full_query = f'Project Context:\n{project_context}\n\nProject Guidelines:\n{project_guidelines}\n\nCurrent File Contents:\n{file_context}\n\nUser Query: {query}'
         else:
             is_empty = is_directory_empty(executor.current_dir)
             print_info('ð Creating new project in the current directory.')
-            full_query = f'User query: {query}'
+            full_query = f'User Query: {query}'
 
         print_info('ð¤ Preparing to send query to LLM...')
         print_info('LLM calls to be made: 1')
