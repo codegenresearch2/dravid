@@ -5,9 +5,21 @@ from ...utils import print_error, print_success, print_info, print_debug
 from ...metadata.common_utils import generate_file_description
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 
-# Define print_step function for logging command execution status
-def print_step(current_step, total_steps, message):
-    click.echo(f"ðŸ”„ Step {current_step}/{total_steps}: {message}")
+# Define constants for logging messages
+STEP_START = "ðŸ”„ Step {current_step}/{total_steps}: Processing {cmd_type} {step_description}..."
+SHELL_CMD_EXEC = "ðŸ’» Executing shell command: {command}"
+FILE_OP_EXEC = "ðŸ“ Performing file operation: {operation} on {filename}"
+METADATA_OP_EXEC = "ðŸ“‚ Updating metadata for file: {filename}"
+EXPLANATION = "ðŸ’¡ Explanation: {content}"
+ERROR_EXEC = "ðŸš« Error executing {step_description}: {cmd}\nError details: {error_details}"
+ERROR_MAX_DEPTH = "ðŸš« Max error handling depth reached. Unable to resolve the issue."
+ERROR_PARSE = "ðŸš« Error parsing dravid's response: {error_details}"
+FIX_APPLY = "ðŸ”§ Applying dravid's suggested fix..."
+FIX_SUCCESS = "All fix steps successfully applied."
+FIX_FAIL = "ðŸš« Failed to apply the fix at step {step_completed}.\nError message: {error_message}"
+
+def print_step(current_step, total_steps, cmd_type, step_description):
+    click.echo(STEP_START.format(current_step=current_step, total_steps=total_steps, cmd_type=cmd_type, step_description=step_description))
 
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
@@ -15,10 +27,10 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
 
     for i, cmd in enumerate(commands, 1):
         step_description = "fix" if is_fix else "command"
-        print_step(i, total_steps, f"Processing {cmd['type']} {step_description}...")
+        print_step(i, total_steps, cmd['type'], step_description)
 
         if cmd['type'] == 'explanation':
-            print_info(f"ðŸ’¡ Explanation: {cmd['content']}")
+            print_info(EXPLANATION.format(content=cmd['content']))
             all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
         else:
             try:
@@ -36,7 +48,7 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                     all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} command - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
 
             except Exception as e:
-                error_message = f"Step {i}/{total_steps}: ðŸš« Error executing {step_description}: {cmd}\nError details: {str(e)}"
+                error_message = ERROR_EXEC.format(step_description=step_description, cmd=cmd, error_details=str(e))
                 print_error(error_message)
                 all_outputs.append(error_message)
                 return False, i, str(e), "\n".join(all_outputs)
@@ -47,7 +59,7 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
     return True, total_steps, None, "\n".join(all_outputs)
 
 def handle_shell_command(cmd, executor):
-    print_info(f"ðŸ’» Executing shell command: {cmd['command']}")
+    print_info(SHELL_CMD_EXEC.format(command=cmd['command']))
     output = executor.execute_shell_command(cmd['command'])
     if isinstance(output, str) and output.startswith("Skipping"):
         print_info(output)
@@ -60,7 +72,7 @@ def handle_shell_command(cmd, executor):
     return output
 
 def handle_file_operation(cmd, executor, metadata_manager):
-    print_info(f"ðŸ“ Performing file operation: {cmd['operation']} on {cmd['filename']}")
+    print_info(FILE_OP_EXEC.format(operation=cmd['operation'], filename=cmd['filename']))
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
     if isinstance(operation_performed, str) and operation_performed.startswith("Skipping"):
         print_info(operation_performed)
@@ -76,7 +88,7 @@ def handle_file_operation(cmd, executor, metadata_manager):
 def handle_metadata_operation(cmd, metadata_manager):
     if cmd['operation'] == 'UPDATE_FILE':
         if metadata_manager.update_metadata_from_file():
-            print_success(f"Updated metadata for file: {cmd['filename']}")
+            print_success(METADATA_OP_EXEC.format(filename=cmd['filename']))
             return f"Updated metadata for {cmd['filename']}"
         else:
             raise Exception(f"Failed to update metadata for file: {cmd['filename']}")
@@ -91,7 +103,7 @@ def update_file_metadata(cmd, metadata_manager, executor):
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context="", debug=False):
     if depth > 3:
-        print_error("ðŸš« Max error handling depth reached. Unable to resolve the issue.")
+        print_error(ERROR_MAX_DEPTH)
         return False
 
     print_error(f"ðŸš« Error executing command: {error}")
@@ -109,22 +121,21 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
     try:
         fix_commands = call_dravid_api(error_query, include_context=True)
     except ValueError as e:
-        print_error(f"ðŸš« Error parsing dravid's response: {str(e)}")
+        print_error(ERROR_PARSE.format(error_details=str(e)))
         return False
 
     print_info("ðŸ’¡ dravid's suggested fix:")
-    print_info("ðŸ”§ Applying dravid's suggested fix...")
+    print_info(FIX_APPLY)
 
     fix_applied, step_completed, error_message, all_outputs = execute_commands(fix_commands, executor, metadata_manager, is_fix=True, debug=debug)
 
     if fix_applied:
-        print_success("All fix steps successfully applied.")
+        print_success(FIX_SUCCESS)
         print_info("Fix application details:")
         click.echo(all_outputs)
         return True
     else:
-        print_error(f"ðŸš« Failed to apply the fix at step {step_completed}.")
-        print_error(f"Error message: {error_message}")
+        print_error(FIX_FAIL.format(step_completed=step_completed, error_message=error_message))
         print_info("Fix application details:")
         click.echo(all_outputs)
 
