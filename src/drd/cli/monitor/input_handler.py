@@ -38,14 +38,14 @@ class InputHandler:
                 self.monitor.processing_input.clear()
 
     def _handle_vision_input(self):
-        self.monitor.processing_input.set()  # Set processing_input flag immediately
         print_info(
             "Enter the image path and instructions (use Tab for autocomplete):")
+        self.monitor.processing_input.set()  # Set processing_input flag after printing the prompt
         user_input = self._get_input_with_autocomplete()
         try:
             self._handle_general_input(user_input)
         finally:
-            self.monitor.processing_input.clear()  # Clear processing_input flag after processing
+            self.monitor.processing_input.clear()
 
     def _handle_general_input(self, user_input):
         # Regex to extract image path and instructions
@@ -69,6 +69,9 @@ class InputHandler:
                     instructions, image_path, False, instruction_prompt, warn=False)
             except Exception as e:
                 print_error(f"Error processing image input: {str(e)}")
+        else:
+            # If no image path is found, execute the command with the entire user input
+            execute_dravid_command(user_input, None, False, instruction_prompt, warn=False)
 
     def _get_input_with_autocomplete(self):
         current_input = ""
