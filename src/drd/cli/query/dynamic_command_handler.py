@@ -14,23 +14,21 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
         step_description = "fix" if is_fix else "command"
         print_step(i, total_steps, f"Processing {cmd['type']} {step_description}...")
 
+        if cmd['type'] == 'explanation':
+            print_info(f"Explanation: {cmd['content']}")
+            all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
+            continue
+
         try:
             if cmd['type'] == 'shell':
                 output = handle_shell_command(cmd, executor)
-                all_outputs.append(
-                    f"Step {i}/{total_steps}: Shell command - {cmd['command']}\nOutput: {output}")
+                all_outputs.append(f"Step {i}/{total_steps}: Shell command - {cmd['command']}\nOutput: {output}")
             elif cmd['type'] == 'file':
                 output = handle_file_operation(cmd, executor, metadata_manager)
-                all_outputs.append(
-                    f"Step {i}/{total_steps}: File operation - {cmd['operation']} - {cmd['filename']} - {output}")
+                all_outputs.append(f"Step {i}/{total_steps}: File operation - {cmd['operation']} - {cmd['filename']} - {output}")
             elif cmd['type'] == 'metadata':
                 output = handle_metadata_operation(cmd, metadata_manager)
-                all_outputs.append(
-                    f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} - {output}")
-            elif cmd['type'] == 'explanation':
-                print_info(f"Explanation: {cmd['content']}")
-                all_outputs.append(
-                    f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
+                all_outputs.append(f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} - {output}")
 
             if debug:
                 print_debug(f"Completed step {i}/{total_steps}")
@@ -74,11 +72,18 @@ def handle_file_operation(cmd, executor, metadata_manager):
 
 def handle_metadata_operation(cmd, metadata_manager):
     if cmd['operation'] == 'UPDATE_FILE':
-        if metadata_manager.update_metadata_from_file(cmd['filename']):
-            print_success(f"Updated metadata for file: {cmd['filename']}")
-            return f"Updated metadata for {cmd['filename']}"
-        else:
-            raise Exception(f"Failed to update metadata for file: {cmd['filename']}")
+        try:
+            file_type, description, exports = metadata_manager.generate_file_description(cmd['filename'])
+            if file_type is not None and description is not None and exports is not None:
+                print_info(f"Generated file metadata for {cmd['filename']}")
+                metadata_manager.update_file_metadata(cmd['filename'], file_type, None, description, exports)
+                print_success(f"Updated metadata for file: {cmd['filename']}")
+                return f"Updated metadata for {cmd['filename']}"
+            else:
+                raise ValueError("generate_file_description did not return the expected values.")
+        except Exception as e:
+            print_error(f"Error updating metadata: {e}")
+            raise
     else:
         raise Exception(f"Unknown operation: {cmd['operation']}")
 
@@ -92,13 +97,16 @@ def update_file_metadata(cmd, metadata_manager, executor):
         project_context,
         folder_structure
     )
-    metadata_manager.update_file_metadata(
-        cmd['filename'],
-        file_type,
-        cmd.get('content', ''),
-        description,
-        exports
-    )
+    if file_type is not None and description is not None and exports is not None:
+        metadata_manager.update_file_metadata(
+            cmd['filename'],
+            file_type,
+            cmd.get('content', ''),
+            description,
+            exports
+        )
+    else:
+        raise ValueError("generate_file_description did not return the expected values.")
 
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context="", debug=False):
