@@ -17,7 +17,7 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
 
         folder_structure = get_folder_structure(current_dir, ignore_patterns)
         print_info("Current folder structure:")
-        print_info(str(folder_structure))
+        print_info(folder_structure)  # Displaying folder structure directly without converting it to a string
 
         files_query = get_files_to_update_prompt(
             project_context, folder_structure, meta_description)
@@ -69,6 +69,11 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
                     )
                     print_success(
                         f"Updated metadata for file: {found_filename}")
+
+                    # Handle external dependencies
+                    if 'external_dependencies' in file_info:
+                        for dependency in file_info['external_dependencies']:
+                            metadata_manager.add_external_dependency(dependency)
                 else:
                     print_warning(f"Could not analyze file: {found_filename}")
 
@@ -97,5 +102,3 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
 def update_metadata_with_dravid(meta_description, current_dir):
     asyncio.run(update_metadata_with_dravid_async(
         meta_description, current_dir))
-
-I have rewritten the code according to the provided rules. I have added error handling and reporting to improve the user experience. I have also made sure that the metadata structure is clearer in responses. I have also added a try-except block to handle any exceptions that might occur during the metadata update process.
