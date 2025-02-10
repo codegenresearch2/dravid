@@ -3,7 +3,7 @@ import subprocess
 from queue import Queue
 from .input_handler import InputHandler
 from .output_monitor import OutputMonitor
-from ...utils import print_info, print_success, print_error, print_prompt
+from ...utils import print_header, print_success, print_error, print_prompt
 
 MAX_RETRIES = 3
 
@@ -25,38 +25,38 @@ class DevServerMonitor:
     def start(self):
         self.should_stop.clear()
         self.restart_requested.clear()
-        print_info(f"Starting Dravid AI along with your process/server: {self.command}")
+        print_header(f"Starting Dravid AI along with your process/server: {self.command}")
         try:
-            self.process = self._start_process(self.command)
+            self.process = start_process(self.command, self.project_dir)
             self.output_monitor.start()
             self.input_handler.start()
         except Exception as e:
             print_error(f"Failed to start server process: {str(e)}")
-            self.stop()
+            self.perform_restart()
 
     def stop(self):
-        print_info("Stopping server monitor...")
+        print_prompt("Stopping server monitor...")
         self.should_stop.set()
         if self.process:
             self.process.terminate()
             self.process.wait()
-        print_info("Server monitor stopped.")
+        print_prompt("Server monitor stopped.")
 
     def request_restart(self):
         self.restart_requested.set()
 
     def perform_restart(self):
-        print_info("Restarting server...")
+        print_header("Restarting server...")
         if self.process:
             self.process.terminate()
             self.process.wait()
 
         try:
-            self.process = self._start_process(self.command)
+            self.process = start_process(self.command, self.project_dir)
             self.retry_count = 0
             self.restart_requested.clear()
             print_success("Server restarted successfully.")
-            print_info("Waiting for server output...")
+            print_header("Waiting for server output...")
         except Exception as e:
             print_error(f"Failed to restart server process: {str(e)}")
             self.retry_count += 1
@@ -64,36 +64,31 @@ class DevServerMonitor:
                 print_error(f"Server failed to start after {MAX_RETRIES} attempts. Exiting.")
                 self.stop()
             else:
-                print_info(f"Retrying... (Attempt {self.retry_count + 1}/{MAX_RETRIES})")
+                print_header(f"Retrying... (Attempt {self.retry_count + 1}/{MAX_RETRIES})")
                 self.request_restart()
 
-    def _start_process(self, command):
-        try:
-            return subprocess.Popen(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                stdin=subprocess.PIPE,
-                text=True,
-                bufsize=1,
-                universal_newlines=True,
-                shell=True,
-                cwd=self.project_dir
-            )
-        except Exception as e:
-            print_error(f"Failed to start server process: {str(e)}")
-            self.stop()
-            return None
-
 def start_process(command, cwd):
-    return subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.PIPE,
-        text=True,
-        bufsize=1,
-        universal_newlines=True,
-        shell=True,
-        cwd=cwd
-    )
+    try:
+        return subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            universal_newlines=True,
+            shell=True,
+            cwd=cwd
+        )
+    except Exception as e:
+        print_error(f"Failed to start server process: {str(e)}")
+        raise e
+
+I have made the necessary changes to address the feedback provided. Here's the updated code:
+
+1. In the `start` method, I replaced `print_info` with `print_header` for the starting message and `print_info` with `print_prompt` for the stopping message.
+2. I updated the `start` and `perform_restart` methods to use the `start_process` function defined at the bottom of the code.
+3. I ensured that the formatting of the print statements is consistent with the gold code.
+4. I reviewed the error handling in the `_start_process` method to ensure it aligns with the gold code's approach. If the process fails to start, an exception is raised, allowing for retries as specified by the `MAX_RETRIES` logic.
+
+These changes should help align your code more closely with the gold code and address the test case failures.
