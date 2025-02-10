@@ -6,6 +6,7 @@ from .dynamic_command_handler import handle_error_with_dravid, execute_commands
 from ...utils import print_error, print_success, print_info, print_debug, print_warning, run_with_loader
 from ...utils.file_utils import get_file_content, fetch_project_guidelines
 from .file_operations import get_files_to_modify
+from ...utils.parser import parse_dravid_response
 
 def execute_dravid_command(query, image_path=None, debug=False, instruction_prompt=None):
     print_info("Starting Dravid CLI tool..")
@@ -23,12 +24,12 @@ def execute_dravid_command(query, image_path=None, debug=False, instruction_prom
         print_info(f"LLM calls to be made: 1")
         commands = get_commands(full_query, image_path, instruction_prompt)
 
+        if debug:
+            print_debug(f"Received {len(commands)} new command(s)")
+
         if not commands:
             print_error("Failed to parse Claude's response or no commands to execute.")
             return
-
-        if debug:
-            print_debug(f"Received {len(commands)} new command(s)")
 
         execute_and_handle_commands(commands, executor, metadata_manager, debug)
 
@@ -62,30 +63,31 @@ def prepare_query(query, project_context, image_path, executor):
     return full_query
 
 def get_commands(query, image_path, instruction_prompt):
-    if image_path:
-        print_info(f"Processing image: {image_path}")
-        commands = run_with_loader(lambda: call_dravid_vision_api(query, image_path, include_context=True, instruction_prompt=instruction_prompt), "Analyzing image and generating response")
-    else:
-        print_info("Streaming response from Claude API...")
-        xml_result = stream_dravid_api(query, include_context=True, instruction_prompt=instruction_prompt, print_chunk=False)
-        commands = parse_dravid_response(xml_result)
-    return commands
+    try:
+        if image_path:
+            print_info(f"Processing image: {image_path}")
+            commands = run_with_loader(lambda: call_dravid_vision_api(query, image_path, include_context=True, instruction_prompt=instruction_prompt), "Analyzing image and generating response")
+        else:
+            print_info("Streaming response from Claude API...")
+            xml_result = stream_dravid_api(query, include_context=True, instruction_prompt=instruction_prompt, print_chunk=False)
+            commands = parse_dravid_response(xml_result)
+        return commands
+    except NameError as e:
+        print_error(f"An error occurred: {str(e)}")
+        return None
 
 def execute_and_handle_commands(commands, executor, metadata_manager, debug):
     success, step_completed, error_message, all_outputs = execute_commands(commands, executor, metadata_manager, debug=debug)
     if not success:
-        handle_error(error_message, commands, step_completed, executor, metadata_manager, debug)
+        print_error(f"Failed to execute command at step {step_completed}.")
+        print_error(f"Error message: {error_message}")
+        print_info("Attempting to fix the error...")
+        if handle_error_with_dravid(Exception(error_message), commands[step_completed-1], executor, metadata_manager, debug=debug):
+            print_info("Fix applied successfully. Continuing with the remaining commands.")
+            remaining_commands = commands[step_completed:]
+            success, _, error_message, additional_outputs = execute_commands(remaining_commands, executor, metadata_manager, debug=debug)
+            all_outputs += "\n" + additional_outputs
+        else:
+            print_error("Unable to fix the error. Skipping this command and continuing with the next.")
     print_info("Execution details:")
     click.echo(all_outputs)
-
-def handle_error(error_message, commands, step_completed, executor, metadata_manager, debug):
-    print_error(f"Failed to execute command at step {step_completed}.")
-    print_error(f"Error message: {error_message}")
-    print_info("Attempting to fix the error...")
-    if handle_error_with_dravid(Exception(error_message), commands[step_completed-1], executor, metadata_manager, debug=debug):
-        print_info("Fix applied successfully. Continuing with the remaining commands.")
-        remaining_commands = commands[step_completed:]
-        success, _, error_message, additional_outputs = execute_commands(remaining_commands, executor, metadata_manager, debug=debug)
-        all_outputs += "\n" + additional_outputs
-    else:
-        print_error("Unable to fix the error. Skipping this command and continuing with the next.")
