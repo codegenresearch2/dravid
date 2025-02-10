@@ -2,7 +2,7 @@ def get_instruction_prompt():
     return """
     <response>
       <explanation>
-        This prompt generates production-grade instructions for setting up various programming projects.
+        This prompt generates concise, production-grade instructions for setting up various programming projects.
         It follows best practices for each language and framework, and uses the current directory for all operations.
         The output is in XML format.
       </explanation>
@@ -58,3 +58,5 @@ def get_instruction_prompt():
       <requires_restart>false</requires_restart>
     </response>
     """
+
+get_instruction_prompt()
