@@ -48,7 +48,7 @@ class InputHandler:
             self.monitor.processing_input.clear()
 
     def _handle_general_input(self, user_input):
-        instruction_prompt = get_instruction_prompt()  # Initialize instruction_prompt at the beginning
+        # Extract image path and instructions using regex
         image_pattern = r"([a-zA-Z0-9._/-]+(?:/|\\)?)+\.(jpg|jpeg|png|bmp|gif)"
         match = re.search(image_pattern, user_input)
         if match:
@@ -56,10 +56,15 @@ class InputHandler:
             instructions = user_input.replace(image_path, "").strip()
             image_path = os.path.expanduser(image_path)
 
+            # Check if image file exists
             if not os.path.exists(image_path):
                 print_error(f"Image file not found: {image_path}")
                 return
 
+            # Get instruction prompt
+            instruction_prompt = get_instruction_prompt()
+
+            # Execute command with image and instructions
             try:
                 print_info(f"Processing image: {image_path}")
                 print_info(f"With instructions: {instructions}")
@@ -67,6 +72,10 @@ class InputHandler:
             except Exception as e:
                 print_error(f"Error processing image input: {str(e)}")
         else:
+            # Get instruction prompt
+            instruction_prompt = get_instruction_prompt()
+
+            # Execute command with general input
             try:
                 print_info(f"Processing command: {user_input}")
                 execute_dravid_command(user_input, None, False, instruction_prompt, warn=False)
