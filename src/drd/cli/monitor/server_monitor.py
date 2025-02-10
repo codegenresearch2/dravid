@@ -31,7 +31,7 @@ class DevServerMonitor:
     def stop(self):
         print_prompt("Initiating Dravid AI and server monitor shutdown...")
         self.should_stop.set()
-        if self.process and self.process.poll() is None:
+        if self.process:
             self.process.terminate()
             self.process.wait()
         print_info("Dravid AI and server monitor have been stopped.")
@@ -41,24 +41,14 @@ class DevServerMonitor:
 
     def perform_restart(self):
         print_info("Attempting to restart server...")
-        if self.process and self.process.poll() is None:
+        if self.process:
             self.process.terminate()
             self.process.wait()
         self._start_process()
 
     def _start_process(self):
         try:
-            self.process = subprocess.Popen(
-                self.command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                stdin=subprocess.PIPE,
-                text=True,
-                bufsize=1,
-                universal_newlines=True,
-                shell=True,
-                cwd=self.project_dir
-            )
+            self.process = start_process(self.command, self.project_dir)
             self.retry_count = 0
             self.restart_requested.clear()
             print_success("Server has been restarted successfully.")
@@ -72,6 +62,7 @@ class DevServerMonitor:
                 self.stop()
             else:
                 print_info(f"Restart attempt failed. Retrying... (Attempt {self.retry_count}/{MAX_RETRIES})")
+                self._start_process()
 
 def start_process(command, cwd):
     return subprocess.Popen(
