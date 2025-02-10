@@ -52,4 +52,4 @@ class TestUtilityFunctions(unittest.TestCase):
     @patch('click.echo')
     def test_print_step(self, mock_echo):
         print_step(1, 5, "Test step message")
-        mock_echo.assert_called_with(f"{Fore.CYAN}[1/5] 📝 Test step message{Style.RESET_ALL}")
+        mock_echo.assert_called_with(f"{Fore.CYAN}[1/5] Test step message{Style.RESET_ALL}")
