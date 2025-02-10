@@ -11,6 +11,10 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
     total_steps = len(commands)
 
     for i, cmd in enumerate(commands, 1):
+        step_description = "fix" if is_fix else "command"
+        print_info(f"Processing {cmd['type']} {step_description}...")
+        print_debug(f"Completed step {i}/{total_steps}")
+
         if cmd['type'] == 'explanation':
             print_info(f"Explanation: {cmd['content']}")
             all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
@@ -31,11 +35,8 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                     print_info(formatted_output)
                     all_outputs.append(formatted_output)
 
-                if debug:
-                    print_debug(f"Completed step {i}/{total_steps}")
-
             except Exception as e:
-                error_message = f"Step {i}/{total_steps}: Error executing command: {str(e)}"
+                error_message = f"Step {i}/{total_steps}: Error executing {step_description} command: {str(e)}"
                 print_error(error_message)
                 all_outputs.append(error_message)
                 return False, i, str(e), "\n".join(all_outputs)
