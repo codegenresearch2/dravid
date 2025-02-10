@@ -79,6 +79,23 @@ class TestDynamicCommandHandler(unittest.TestCase):
         mock_print_success.assert_not_called()
         mock_echo.assert_not_called()
 
+    @patch('drd.cli.query.dynamic_command_handler.generate_file_description')
+    def test_handle_file_operation(self, mock_generate_description):
+        cmd = {'operation': 'CREATE', 'filename': 'test.txt',
+               'content': 'Test content'}
+        self.executor.perform_file_operation.return_value = True
+
+        output = handle_file_operation(
+            cmd, self.executor, self.metadata_manager)
+
+        self.assertEqual(output, "Success")
+        self.executor.perform_file_operation.assert_called_once_with(
+            'CREATE', 'test.txt', 'Test content', force=True)
+        mock_generate_description.assert_called_once_with(
+            'test.txt', 'Test content', self.metadata_manager.get_project_context(), self.executor.get_folder_structure())
+        self.metadata_manager.update_file_metadata.assert_called_once_with(
+            'test.txt', 'file_type', 'Test content', 'description', ['exports'])
+
 
 if __name__ == '__main__':
     unittest.main()
