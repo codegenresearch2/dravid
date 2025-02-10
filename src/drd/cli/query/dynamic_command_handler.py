@@ -23,7 +23,11 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 elif cmd['type'] == 'metadata':
                     output = handle_metadata_operation(cmd, metadata_manager)
 
-                all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} {step_description} - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
+                if isinstance(output, str) and output.startswith("Skipping"):
+                    print_info(f"Step {i}/{total_steps}: {output}")
+                    all_outputs.append(f"Step {i}/{total_steps}: {output}")
+                else:
+                    all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} {step_description} - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
 
             except Exception as e:
                 error_message = f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {str(e)}"
@@ -41,6 +45,7 @@ def handle_shell_command(cmd, executor):
     output = executor.execute_shell_command(cmd['command'])
     if isinstance(output, str) and output.startswith("Skipping"):
         print_info(output)
+        return output
     if output is None:
         raise Exception(f"Command failed: {cmd['command']}")
     print_success(f"Successfully executed: {cmd['command']}")
@@ -51,8 +56,9 @@ def handle_shell_command(cmd, executor):
 def handle_file_operation(cmd, executor, metadata_manager, confirm='n'):
     print_info(f"Performing file operation: {cmd['operation']} on {cmd['filename']}")
     if confirm.lower() != 'y':
-        print_info(f"Skipping file operation: {cmd['operation']} on {cmd['filename']}")
-        return f"Skipping file operation: {cmd['operation']} on {cmd['filename']}"
+        skip_message = f"Skipping file operation: {cmd['operation']} on {cmd['filename']}"
+        print_info(skip_message)
+        return skip_message
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
     if operation_performed:
         print_success(f"Successfully performed {cmd['operation']} on file: {cmd['filename']}")
