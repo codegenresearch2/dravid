@@ -14,29 +14,49 @@ from drd.metadata.rate_limit_handler import (
     RATE_LIMIT_PERIOD
 )
 
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
     async def test_rate_limiter(self):
-        limiter = RateLimiter(3, 1)
-        acquire_times = [time.time()]
-        for _ in range(5):
-            await limiter.acquire()
-            acquire_times.append(time.time())
+        limiter = RateLimiter(3, 1)  # 3 calls per 1 second
+        start_time = time.time()
 
+        acquire_times = []
+        for i in range(5):
+            await limiter.acquire()
+            current_time = time.time()
+            acquire_times.append(current_time - start_time)
+            logger.debug(f"Acquire {i+1} at {current_time - start_time:.4f} seconds")
+
+        end_time = time.time()
+        total_time = end_time - start_time
+
+        logger.debug(f"Total time: {total_time:.4f} seconds")
+        logger.debug(f"Acquire times: {acquire_times}")
+
+        # Check that the first 3 calls were almost instantaneous
         self.assertLess(acquire_times[2] - acquire_times[0], 0.1)
+
+        # Check that the 4th call was delayed
         self.assertGreater(acquire_times[3] - acquire_times[2], 0.9)
-        self.assertGreater(acquire_times[-1] - acquire_times[0], 0.9)
+
+        # Check that the total time is at least 1 second (allowing some margin for error)
+        self.assertGreater(total_time, 0.9)
 
     @patch('drd.metadata.rate_limit_handler.call_dravid_api_with_pagination')
     @patch('drd.metadata.rate_limit_handler.extract_and_parse_xml')
     async def test_process_single_file(self, mock_extract_xml, mock_call_api):
-        mock_call_api.return_value = "<response><type>python</type><summary>A test file</summary><exports>test_function</exports><imports>os</imports></response>"
+        mock_call_api.return_value = "<response><type>python</type><summary>A test file</summary><exports>test_function</exports><imports>os, sys</imports></response>"
         mock_root = ET.fromstring(mock_call_api.return_value)
         mock_extract_xml.return_value = mock_root
 
         result = await process_single_file("test.py", "print('Hello')", "Test project", {"test.py": "file"})
 
-        self.assertEqual(result, ("test.py", "python", "A test file", "test_function", "os"))
+        self.assertEqual(result, ("test.py", "python", "A test file", "test_function", "os, sys"))
+        mock_call_api.assert_called_once()
+        mock_extract_xml.assert_called_once_with(mock_call_api.return_value)
 
     @patch('drd.metadata.rate_limit_handler.call_dravid_api_with_pagination')
     async def test_process_single_file_error(self, mock_call_api):
@@ -75,7 +95,7 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
 
         mock_process_single_file.side_effect = slow_process
 
-        files = [("file.py", "content")] * 20
+        files = [("file.py", "content")] * 20  # 20 files
         project_context = "Test project"
         folder_structure = {"file.py": "file"}
 
@@ -83,4 +103,7 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
         await process_files(files, project_context, folder_structure)
         end_time = time.time()
 
+        # With MAX_CONCURRENT_REQUESTS = 10, it should take about 0.2 seconds
+        # (2 batches of 10 files, each taking 0.1 seconds)
+        # Allow some margin for error
         self.assertLess(end_time - start_time, 0.3)
