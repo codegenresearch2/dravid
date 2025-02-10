@@ -23,8 +23,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
         commands = [
             {'type': 'explanation', 'content': 'Test explanation'},
             {'type': 'shell', 'command': 'echo "Hello"'},
-            {'type': 'file', 'operation': 'CREATE',
-                'filename': 'test.txt', 'content': 'Test content'},
+            {'type': 'file', 'operation': 'CREATE', 'filename': 'test.txt', 'content': 'Test content'},
         ]
 
         with patch('drd.cli.query.dynamic_command_handler.handle_shell_command', return_value="Shell output") as mock_shell, \
