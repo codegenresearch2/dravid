@@ -39,7 +39,8 @@ class InputHandler:
                 self.monitor.processing_input.clear()
 
     def _handle_vision_input(self):
-        user_input = self._get_input_with_autocomplete("Enter the image path and instructions (use Tab for autocomplete): ")
+        print("Enter the image path and instructions (use Tab for autocomplete): ")
+        user_input = self._get_input_with_autocomplete()
         self.monitor.processing_input.set()
         try:
             self._handle_general_input(user_input)
@@ -63,11 +64,23 @@ class InputHandler:
 
             print_info(f"Processing image: {image_path}")
             print_info(f"With instructions: {instructions}")
-            execute_dravid_command(instructions, image_path, False, instruction_prompt, warn=False)
+            execute_dravid_command(
+                instructions,
+                image_path,
+                False,
+                instruction_prompt,
+                warn=False
+            )
         else:
-            execute_dravid_command(user_input, None, False, instruction_prompt, warn=False)
+            execute_dravid_command(
+                user_input,
+                None,
+                False,
+                instruction_prompt,
+                warn=False
+            )
 
-    def _get_input_with_autocomplete(self, prompt):
+    def _get_input_with_autocomplete(self, prompt=""):
         current_input = ""
         while True:
             click.echo(prompt + current_input, nl=False)
