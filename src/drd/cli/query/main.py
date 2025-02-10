@@ -48,7 +48,8 @@ def execute_dravid_command(query, image_path, debug, instruction_prompt, warn=No
             full_query = f"{project_context}\n\nProject Guidelines:\n{project_guidelines}\n\nCurrent file contents:\n{file_context}\n\nCurrent directory is not empty.\n\nUser query: {query}"
         else:
             is_empty = is_directory_empty(executor.current_dir)
-            print_info("ð No project context found. Creating a new project in the current directory.")
+            directory_status = "empty" if is_empty else "not empty"
+            print_info(f"ð No project context found. Creating a new project in the current directory, which is {directory_status}.")
             full_query = f"User query: {query}"
 
         print_info("ð¤ Preparing to send query to LLM...")
