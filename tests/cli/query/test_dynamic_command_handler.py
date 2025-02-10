@@ -70,11 +70,11 @@ class TestDynamicCommandHandler(unittest.TestCase):
             mock_update_metadata.assert_called_once_with(cmd, self.metadata_manager, self.executor)
 
     @patch('drd.cli.query.dynamic_command_handler.generate_file_description')
-    def test_update_file_metadata(self, mock_generate_description):
+    async def test_update_file_metadata(self, mock_generate_description):
         cmd = {'filename': 'test.txt', 'content': 'Test content'}
         mock_generate_description.return_value = ('python', 'Test file', ['test_function'])
 
-        update_file_metadata(cmd, self.metadata_manager, self.executor)
+        await update_file_metadata(cmd, self.metadata_manager, self.executor)
 
         self.metadata_manager.get_project_context.assert_called_once()
         self.executor.get_folder_structure.assert_called_once()
@@ -300,4 +300,4 @@ class TestDynamicCommandHandler(unittest.TestCase):
     @patch('drd.cli.query.dynamic_command_handler.print_step')
     @patch('drd.cli.query.dynamic_command_handler.print_info')
     @patch('drd.cli.query.dynamic_command_handler.print_debug')
-    def test_execute_commands_with_skipped
+    def test_execute_commands_with_
