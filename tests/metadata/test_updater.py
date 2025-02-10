@@ -33,11 +33,11 @@ class TestMetadataUpdater(unittest.TestCase):
     @patch('drd.metadata.updater.print_success')
     @patch('drd.metadata.updater.print_warning')
     @patch('drd.metadata.updater.print_error')
-    async def test_update_metadata_with_dravid(self, mock_print_error, mock_print_warning,
-                                               mock_print_success, mock_print_info,
-                                               mock_find_file, mock_extract_xml, mock_call_api,
-                                               mock_get_folder_structure, mock_get_ignore_patterns,
-                                               mock_metadata_manager):
+    def test_update_metadata_with_dravid(self, mock_print_error, mock_print_warning,
+                                         mock_print_success, mock_print_info,
+                                         mock_find_file, mock_extract_xml, mock_call_api,
+                                         mock_get_folder_structure, mock_get_ignore_patterns,
+                                         mock_metadata_manager):
         # Set up mocks
         mock_metadata_manager.return_value.get_project_context.return_value = self.project_context
         mock_get_ignore_patterns.return_value = (
@@ -98,7 +98,7 @@ class TestMetadataUpdater(unittest.TestCase):
 
         with patch('builtins.open', mock_open_file):
             # Call the function
-            await update_metadata_with_dravid(
+            update_metadata_with_dravid(
                 self.meta_description, self.current_dir)
 
         # Assertions
