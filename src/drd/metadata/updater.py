@@ -17,7 +17,7 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
 
         folder_structure = get_folder_structure(current_dir, ignore_patterns)
         print_info("Current folder structure:")
-        print_info(folder_structure)  # Displaying folder structure directly without converting it to a string
+        print_info(folder_structure)
 
         files_query = get_files_to_update_prompt(
             project_context, folder_structure, meta_description)
@@ -71,9 +71,12 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
                         f"Updated metadata for file: {found_filename}")
 
                     # Handle external dependencies
-                    if 'external_dependencies' in file_info:
-                        for dependency in file_info['external_dependencies']:
-                            metadata_manager.add_external_dependency(dependency)
+                    metadata = file.find('metadata')
+                    if metadata is not None:
+                        dependencies = metadata.find('external_dependencies')
+                        if dependencies is not None:
+                            for dep in dependencies.findall('dependency'):
+                                metadata_manager.add_external_dependency(dep.text)
                 else:
                     print_warning(f"Could not analyze file: {found_filename}")
 
