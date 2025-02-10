@@ -37,7 +37,8 @@ class OutputMonitor:
             iteration += 1
 
             # Check if the process has ended unexpectedly
-            if self.monitor.process.poll() is not None and not self.monitor.processing_input.is_set():
+            if (self.monitor.process.poll() is not None and
+                    not self.monitor.processing_input.is_set()):
                 if not self.monitor.restart_requested.is_set():
                     print_info("Server process ended unexpectedly.")
                     if self.retry_count < MAX_RETRIES:
@@ -73,7 +74,8 @@ class OutputMonitor:
                 self._check_idle_state()
 
             # Check if a restart is requested
-            if self.monitor.restart_requested.is_set() and not self.monitor.processing_input.is_set():
+            if (self.monitor.restart_requested.is_set() and
+                    not self.monitor.processing_input.is_set()):
                 self.monitor.perform_restart()
 
     def _check_idle_state(self):
