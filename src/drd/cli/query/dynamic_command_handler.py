@@ -63,8 +63,9 @@ def handle_file_operation(cmd, executor, metadata_manager):
         raise Exception(f"File operation failed: {cmd['operation']} on {cmd['filename']}")
 
 def handle_metadata_operation(cmd, metadata_manager):
+    print_info(f"Processing metadata operation: {cmd['operation']}")
     if cmd['operation'] == 'UPDATE_FILE':
-        if metadata_manager.update_metadata_from_file():
+        if metadata_manager.update_metadata_from_file(cmd['filename']):
             print_success(f"Updated metadata for file: {cmd['filename']}")
             return f"Updated metadata for {cmd['filename']}"
         else:
