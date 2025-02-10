@@ -19,7 +19,7 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 if cmd['type'] == 'shell':
                     output = handle_shell_command(cmd, executor)
                 elif cmd['type'] == 'file':
-                    output = handle_file_operation(cmd, executor, metadata_manager, confirm='y')
+                    output = handle_file_operation(cmd, executor, metadata_manager)
                 elif cmd['type'] == 'metadata':
                     output = handle_metadata_operation(cmd, metadata_manager)
 
@@ -53,12 +53,8 @@ def handle_shell_command(cmd, executor):
         click.echo(f"Command output:\n{output}")
     return output
 
-def handle_file_operation(cmd, executor, metadata_manager, confirm='n'):
+def handle_file_operation(cmd, executor, metadata_manager):
     print_info(f"Performing file operation: {cmd['operation']} on {cmd['filename']}")
-    if confirm.lower() != 'y':
-        skip_message = f"Skipping file operation: {cmd['operation']} on {cmd['filename']}"
-        print_info(skip_message)
-        return skip_message
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
     if operation_performed:
         print_success(f"Successfully performed {cmd['operation']} on file: {cmd['filename']}")
