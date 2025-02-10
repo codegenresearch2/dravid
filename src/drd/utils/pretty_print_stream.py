@@ -14,12 +14,12 @@ def pretty_print_xml_stream(chunk, state):
         # Check if we're currently processing a step
         if not state.get('in_step'):
             # Try to find and process an explanation tag
-            explanation_match = re.search(r'<\s*explanation\s*>(.*?)<\s*/\s*explanation\s*>', state['buffer'], re.DOTALL | re.IGNORECASE)
-            if explanation_match:
+            match = re.search(r'<\s*explanation\s*>(.*?)<\s*/\s*explanation\s*>', state['buffer'], re.DOTALL | re.IGNORECASE)
+            if match:
                 # Print the explanation and remove it from the buffer
                 click.echo(click.style("\n📝 Explanation:", fg="green", bold=True), nl=False)
-                click.echo(f" {explanation_match.group(1).strip()}")
-                state['buffer'] = state['buffer'][explanation_match.end():]
+                click.echo(f" {match.group(1).strip()}")
+                state['buffer'] = state['buffer'][match.end():]
                 continue
 
             # Look for the start of a step tag
@@ -56,9 +56,8 @@ def pretty_print_xml_stream(chunk, state):
                         if cdata_start != -1:
                             cdata_end = step_content.rfind("]]>")
                             if cdata_end != -1:
-                                cdata_content = step_content[cdata_start+9:cdata_end]
                                 click.echo(click.style("\n📄 File Content:", fg="cyan", bold=True))
-                                click.echo(cdata_content)
+                                click.echo(step_content[cdata_start+9:cdata_end])
                     elif step_type == 'shell':
                         # Extract and print the shell command
                         command_match = re.search(r'<\s*command\s*>(.*?)<\s*/\s*command\s*>', step_content, re.DOTALL | re.IGNORECASE)
