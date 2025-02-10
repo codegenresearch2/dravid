@@ -9,9 +9,12 @@ from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
     total_steps = len(commands)
+    step_description = "fix" if is_fix else "command"
 
     for i, cmd in enumerate(commands, 1):
-        # Process command directly without step description print
+        step_message = f"Processing {cmd['type']} {step_description}..."
+        print_step(i, total_steps, step_message)
+
         if cmd['type'] == 'explanation':
             print_info(f"Explanation: {cmd['content']}")
             all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
@@ -25,14 +28,14 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                     output = handle_metadata_operation(cmd, metadata_manager)
 
                 if isinstance(output, str) and output.startswith("Skipping"):
-                    print_info(output)
+                    print_info(f"Step {i}/{total_steps}: {output}")
                     all_outputs.append(f"Step {i}/{total_steps}: {output}")
                 else:
-                    # Streamline output formatting
-                    all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} command - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
+                    formatted_output = f"Step {i}/{total_steps}: {cmd['type'].capitalize()} command - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}"
+                    print_info(formatted_output)
+                    all_outputs.append(formatted_output)
 
             except Exception as e:
-                # Structured error message
                 error_message = f"Step {i}/{total_steps}: Error executing {cmd['type']} command: {str(e)}"
                 print_error(error_message)
                 all_outputs.append(error_message)
