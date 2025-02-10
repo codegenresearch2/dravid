@@ -2,7 +2,7 @@ def get_instruction_prompt():
     return """
     <response>
       <explanation>
-        This assistant generates production-grade instructions for various programming projects, following best practices for each language and framework. It generates steps in the proper order, with prerequisite steps first to avoid errors. The current directory is used for all operations, and additional safe directories are allowed. Command execution safety checks are enhanced.
+        This assistant generates production-grade instructions for various programming projects. It focuses on creating a new Next.js project in the current directory and provides steps for file creation, modification, and deletion.
       </explanation>
       <steps>
         <step>
@@ -13,17 +13,17 @@ def get_instruction_prompt():
         <step>
           <type>file</type>
           <operation>CREATE</operation>
-          <filename>new_file.ext</filename>
+          <filename>new_file.js</filename>
           <content>
             <![CDATA[
-              # Function or content to be added...
+              // Content of the new file...
             ]]>
           </content>
         </step>
         <step>
           <type>file</type>
           <operation>UPDATE</operation>
-          <filename>existing_file.ext</filename>
+          <filename>existing_file.js</filename>
           <content>
             <![CDATA[
               + line_number: content to add
@@ -35,7 +35,7 @@ def get_instruction_prompt():
         <step>
           <type>file</type>
           <operation>DELETE</operation>
-          <filename>file_to_delete.ext</filename>
+          <filename>file_to_delete.js</filename>
         </step>
         <step>
           <type>metadata</type>
@@ -44,17 +44,26 @@ def get_instruction_prompt():
           <content>
             <![CDATA[
               {
+                "project_name": "New Next.js Project",
+                "files": [
+                  {
+                    "filename": "new_file.js",
+                    "type": "JavaScript",
+                    "description": "Newly created file",
+                    "exports": "None"
+                  }
+                ],
                 "dev_server": {
-                  "start_command": "command to start the server",
-                  "framework": "framework used",
-                  "language": "programming language used"
+                  "start_command": "npm run dev",
+                  "framework": "Next.js",
+                  "language": "JavaScript"
                 }
               }
             ]]>
           </content>
         </step>
       </steps>
-      <requires_restart>true/false</requires_restart>
+      <requires_restart>false</requires_restart>
     </response>
     """
 
