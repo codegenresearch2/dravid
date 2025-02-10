@@ -2,7 +2,7 @@ import re
 import threading
 import time
 import select
-from ...utils import print_info, print_error
+from ...utils import print_info, print_error, print_prompt
 
 MAX_RETRIES = 3
 
@@ -35,13 +35,13 @@ class OutputMonitor:
 
             if self.monitor.process.poll() is not None and not self.monitor.processing_input.is_set():
                 if not self.monitor.restart_requested.is_set():
-                    print_info("Server process ended unexpectedly. 🚫")
+                    print_info("Server process ended unexpectedly.")
                     if self.retry_count < MAX_RETRIES:
-                        print_info(f"Restarting... (Attempt {self.retry_count + 1}/{MAX_RETRIES}) 🔄")
+                        print_info(f"Restarting... (Attempt {self.retry_count + 1}/{MAX_RETRIES})")
                         self.monitor.perform_restart()
                         self.retry_count += 1
                     else:
-                        print_error(f"Server failed to start after {MAX_RETRIES} attempts. Exiting. ❌")
+                        print_error(f"Server failed to start after {MAX_RETRIES} attempts. Exiting.")
                         self.monitor.stop()
                         break
                 continue
@@ -73,7 +73,7 @@ class OutputMonitor:
         current_time = time.time()
         time_since_last_output = current_time - self.last_output_time
         if (time_since_last_output > 5 and not self.idle_prompt_shown and not self.monitor.processing_input.is_set()):
-            print_info("\nNo more tasks to auto-process. What can I do next? 🤔")
+            print_prompt("\nNo more tasks to auto-process. What can I do next?")
             self._show_options()
             self.idle_prompt_shown = True
 
