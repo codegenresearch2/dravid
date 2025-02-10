@@ -25,12 +25,7 @@ def run_dev_server_with_monitoring(command: str):
         monitor.stop()
 
 def handle_module_not_found(error_msg, monitor):
-    match = re.search(
-        r"(?:Cannot find module|Module not found|ImportError|No module named)"
-        r".*['\"](.*?)['\"]",
-        error_msg,
-        re.IGNORECASE
-    )
+    match = re.search(r"(?:Cannot find module|Module not found|ImportError|No module named).*['\"](.*?)['\"]", error_msg, re.IGNORECASE)
     if match:
         module_name = match.group(1)
         error = ImportError(f"Module '{module_name}' not found")
