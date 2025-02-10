@@ -78,8 +78,8 @@ class OutputMonitor:
             not self.idle_prompt_shown and
                 not self.monitor.processing_input.is_set()):
             print_prompt("\nNo more tasks to auto-process. What can I do next?")
-            self._show_options()
             self.idle_prompt_shown = True
+            self._show_options()
 
     def _show_options(self):
         print_info("\nAvailable actions:")
