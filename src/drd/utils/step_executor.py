@@ -114,4 +114,136 @@ class Executor:
             print_error(f"🚨 {ERROR_MESSAGES[operation]}: {str(e)}")
             return False
 
-    # Rest of the code remains the same
+    def parse_json(self, json_string):
+        try:
+            return json.loads(json_string)
+        except json.JSONDecodeError as e:
+            print_error(f"🚨 JSON parsing error: {str(e)}")
+            return None
+
+    def merge_json(self, existing_content, new_content):
+        try:
+            existing_json = json.loads(existing_content)
+            new_json = json.loads(new_content)
+            merged_json = {**existing_json, **new_json}
+            return json.dumps(merged_json, indent=2)
+        except json.JSONDecodeError as e:
+            print_error(f"🚨 Error merging JSON content: {str(e)}")
+            return None
+
+    def get_folder_structure(self):
+        ignore_patterns, _ = get_ignore_patterns(self.current_dir)
+        return get_folder_structure(self.current_dir, ignore_patterns)
+
+    def execute_shell_command(self, command, timeout=300):
+        if not self.is_safe_command(command):
+            print_warning(f"⚠️ Please verify the command once: {command}")
+        confirmation_box = create_confirmation_box(command, "execute this command")
+        print(confirmation_box)
+        if not click.confirm(f"{Fore.YELLOW}Confirm execution [y/N]:{Style.RESET_ALL}", default=False):
+            print_info("🚫 Command execution cancelled by user.")
+            return 'Skipping this step...'
+        click.echo(f"{Fore.YELLOW}Executing shell command: {command}{Style.RESET_ALL}")
+        if command.strip().startswith(('cd', 'chdir')):
+            return self._handle_cd_command(command)
+        elif command.strip().startswith(('source', '.')):
+            return self._handle_source_command(command)
+        else:
+            return self._execute_single_command(command, timeout)
+
+    def _execute_single_command(self, command, timeout):
+        try:
+            process = subprocess.Popen(
+                command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=self.env,
+                cwd=self.current_dir
+            )
+            start_time = time.time()
+            output = []
+            while True:
+                return_code = process.poll()
+                if return_code is not None:
+                    break
+                if time.time() - start_time > timeout:
+                    process.terminate()
+                    error_message = f"🚨 Command timed out after {timeout} seconds: {command}"
+                    print_error(error_message)
+                    raise Exception(error_message)
+                line = process.stdout.readline()
+                if line:
+                    print(line.strip())
+                    output.append(line)
+                time.sleep(0.1)
+            stdout, stderr = process.communicate()
+            output.append(stdout)
+            if return_code != 0:
+                error_message = f"🚨 Command failed with return code {return_code}\nError output: {stderr}"
+                print_error(error_message)
+                raise Exception(error_message)
+            self._update_env_from_command(command)
+            print_success("🎉 Command executed successfully.")
+            return ''.join(output)
+        except Exception as e:
+            error_message = f"🚨 Error executing command '{command}': {str(e)}"
+            print_error(error_message)
+            raise Exception(error_message)
+
+    def _handle_source_command(self, command):
+        _, file_path = command.split(None, 1)
+        file_path = os.path.expandvars(os.path.expanduser(file_path))
+        if not os.path.isfile(file_path):
+            error_message = f"🚨 Source file not found: {file_path}"
+            print_error(error_message)
+            raise Exception(error_message)
+        try:
+            result = subprocess.run(
+                f'source {file_path} && env',
+                shell=True,
+                check=True,
+                capture_output=True,
+                text=True,
+                executable='/bin/bash'
+            )
+            for line in result.stdout.splitlines():
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    self.env[key] = value
+            print_success(f"🎉 Sourced file successfully: {file_path}")
+            return "Source command executed successfully"
+        except subprocess.CalledProcessError as e:
+            error_message = f"🚨 Error executing source command: {str(e)}"
+            print_error(error_message)
+            raise Exception(error_message)
+
+    def _update_env_from_command(self, command):
+        if '=' in command:
+            if command.startswith('export '):
+                _, var_assignment = command.split(None, 1)
+            elif command.startswith('set '):
+                _, var_assignment = command.split(None, 1)
+            else:
+                var_assignment = command
+            key, value = var_assignment.split('=', 1)
+            self.env[key.strip()] = value.strip().strip('"\'')
+
+    def _handle_cd_command(self, command):
+        _, path = command.split(None, 1)
+        new_dir = os.path.abspath(os.path.join(self.current_dir, path))
+        if self.is_safe_path(new_dir):
+            os.chdir(new_dir)
+            self.current_dir = new_dir
+            print_info(f"📁 Changed directory to: {self.current_dir}")
+            return f"Changed directory to: {self.current_dir}"
+        else:
+            print_error(f"🚫 Cannot change to directory: {new_dir}")
+            return f"Failed to change directory to: {new_dir}"
+
+    def reset_directory(self):
+        os.chdir(self.initial_dir)
+        project_dir = self.current_dir
+        self.current_dir = self.initial_dir
+        print_info(f"📁 Resetting directory to: {self.current_dir} from project dir:{project_dir}")
