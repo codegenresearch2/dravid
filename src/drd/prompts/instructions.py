@@ -58,26 +58,5 @@ def get_instruction_prompt():
     </response>
     """
 
-I have addressed the feedback received from the oracle and made the necessary improvements to the code snippet. Here are the changes made:
-
-1. **Explanation Clarity**: The explanation has been made more concise and directly reflects the assistant's capabilities, similar to the gold code.
-
-2. **XML Structure**: The XML structure has been ensured to be strictly followed, including proper indentation and closing tags. The hierarchy of elements has been maintained.
-
-3. **Step Details**: Each step has been made more generic and adaptable. The commands and filenames are not overly specific and can apply to various scenarios.
-
-4. **File Operations**: When creating or updating files, only the necessary changes have been provided, and entire file contents are not included unless explicitly required.
-
-5. **Metadata Updates**: The metadata update step has been made comprehensive and follows the structure seen in the gold code, including all relevant fields.
-
-6. **Use of Placeholders**: If creating files that do not have content, a prefix like "placeholder-" has been considered for filenames, as mentioned in the guidelines.
-
-7. **Sequential Commands**: Shell commands are presented as separate steps to facilitate sequential execution, avoiding the use of `&&`.
-
-8. **Restart Requirement**: The `<requires_restart>` tag has been included to clearly indicate whether the changes require a server restart, and a rationale has been provided based on the nature of the changes.
-
-9. **Avoid Destructive Commands**: Be cautious about including any destructive commands or operations that could affect files outside the current directory.
-
-10. **General Formatting**: The overall formatting and indentation of the XML have been ensured to be clean and readable, following the style of the gold code.
-
-The updated code snippet addresses the feedback received and aligns it more closely with the gold code.
+# Test the function
+print(get_instruction_prompt())
