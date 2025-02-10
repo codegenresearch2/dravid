@@ -3,7 +3,6 @@ def get_instruction_prompt():
     <response>
       <explanation>
         This prompt generates detailed, adaptable, and production-grade instructions for setting up various programming projects.
-        It follows best practices for each language and framework, and uses the current directory for all operations.
         The output is in XML format.
       </explanation>
       <steps>
