@@ -1,7 +1,7 @@
 import traceback
 import click
 from ...api.main import call_dravid_api
-from ...utils import print_error, print_success, print_info, print_step, print_debug
+from ...utils import print_error, print_success, print_info, print_debug
 from ...metadata.common_utils import generate_file_description
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 
@@ -11,10 +11,8 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
 
     for i, cmd in enumerate(commands, 1):
         step_description = "fix" if is_fix else "command"
-        print_step(i, total_steps, f"Processing {cmd['type']} {step_description}...")
 
         if cmd['type'] == 'explanation':
-            print_info(f"Explanation: {cmd['content']}")
             all_outputs.append(f"Step {i}/{total_steps}: Explanation - {cmd['content']}")
         else:
             try:
@@ -26,14 +24,12 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                     output = handle_metadata_operation(cmd, metadata_manager)
 
                 if isinstance(output, str) and output.startswith("Skipping"):
-                    print_info(f"Step {i}/{total_steps}: {output}")
                     all_outputs.append(f"Step {i}/{total_steps}: {output}")
                 else:
                     all_outputs.append(f"Step {i}/{total_steps}: {cmd['type'].capitalize()} {step_description} - {cmd.get('command', '')} {cmd.get('operation', '')}\nOutput: {output}")
 
             except Exception as e:
                 error_message = f"Step {i}/{total_steps}: Error executing {step_description}: {cmd}\nError details: {str(e)}"
-                print_error(error_message)
                 all_outputs.append(error_message)
                 return False, i, str(e), "\n".join(all_outputs)
 
@@ -43,26 +39,26 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
     return True, total_steps, None, "\n".join(all_outputs)
 
 def handle_shell_command(cmd, executor):
-    print_info(f"Executing shell command: {cmd['command']}")
+    print_info(f"  Executing shell command: {cmd['command']}")
     output = executor.execute_shell_command(cmd['command'])
     if isinstance(output, str) and output.startswith("Skipping"):
-        print_info(output)
+        print_info(f"  {output}")
         return output
     if output is None:
         raise Exception(f"Command failed: {cmd['command']}")
-    print_success(f"Successfully executed: {cmd['command']}")
+    print_success(f"  Successfully executed: {cmd['command']}")
     if output:
-        click.echo(f"Command output:\n{output}")
+        click.echo(f"  Command output:\n{output}")
     return output
 
 def handle_file_operation(cmd, executor, metadata_manager):
-    print_info(f"Performing file operation: {cmd['operation']} on {cmd['filename']}")
+    print_info(f"  Performing file operation: {cmd['operation']} on {cmd['filename']}")
     operation_performed = executor.perform_file_operation(cmd['operation'], cmd['filename'], cmd.get('content'), force=True)
     if isinstance(operation_performed, str) and operation_performed.startswith("Skipping"):
-        print_info(operation_performed)
+        print_info(f"  {operation_performed}")
         return operation_performed
     elif operation_performed:
-        print_success(f"Successfully performed {cmd['operation']} on file: {cmd['filename']}")
+        print_success(f"  Successfully performed {cmd['operation']} on file: {cmd['filename']}")
         if cmd['operation'] in ['CREATE', 'UPDATE']:
             update_file_metadata(cmd, metadata_manager, executor)
         return "Success"
@@ -72,7 +68,7 @@ def handle_file_operation(cmd, executor, metadata_manager):
 def handle_metadata_operation(cmd, metadata_manager):
     if cmd['operation'] == 'UPDATE_FILE':
         if metadata_manager.update_metadata_from_file():
-            print_success(f"Updated metadata for file: {cmd['filename']}")
+            print_success(f"  Updated metadata for file: {cmd['filename']}")
             return f"Updated metadata for {cmd['filename']}"
         else:
             raise Exception(f"Failed to update metadata for file: {cmd['filename']}")
