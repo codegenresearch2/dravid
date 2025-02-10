@@ -12,7 +12,7 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
 
     error_message = str(error)
     error_type = type(error).__name__
-    error_trace = ''.join(traceback.format_tb(error.__traceback__))
+    error_trace = ''.join(traceback.format_exception(type(error), error, error.__traceback__))
 
     project_context = monitor.metadata_manager.get_project_context()
 
