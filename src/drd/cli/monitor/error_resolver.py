@@ -59,8 +59,7 @@ def monitoring_handle_error_with_dravid(error, line, monitor):
             fix_commands.append(command)
 
     print_info("Dravid's suggested fix:")
-    for cmd in fix_commands:
-        print_info(f"  - {cmd['type'].capitalize()} command: {cmd.get('command', '')} {cmd.get('operation', '')}")
+    print_command_details(fix_commands)
 
     user_input = monitor.get_user_input(
         "Do you want to proceed with this fix? You will be able to stop anytime during the step. [y/N]: "
