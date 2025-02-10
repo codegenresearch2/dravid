@@ -1,27 +1,15 @@
 import unittest
 import sys
-import logging
 from unittest.mock import patch, MagicMock, call
 from io import StringIO
 from drd.cli.monitor.output_monitor import OutputMonitor
 from drd.utils import print_info, print_prompt
-
-def setup_logger():
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
-
-def print_command_details():
-    print_info("\nAvailable actions:")
-    print_info("1. Give a coding instruction to perform")
-    print_info("2. Process an image (type 'vision')")
-    print_info("3. Exit monitoring mode (type 'exit')")
-    print_prompt("\nType your choice or command:")
 
 class TestOutputMonitor(unittest.TestCase):
 
     def setUp(self):
         self.mock_monitor = MagicMock()
         self.output_monitor = OutputMonitor(self.mock_monitor)
-        setup_logger()
 
     @patch('select.select')
     @patch('time.time')
@@ -37,8 +25,19 @@ class TestOutputMonitor(unittest.TestCase):
         mock_select.return_value = ([self.mock_monitor.process.stdout], [], [])
         mock_time.side_effect = [0] + [6] * 10  # Simulate time passing
 
+        # Capture stdout
+        captured_output = StringIO()
+        sys.stdout = captured_output
+
         # Run
         self.output_monitor._monitor_output()
+
+        # Restore stdout
+        sys.stdout = sys.__stdout__
+
+        # Print captured output
+        print("Captured output:")
+        print(captured_output.getvalue())
 
         # Assert
         expected_calls = [
