@@ -36,6 +36,10 @@ class TestOutputMonitor(unittest.TestCase):
         # Restore stdout
         sys.stdout = sys.__stdout__
 
+        # Print captured output
+        print('Captured output:')
+        print(captured_output.getvalue())
+
         # Assert
         expected_calls = [
             call('\nAvailable actions:'),
