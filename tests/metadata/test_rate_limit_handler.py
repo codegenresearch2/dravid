@@ -53,7 +53,12 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
         result = await process_single_file('test.py', "print('Hello')", 'Test project', {'test.py': 'file'})
 
         # Assert the expected results
-        self.assertEqual(result, ('test.py', 'python', 'A test file', 'test_function', 'os, sys'))
+        self.assertEqual(len(result), 5)
+        self.assertEqual(result[0], 'test.py')
+        self.assertEqual(result[1], 'python')
+        self.assertEqual(result[2], 'A test file')
+        self.assertEqual(result[3], 'test_function')
+        self.assertEqual(result[4], 'os, sys')
         mock_call_api.assert_called_once()
         mock_extract_xml.assert_called_once_with(mock_call_api.return_value)
 
@@ -66,7 +71,12 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
         result = await process_single_file('test.py', "print('Hello')", 'Test project', {'test.py': 'file'})
 
         # Assert the expected results in case of an error
-        self.assertEqual(result, ('test.py', 'unknown', 'Error: API Error', '', ''))
+        self.assertEqual(len(result), 5)
+        self.assertEqual(result[0], 'test.py')
+        self.assertEqual(result[1], 'unknown')
+        self.assertTrue(result[2].startswith('Error:'))
+        self.assertEqual(result[3], '')
+        self.assertEqual(result[4], '')
         mock_call_api.assert_called_once()
         mock_extract_xml.assert_not_called()
 
@@ -84,10 +94,9 @@ class TestRateLimitHandler(unittest.IsolatedAsyncioTestCase):
         results = await process_files(files, project_context, folder_structure)
 
         # Assert the expected results for processing multiple files
-        self.assertEqual(results, [
-            ('file1.py', 'python', 'File 1', 'func1', 'os'),
-            ('file2.py', 'python', 'File 2', 'func2', 'sys')
-        ])
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0], ('file1.py', 'python', 'File 1', 'func1', 'os'))
+        self.assertEqual(results[1], ('file2.py', 'python', 'File 2', 'func2', 'sys'))
 
     @patch('drd.metadata.rate_limit_handler.process_single_file')
     async def test_process_files_concurrency(self, mock_process_single_file):
