@@ -28,6 +28,7 @@ def handle_ask_command(ask, file, debug):
             context += f"Content of {file_path}:\n{content}\n\n"
         else:
             print_error(f"File not found: {file_path}. Attempting to find a similar or alternative file.")
+            print_info("Making an LLM call to suggest an alternative file.")
             suggestion = suggest_file_alternative(file_path, project_metadata)
             print_info(f"Suggestion: {suggestion}")
             user_input = click.prompt("Do you want to proceed without this file? (y/n) ", type=str)
@@ -43,4 +44,5 @@ def handle_ask_command(ask, file, debug):
         return
 
     print_info("Streaming response from LLM.")
+    print_info("Making an LLM call to generate a response.")
     stream_dravid_api(context, print_chunk=True)
