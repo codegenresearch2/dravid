@@ -2,10 +2,10 @@ import re
 import os
 from .server_monitor import DevServerMonitor
 from .error_resolver import monitoring_handle_error_with_dravid
-from ...utils import print_info, print_prompt
+from ...utils import print_info
 
 def run_dev_server_with_monitoring(command: str):
-    print_info("ðŸ‘“ Starting server monitor...")
+    print_info("ðŸ”Ž Starting server monitor...")
     error_handlers = {
         r"(?:Cannot find module|Module not found|ImportError|No module named)": handle_module_not_found,
         r"(?:SyntaxError|Expected|Unexpected token)": handle_syntax_error,
