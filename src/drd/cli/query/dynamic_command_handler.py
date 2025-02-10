@@ -90,20 +90,11 @@ def update_file_metadata(cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
     folder_structure = executor.get_folder_structure()
     try:
-        file_type, description, exports = metadata_manager.generate_file_description(
-            cmd['filename'],
-            cmd.get('content', ''),
-            project_context,
-            folder_structure
-        )
-        if file_type is not None and description is not None and exports is not None:
-            metadata_manager.update_file_metadata(
-                cmd['filename'],
-                file_type,
-                cmd.get('content', ''),
-                description,
-                exports
-            )
+        result = metadata_manager.generate_file_description(cmd['filename'], cmd.get('content', ''), project_context, folder_structure)
+        if len(result) == 3 and all(result):
+            file_type, description, exports = result
+            metadata_manager.update_file_metadata(cmd['filename'], file_type, None, description, exports)
+            print_success(f"Updated metadata for file: {cmd['filename']}")
         else:
             raise ValueError("generate_file_description did not return the expected values.")
     except Exception as e:
