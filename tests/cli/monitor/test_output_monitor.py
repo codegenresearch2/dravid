@@ -13,7 +13,8 @@ class TestOutputMonitor(unittest.TestCase):
     @patch('select.select')
     @patch('time.time')
     @patch('drd.cli.monitor.output_monitor.print_info')
-    def test_idle_state(self, mock_print_info, mock_time, mock_select):
+    @patch('drd.cli.monitor.output_monitor.print_prompt')
+    def test_idle_state(self, mock_print_prompt, mock_print_info, mock_time, mock_select):
         # Setup
         self.mock_monitor.should_stop.is_set.side_effect = [False] * 10 + [True]
         self.mock_monitor.process.poll.return_value = None
@@ -21,16 +22,7 @@ class TestOutputMonitor(unittest.TestCase):
         self.mock_monitor.process.stdout = MagicMock()
         self.mock_monitor.process.stdout.readline.return_value = ""
         mock_select.return_value = ([self.mock_monitor.process.stdout], [], [])
-
-        # Create a function to generate increasing time values
-        start_time = 1000000  # Start with a large value to avoid negative times
-
-        def time_sequence():
-            nonlocal start_time
-            start_time += 1  # Increment by 1 second each time
-            return start_time
-
-        mock_time.side_effect = time_sequence
+        mock_time.side_effect = [0] + [6] * 10  # Simulate time passing
 
         # Capture stdout
         captured_output = StringIO()
@@ -42,14 +34,18 @@ class TestOutputMonitor(unittest.TestCase):
         # Restore stdout
         sys.stdout = sys.__stdout__
 
+        # Print captured output
+        print("Captured output:")
+        print(captured_output.getvalue())
+
         # Assert
+        mock_print_prompt.assert_called_once_with("\nNo more tasks to auto-process. What can I do next?")
         expected_calls = [
-            call("\nNo more tasks to auto-process. What can I do next?"),
-            call("  Available actions:"),
-            call("    1. Give a coding instruction to perform"),
-            call("    2. Process an image (type 'vision')"),
-            call("    3. Exit monitoring mode (type 'exit')"),
-            call("\n  Type your choice or command:")
+            call("\nAvailable actions:"),
+            call("  1. Give a coding instruction to perform"),
+            call("  2. Process an image (type 'vision')"),
+            call("  3. Exit monitoring mode (type 'exit')"),
+            call("\nType your choice or command:")
         ]
         mock_print_info.assert_has_calls(expected_calls, any_order=True)
 
