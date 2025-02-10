@@ -16,7 +16,8 @@ def pretty_print_xml_stream(chunk, state):
                               state['buffer'], re.DOTALL | re.IGNORECASE)
             if match:
                 explanation = match.group(1).strip()
-                click.echo(click.style("\nš” Explanation: ", fg="green", bold=True) + explanation)
+                click.echo(click.style("\nš” Explanation: ", fg="green", bold=True), nl=False)
+                click.echo(explanation)
                 state['buffer'] = state['buffer'][match.end():]
                 continue
 
@@ -44,7 +45,8 @@ def pretty_print_xml_stream(chunk, state):
                         if operation_match and filename_match:
                             operation = operation_match.group(1).strip()
                             filename = filename_match.group(1).strip()
-                            click.echo(click.style("\nš File Operation: ", fg="yellow", bold=True) + f"{operation} {filename}")
+                            click.echo(click.style("\nš File Operation: ", fg="yellow", bold=True), nl=False)
+                            click.echo(f"{operation} {filename}")
 
                         # Process CDATA content
                         cdata_start = step_content.find("<![CDATA[")
@@ -52,19 +54,21 @@ def pretty_print_xml_stream(chunk, state):
                             cdata_end = step_content.rfind("]]>")
                             if cdata_end != -1:
                                 cdata_content = step_content[cdata_start+9:cdata_end]
-                                click.echo(click.style("\nš File Content: ", fg="cyan", bold=True) + cdata_content)
+                                click.echo(click.style("\nš File Content: ", fg="cyan", bold=True))
+                                click.echo(cdata_content)
                     elif step_type == 'shell':
                         command_match = re.search(r'<\s*command\s*>(.*?)<\s*/\s*command\s*>', step_content, re.DOTALL | re.IGNORECASE)
                         if command_match:
                             command = command_match.group(1).strip()
-                            click.echo(click.style("\nš» Shell Command: ", fg="blue", bold=True) + command)
+                            click.echo(click.style("\nš» Shell Command: ", fg="blue", bold=True), nl=False)
+                            click.echo(command)
                 continue
 
         # If we've reached this point, we couldn't process anything in this iteration
         break
 
     if iteration_count == max_iterations:
-        click.echo(click.style("Debug: Max iterations reached, possible infinite loop detected", fg="red"))
+        print("Debug: Max iterations reached, possible infinite loop detected")
 
 def stream_and_print_commands(chunks):
     state = {
