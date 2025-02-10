@@ -23,15 +23,21 @@ Respond with an XML structure containing the metadata:
 
 <response>
   <metadata>
-    <type>file_type</type>
-    <description>Description based on the file's contents, project context, and folder structure</description>
-    <file_category>code_file or dependency_file</file_category>
+    <type>python</type>
+    <description>File metadata for {filename} in the {project_context} project context</description>
+    <file_category>code_file</file_category>
     <exports>fun:functionName,class:ClassName,var:variableName</exports>
     <imports>path/to/file:importedName</imports>
     <external_dependencies>
-      <dependency>
-        <dependency>name1@version1</dependency>
-        <dependency>name2@version2</dependency>
+      <dependency>name1@version1</dependency>
+      <dependency>name2@version2</dependency>
     </external_dependencies>
   </metadata>
 </response>
+
+Respond strictly only with the XML response as it will be used for parsing, no other extra words.
+If there are no exports, use <exports>None</exports> instead of an empty tag.
+If there are no imports, use <imports>None</imports> instead of an empty tag.
+If there are no external dependencies, omit the <external_dependencies> tag entirely.
+Ensure that all other tags (type, description, file_category, exports, imports) are always present and non-empty.
+"""
