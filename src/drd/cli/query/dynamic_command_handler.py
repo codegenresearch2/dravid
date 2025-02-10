@@ -7,7 +7,7 @@ from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 
 # Define print_step function for logging command execution status
 def print_step(current_step, total_steps, message):
-    print(f"ðŸ”„ Step {current_step}/{total_steps}: {message}")
+    click.echo(f"ðŸ”„ Step {current_step}/{total_steps}: {message}")
 
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
