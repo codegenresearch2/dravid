@@ -27,7 +27,6 @@ class InputHandler:
 
     def _process_input(self, user_input):
         if user_input.lower() == 'p':
-            print_info("Processing image input...")
             self._handle_vision_input()
             return
 
@@ -64,21 +63,9 @@ class InputHandler:
 
             print_info(f"Processing image: {image_path}")
             print_info(f"With instructions: {instructions}")
-            execute_dravid_command(
-                instructions,
-                image_path,
-                False,
-                instruction_prompt,
-                warn=False
-            )
+            execute_dravid_command(instructions, image_path, False, instruction_prompt, warn=False)
         else:
-            execute_dravid_command(
-                user_input,
-                None,
-                False,
-                instruction_prompt,
-                warn=False
-            )
+            execute_dravid_command(user_input, None, False, instruction_prompt, warn=False)
 
     def _get_input_with_autocomplete(self, prompt="> "):
         current_input = ""
@@ -97,6 +84,7 @@ class InputHandler:
                     click.echo("\nPossible completions:")
                     for comp in completions:
                         click.echo(comp)
+                    click.echo(prompt + current_input, nl=False)
             elif char.isprintable():
                 current_input += char
                 click.echo(char, nl=False)
