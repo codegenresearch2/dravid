@@ -1,13 +1,9 @@
 import traceback
 import click
 from ...api.main import call_dravid_api
-from ...utils import print_error, print_success, print_info, print_step
+from ...utils import print_error, print_success, print_info, print_step, print_debug
 from ...metadata.common_utils import generate_file_description
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
-
-def print_debug(message):
-    # Implement the debug printing logic here
-    pass
 
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
@@ -30,6 +26,7 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
                 output = handle_file_operation(cmd, executor, metadata_manager)
                 all_outputs.append(f"Step {i}/{total_steps}: File operation - {cmd['operation']} - {cmd['filename']} - {output}")
             elif cmd['type'] == 'metadata':
+                print_info(f"Processing metadata operation: {cmd['operation']}")
                 output = handle_metadata_operation(cmd, metadata_manager)
                 all_outputs.append(f"Step {i}/{total_steps}: Metadata operation - {cmd['operation']} - {output}")
 
@@ -78,8 +75,19 @@ def handle_metadata_operation(cmd, metadata_manager):
 def update_file_metadata(cmd, metadata_manager, executor):
     project_context = metadata_manager.get_project_context()
     folder_structure = executor.get_folder_structure()
-    file_type, description, exports = generate_file_description(cmd['filename'], cmd.get('content', ''), project_context, folder_structure)
-    metadata_manager.update_file_metadata(cmd['filename'], file_type, cmd.get('content', ''), description, exports)
+    file_type, description, exports = generate_file_description(
+        cmd['filename'],
+        cmd.get('content', ''),
+        project_context,
+        folder_structure
+    )
+    metadata_manager.update_file_metadata(
+        cmd['filename'],
+        file_type,
+        cmd.get('content', ''),
+        description,
+        exports
+    )
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context="", debug=False):
     if depth > 3:
@@ -93,7 +101,9 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
     error_trace = ''.join(traceback.format_exception(type(error), error, error.__traceback__))
 
     project_context = metadata_manager.get_project_context()
-    error_query = get_error_resolution_prompt(previous_context, cmd, error_type, error_message, error_trace, project_context)
+    error_query = get_error_resolution_prompt(
+        previous_context, cmd, error_type, error_message, error_trace, project_context
+    )
 
     print_info("Sending error information to dravid for analysis...")
     print_info("LLM calls to be made: 1")
@@ -107,7 +117,9 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
     print_info("dravid's suggested fix:")
     print_info("Applying dravid's suggested fix...")
 
-    fix_applied, step_completed, error_message, all_outputs = execute_commands(fix_commands, executor, metadata_manager, is_fix=True, debug=debug)
+    fix_applied, step_completed, error_message, all_outputs = execute_commands(
+        fix_commands, executor, metadata_manager, is_fix=True, debug=debug
+    )
 
     if fix_applied:
         print_success("All fix steps successfully applied.")
@@ -120,4 +132,12 @@ def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, pr
         print_info("Fix application details:")
         click.echo(all_outputs)
 
-        return handle_error_with_dravid(Exception(error_message), {"type": "fix", "command": f"apply fix step {step_completed}"}, executor, metadata_manager, depth + 1, all_outputs, debug)
+        return handle_error_with_dravid(
+            Exception(error_message),
+            {"type": "fix", "command": f"apply fix step {step_completed}"},
+            executor,
+            metadata_manager,
+            depth + 1,
+            all_outputs,
+            debug
+        )
