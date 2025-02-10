@@ -2,11 +2,18 @@ import traceback
 import click
 from ...api.main import call_dravid_api
 from ...utils.print_utils import print_error, print_success, print_info, print_step, print_debug
-from ...metadata.xml_utils import update_xml_metadata
+from ...metadata.xml_utils import update_xml_metadata, parse_xml_dependencies
 from ...metadata.common_utils import generate_file_description
 from ...prompts.error_resolution_prompt import get_error_resolution_prompt
 from ...utils.executor import Executor
 from ...metadata.metadata_manager import ProjectMetadataManager
+
+# Define command types and operations as constants
+SHELL_COMMAND = 'shell'
+FILE_OPERATION = 'file'
+METADATA_OPERATION = 'metadata'
+REQUIRES_RESTART = 'requires_restart'
+EXPLANATION = 'explanation'
 
 def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=False):
     all_outputs = []
@@ -31,15 +38,15 @@ def execute_commands(commands, executor, metadata_manager, is_fix=False, debug=F
     return True, total_steps, None, '\n'.join(all_outputs)
 
 def handle_command(cmd, executor, metadata_manager):
-    if cmd['type'] == 'explanation':
+    if cmd['type'] == EXPLANATION:
         return f'Explanation - {cmd["content"]}'
-    elif cmd['type'] == 'shell':
+    elif cmd['type'] == SHELL_COMMAND:
         return handle_shell_command(cmd, executor)
-    elif cmd['type'] == 'file':
+    elif cmd['type'] == FILE_OPERATION:
         return handle_file_operation(cmd, executor, metadata_manager)
-    elif cmd['type'] == 'metadata':
+    elif cmd['type'] == METADATA_OPERATION:
         return handle_metadata_operation(cmd, metadata_manager)
-    elif cmd['type'] == 'requires_restart':
+    elif cmd['type'] == REQUIRES_RESTART:
         return 'requires restart if the server is running'
     else:
         raise ValueError(f'Unknown command type: {cmd["type"]}')
@@ -77,6 +84,10 @@ def update_file_metadata(cmd, metadata_manager, executor):
     folder_structure = executor.get_folder_structure()
     file_type, description, exports = generate_file_description(cmd['filename'], cmd.get('content', ''), project_context, folder_structure)
     update_xml_metadata(cmd['filename'], file_type, description, exports)
+    # Parse and handle XML dependencies if needed
+    if 'dependencies' in cmd:
+        dependencies = parse_xml_dependencies(cmd['dependencies'])
+        metadata_manager.update_project_dependencies(dependencies)
 
 def handle_error_with_dravid(error, cmd, executor, metadata_manager, depth=0, previous_context='', debug=False):
     if depth > 3:
