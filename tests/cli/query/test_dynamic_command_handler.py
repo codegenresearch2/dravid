@@ -17,6 +17,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
     def setUp(self):
         self.executor = MagicMock()
         self.metadata_manager = MagicMock()
+        self.executor.initial_dir = '/initial/directory'  # Allow additional safe directories
 
     @patch('drd.cli.query.dynamic_command_handler.print_step')
     @patch('drd.cli.query.dynamic_command_handler.print_info')
@@ -195,3 +196,80 @@ class TestDynamicCommandHandler(unittest.TestCase):
             call("Completed step 2/3"),
             call("Completed step 3/3")
         ])
+
+    @patch('os.chdir')
+    @patch('os.path.abspath')
+    def test_handle_cd_command(self, mock_abspath, mock_chdir):
+        mock_abspath.return_value = '/fake/path/app'
+        result = self.executor._handle_cd_command('cd app')
+        self.assertEqual(result, "Changed directory to: /fake/path/app")
+        mock_chdir.assert_called_once_with('/fake/path/app')
+        self.assertEqual(self.executor.current_dir, '/fake/path/app')
+        self.executor.reset_directory()  # Reset directory after operations
+
+    @patch('subprocess.Popen')
+    def test_execute_single_command(self, mock_popen):
+        mock_process = MagicMock()
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.stdout.readline.return_value = 'output line'
+        mock_process.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_process
+
+        result = self.executor._execute_single_command('echo "Hello"', 300)
+        self.assertEqual(result, 'output line')
+        mock_popen.assert_called_once_with(
+            'echo "Hello"',
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=self.executor.env,
+            cwd=self.executor.current_dir
+        )
+
+    @patch('click.confirm')
+    @patch('os.chdir')
+    @patch('os.path.abspath')
+    def test_execute_shell_command_cd(self, mock_abspath, mock_chdir, mock_confirm):
+        mock_confirm.return_value = True
+        mock_abspath.return_value = '/fake/path/app'
+        result = self.executor.execute_shell_command('cd app')
+        self.assertEqual(result, "Changed directory to: /fake/path/app")
+        mock_chdir.assert_called_once_with('/fake/path/app')
+        self.assertEqual(self.executor.current_dir, '/fake/path/app')
+        self.executor.reset_directory()  # Reset directory after operations
+
+    @patch('click.confirm')
+    @patch('subprocess.Popen')
+    def test_execute_shell_command_echo(self, mock_popen, mock_confirm):
+        mock_confirm.return_value = True
+        mock_process = MagicMock()
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.stdout.readline.return_value = 'Hello, World!'
+        mock_process.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_process
+
+        result = self.executor.execute_shell_command('echo "Hello, World!"')
+        self.assertEqual(result, 'Hello, World!')
+        self.executor.reset_directory()  # Reset directory after operations
+
+    @patch('os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('click.confirm')
+    def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
+        mock_exists.return_value = False
+        mock_confirm.return_value = True
+        result = self.executor.perform_file_operation(
+            'CREATE', 'test.txt', 'content')
+        self.assertTrue(result)
+        mock_file.assert_called_with(os.path.join(
+            self.executor.current_dir, 'test.txt'), 'w')
+        mock_file().write.assert_called_with('content')
+        self.executor.reset_directory()  # Reset directory after operations
+
+    @patch('os.chdir')
+    def test_reset_directory(self, mock_chdir):
+        self.executor.current_dir = '/fake/path/app'
+        self.executor.reset_directory()
+        mock_chdir.assert_called_once_with(self.executor.initial_dir)
+        self.assertEqual(self.executor.current_dir, self.executor.initial_dir)
