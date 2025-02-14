@@ -10,12 +10,10 @@ from .diff import preview_file_changes
 from .apply_file_changes import apply_changes
 from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
 
-
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
         self.allowed_directories = [self.current_dir, '/fake/path']
-
         self.initial_dir = self.current_dir
         self.disallowed_commands = [
             'rmdir', 'del', 'format', 'mkfs',
@@ -32,16 +30,11 @@ class Executor:
         parts = command.split()
         if parts[0] != 'rm':
             return False
-
-        # Check for dangerous flags
         dangerous_flags = ['-r', '-f', '-rf', '-fr']
         if any(flag in parts for flag in dangerous_flags):
             return False
-
-        # Check if it's removing a specific file
         if len(parts) != 2:
             return False
-
         file_to_remove = parts[1]
         return self.is_safe_path(file_to_remove) and os.path.isfile(os.path.join(self.current_dir, file_to_remove))
 
@@ -58,36 +51,36 @@ class Executor:
             confirmation_box = create_confirmation_box(
                 filename, f"File operation is being carried out outside of the project directory. {operation.lower()} this file")
             print(confirmation_box)
-            if not click.confirm(f"{Fore.YELLOW}Confirm {operation.lower()} :{Style.RESET_ALL}", default=False):
-                print_info(f"File {operation.lower()} cancelled by user.")
+            if not click.confirm(f"{Fore.YELLOW}💡 Confirm {operation.lower()} [y/N]:{Style.RESET_ALL}", default=False):
+                print_info(f"🙅 File {operation.lower()} cancelled by user.")
                 return "Skipping this step"
 
-        print_info(f"File: {filename}")
+        print_info(f"📁 File: {filename}")
 
         if operation == 'CREATE':
             if os.path.exists(full_path) and not force:
-                print_info(f"File already exists: {filename}")
+                print_info(f"🔄 File already exists: {filename}")
                 return False
             try:
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
                 preview = preview_file_changes(
                     operation, filename, new_content=content)
                 print(preview)
-                if click.confirm(f"{Fore.YELLOW}Confirm creation {Style.RESET_ALL}", default=False):
+                if click.confirm(f"{Fore.YELLOW}💡 Confirm creation [y/N]:{Style.RESET_ALL}", default=False):
                     with open(full_path, 'w') as f:
                         f.write(content)
-                    print_success(f"File created successfully: {filename}")
+                    print_success(f"🎉 File created successfully: {filename}")
                     return True
                 else:
-                    print_info("File creation cancelled by user.")
+                    print_info("🙅 File creation cancelled by user.")
                     return "Skipping this step"
             except Exception as e:
-                print_error(f"Error creating file: {str(e)}")
+                print_error(f"🚨 Error creating file: {str(e)}")
                 return False
 
         elif operation == 'UPDATE':
             if not os.path.exists(full_path):
-                print_info(f"File does not exist: {filename}")
+                print_info(f"🔄 File does not exist: {filename}")
                 return False
             try:
                 with open(full_path, 'r') as f:
@@ -102,51 +95,51 @@ class Executor:
                         filename, f"{operation.lower()} this file")
                     print(confirmation_box)
 
-                    if click.confirm(f"{Fore.YELLOW}Confirm update {Style.RESET_ALL}", default=False):
+                    if click.confirm(f"{Fore.YELLOW}💡 Confirm update [y/N]:{Style.RESET_ALL}", default=False):
                         with open(full_path, 'w') as f:
                             f.write(updated_content)
-                        print_success(f"File updated successfully: {filename}")
+                        print_success(f"🎉 File updated successfully: {filename}")
                         return True
                     else:
-                        print_info(f"File update cancelled by user.")
+                        print_info(f"🙅 File update cancelled by user.")
                         return "Skipping this step"
                 else:
                     print_error(
-                        "No content or changes provided for update operation")
+                        "🚨 No content or changes provided for update operation")
                     return False
             except Exception as e:
-                print_error(f"Error updating file: {str(e)}")
+                print_error(f"🚨 Error updating file: {str(e)}")
                 return False
 
         elif operation == 'DELETE':
             if not os.path.isfile(full_path):
                 print_info(
-                    f"Delete operation is only allowed for files: {filename}")
+                    f"🙅 Delete operation is only allowed for files: {filename}")
                 return False
             confirmation_box = create_confirmation_box(
                 filename, f"{operation.lower()} this file")
             print(confirmation_box)
-            if click.confirm(f"{Fore.YELLOW}Confirm deletion {Style.RESET_ALL}", default=False):
+            if click.confirm(f"{Fore.YELLOW}💡 Confirm deletion [y/N]:{Style.RESET_ALL}", default=False):
                 try:
                     os.remove(full_path)
-                    print_success(f"File deleted successfully: {filename}")
+                    print_success(f"🎉 File deleted successfully: {filename}")
                     return True
                 except Exception as e:
-                    print_error(f"Error deleting file: {str(e)}")
+                    print_error(f"🚨 Error deleting file: {str(e)}")
                     return False
             else:
-                print_info("File deletion cancelled by user.")
+                print_info("🙅 File deletion cancelled by user.")
                 return "Skipping this step"
 
         else:
-            print_error(f"Unknown file operation: {operation}")
+            print_error(f"🚨 Unknown file operation: {operation}")
             return False
 
     def parse_json(self, json_string):
         try:
             return json.loads(json_string)
         except json.JSONDecodeError as e:
-            print_error(f"JSON parsing error: {str(e)}")
+            print_error(f"🚨 JSON parsing error: {str(e)}")
             return None
 
     def merge_json(self, existing_content, new_content):
@@ -156,7 +149,7 @@ class Executor:
             merged_json = {**existing_json, **new_json}
             return json.dumps(merged_json, indent=2)
         except json.JSONDecodeError as e:
-            print_error(f"Error merging JSON content: {str(e)}")
+            print_error(f"🚨 Error merging JSON content: {str(e)}")
             return None
 
     def get_folder_structure(self):
@@ -165,15 +158,18 @@ class Executor:
 
     def execute_shell_command(self, command, timeout=300):  # 5 minutes timeout
         if not self.is_safe_command(command):
-            print_warning(f"Please verify the command once: {command}")
+            print_warning(f"💡 Please verify the command once: {command}")
 
         confirmation_box = create_confirmation_box(
             command, "execute this command")
         print(confirmation_box)
 
-        if not click.confirm(f"{Fore.YELLOW}Confirm execution {Style.RESET_ALL}", default=False):
-            print_info("Command execution cancelled by user.")
+        if not click.confirm(f"{Fore.YELLOW}💡 Confirm execution [y/N]:{Style.RESET_ALL}", default=False):
+            print_info("🙅 Command execution cancelled by user.")
             return 'Skipping this step...'
+
+        click.echo(
+            f"{Fore.YELLOW}🔨 Executing shell command: {command}{Style.RESET_ALL}")
 
         if command.strip().startswith(('cd', 'chdir')):
             return self._handle_cd_command(command)
@@ -202,7 +198,7 @@ class Executor:
                     break
                 if time.time() - start_time > timeout:
                     process.terminate()
-                    error_message = f"Command timed out after {timeout} seconds: {command}"
+                    error_message = f"🚨 Command timed out after {timeout} seconds: {command}"
                     print_error(error_message)
                     raise Exception(error_message)
 
@@ -217,31 +213,29 @@ class Executor:
             output.append(stdout)
 
             if return_code != 0:
-                error_message = f"Command failed with return code {return_code}\nError output: {stderr}"
+                error_message = f"🚨 Command failed with return code {return_code}\nError output: {stderr}"
                 print_error(error_message)
                 raise Exception(error_message)
 
             self._update_env_from_command(command)
 
-            print_success("Command executed successfully.")
+            print_success("🎉 Command executed successfully.")
             return ''.join(output)
 
         except Exception as e:
-            error_message = f"Error executing command '{command}': {str(e)}"
+            error_message = f"🚨 Error executing command '{command}': {str(e)}"
             print_error(error_message)
             raise Exception(error_message)
 
     def _handle_source_command(self, command):
-        # Extract the file path from the source command
         _, file_path = command.split(None, 1)
         file_path = os.path.expandvars(os.path.expanduser(file_path))
 
         if not os.path.isfile(file_path):
-            error_message = f"Source file not found: {file_path}"
+            error_message = f"🚨 Source file not found: {file_path}"
             print_error(error_message)
             raise Exception(error_message)
 
-        # Execute the source command in a subshell and capture the environment changes
         try:
             result = subprocess.run(
                 f'source {file_path} && env',
@@ -252,33 +246,29 @@ class Executor:
                 executable='/bin/bash'
             )
 
-            # Update the environment with any changes
             for line in result.stdout.splitlines():
                 if '=' in line:
                     key, value = line.split('=', 1)
                     self.env[key] = value
 
-            print_success(f"Sourced file successfully: {file_path}")
+            print_success(f"🎉 Sourced file successfully: {file_path}")
             return "Source command executed successfully"
         except subprocess.CalledProcessError as e:
-            error_message = f"Error executing source command: {str(e)}"
+            error_message = f"🚨 Error executing source command: {str(e)}"
             print_error(error_message)
             raise Exception(error_message)
 
     def _update_env_from_command(self, command):
         if '=' in command:
             if command.startswith('export '):
-                # Handle export command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
             elif command.startswith('set '):
-                # Handle set command
                 _, var_assignment = command.split(None, 1)
                 key, value = var_assignment.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
             else:
-                # Handle simple assignment
                 key, value = command.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
 
@@ -288,10 +278,10 @@ class Executor:
         if self.is_safe_path(new_dir):
             os.chdir(new_dir)
             self.current_dir = new_dir
-            print_info(f"Changed directory to: {self.current_dir}")
+            print_info(f"📁 Changed directory to: {self.current_dir}")
             return f"Changed directory to: {self.current_dir}"
         else:
-            print_error(f"Cannot change to directory: {new_dir}")
+            print_error(f"🙅 Cannot change to directory: {new_dir}")
             return f"Failed to change directory to: {new_dir}"
 
     def reset_directory(self):
@@ -299,4 +289,4 @@ class Executor:
         project_dir = self.current_dir
         self.current_dir = self.initial_dir
         print_info(
-            f"Resetting directory to: {self.current_dir} from project dir:{project_dir}")
+            f"🔄 Resetting directory to: {self.current_dir} from project dir:{project_dir}")
