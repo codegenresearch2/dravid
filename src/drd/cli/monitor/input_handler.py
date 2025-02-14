@@ -3,10 +3,10 @@ import click
 import os
 import glob
 import re
+import time
 from ...utils import print_info, print_error, print_debug
 from ...prompts.instructions import get_instruction_prompt
 from ..query.main import execute_dravid_command
-
 
 class InputHandler:
     def __init__(self, monitor):
@@ -21,8 +21,9 @@ class InputHandler:
         while not self.monitor.should_stop.is_set():
             user_input = input("> ").strip()
             if user_input.lower() == 'exit':
-                print_info("Exiting server monitor...")
+                print_info("Exiting server monitor. Please wait...")
                 self.monitor.stop()
+                time.sleep(0.1)  # Delay for thread synchronization
                 break
             self._process_input(user_input)
 
@@ -33,21 +34,13 @@ class InputHandler:
 
         if user_input:
             self.monitor.processing_input.set()
-            try:
-                self._handle_general_input(user_input)
-            finally:
-                self.monitor.processing_input.clear()
+            time.sleep(0.1)  # Delay for thread synchronization
+            self._handle_general_input(user_input)
 
     def _handle_vision_input(self):
-        print_info(
-            "Enter the image path and instructions (use Tab for autocomplete):")
+        print_info("Enter the image path and instructions (use Tab for autocomplete):")
         user_input = self._get_input_with_autocomplete()
-
-        self.monitor.processing_input.set()
-        try:
-            self._handle_general_input(user_input)
-        finally:
-            self.monitor.processing_input.clear()
+        self._handle_general_input(user_input)
 
     def _handle_general_input(self, user_input):
         # Regex to extract image path and instructions
@@ -61,16 +54,21 @@ class InputHandler:
             image_path = os.path.expanduser(image_path)
 
             if not os.path.exists(image_path):
-                print_error(f"Image file not found: {image_path}")
+                print_error(f"Error: Image file not found - {image_path}")
                 return
 
-            print_info(f"Processing image: {image_path}")
-            print_info(f"With instructions: {instructions}")
-            execute_dravid_command(
-                instructions, image_path, False, instruction_prompt, warn=False)
+            self.monitor.processing_input.set()
+            time.sleep(0.1)  # Delay for thread synchronization
+            try:
+                print_info(f"Processing image input: {image_path}")
+                print_info(f"With instructions: {instructions}")
+                execute_dravid_command(instructions, image_path, False, instruction_prompt, warn=False)
+            except Exception as e:
+                print_error(f"Error processing image input: {str(e)}")
+            finally:
+                self.monitor.processing_input.clear()
         else:
-            execute_dravid_command(
-                user_input, None, False, instruction_prompt, warn=False)
+            execute_dravid_command(user_input, None, False, instruction_prompt, warn=False)
 
     def _get_input_with_autocomplete(self):
         current_input = ""
