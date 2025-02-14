@@ -1,6 +1,7 @@
 import unittest
-from unittest.mock import patch, MagicMock, call, mock_open
-import xml.etree.ElementTree as ET
+from unittest.mock import patch, MagicMock, call
+import traceback
+import click
 
 from drd.cli.query.dynamic_command_handler import (
     execute_commands,
@@ -39,9 +40,9 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertTrue(success)
         self.assertEqual(steps_completed, 3)
         self.assertIsNone(error)
-        self.assertIn("Explanation - Test explanation", output)
-        self.assertIn("Shell command - echo \"Hello\"", output)
-        self.assertIn("File command - CREATE - test.txt", output)
+        self.assertIn("Step 1: Explanation - Test explanation", output)
+        self.assertIn("Step 2: Shell command - echo \"Hello\"", output)
+        self.assertIn("Step 3: File command - CREATE - test.txt", output)
         mock_print_debug.assert_called_with("Completed step 3/3")
 
     @patch('drd.cli.query.dynamic_command_handler.print_info')
@@ -56,8 +57,10 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertEqual(output, "Hello")
         self.executor.execute_shell_command.assert_called_once_with(
             'echo "Hello"')
+        mock_print_info.assert_called_once_with(
+            'Executing shell command: echo "Hello"')
         mock_print_success.assert_called_once_with(
-            'Successfully executed: echo "Hello"')
+            'Successfully executed shell command: echo "Hello"')
         mock_echo.assert_called_once_with('Command output:\nHello')
 
     @patch('drd.cli.query.dynamic_command_handler.print_info')
@@ -128,6 +131,8 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertEqual(output, "Skipping this step...")
         self.executor.execute_shell_command.assert_called_once_with(
             'echo "Hello"')
+        mock_print_info.assert_any_call(
+            'Executing shell command: echo "Hello"')
         mock_print_info.assert_any_call("Skipping this step...")
         mock_print_success.assert_not_called()
         mock_echo.assert_not_called()
@@ -153,9 +158,9 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertTrue(success)
         self.assertEqual(steps_completed, 3)
         self.assertIsNone(error)
-        self.assertIn("Explanation - Test explanation", output)
-        self.assertIn("Shell command - echo \"Hello\"", output)
-        self.assertIn("File command -  CREATE", output)
+        self.assertIn("Step 1: Explanation - Test explanation", output)
+        self.assertIn("Step 2: Shell command - echo \"Hello\"", output)
+        self.assertIn("Step 3: File command - CREATE - test.txt", output)
         mock_print_debug.assert_has_calls([
             call("Completed step 1/3"),
             call("Completed step 2/3"),
@@ -182,7 +187,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
         self.assertTrue(success)
         self.assertEqual(steps_completed, 3)
         self.assertIsNone(error)
-        self.assertIn("Explanation - Test explanation", output)
+        self.assertIn("Step 1: Explanation - Test explanation", output)
         self.assertIn("Skipping this step...", output)
         mock_print_info.assert_any_call("Step 2/3: Skipping this step...")
         mock_print_info.assert_any_call("Step 3/3: Skipping this step...")
@@ -191,3 +196,7 @@ class TestDynamicCommandHandler(unittest.TestCase):
             call("Completed step 2/3"),
             call("Completed step 3/3")
         ])
+
+
+if __name__ == '__main__':
+    unittest.main()
