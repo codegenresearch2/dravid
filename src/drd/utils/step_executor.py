@@ -14,31 +14,28 @@ from ..metadata.common_utils import get_ignore_patterns, get_folder_structure
 class Executor:
     def __init__(self):
         self.current_dir = os.getcwd()
-        self.allowed_directories = [self.current_dir, '/fake/path']
-
-        self.initial_dir = self.current_dir
+        self.allowed_directories = [self.current_dir]
         self.disallowed_commands = [
             'rmdir', 'del', 'format', 'mkfs',
             'dd', 'fsck', 'mkswap', 'mount', 'umount',
             'sudo', 'su', 'chown', 'chmod'
         ]
         self.env = os.environ.copy()
+        self.initial_dir = self.current_dir
 
     def is_safe_path(self, path):
-        full_path = os.path.abspath(path)
-        return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories) or full_path == self.current_dir
+        full_path = os.path.abspath(os.path.join(self.current_dir, path))
+        return any(full_path.startswith(allowed_dir) for allowed_dir in self.allowed_directories)
 
     def is_safe_rm_command(self, command):
         parts = command.split()
         if parts[0] != 'rm':
             return False
 
-        # Check for dangerous flags
         dangerous_flags = ['-r', '-f', '-rf', '-fr']
         if any(flag in parts for flag in dangerous_flags):
             return False
 
-        # Check if it's removing a specific file
         if len(parts) != 2:
             return False
 
@@ -50,6 +47,114 @@ class Executor:
         if command_parts[0] == 'rm':
             return self.is_safe_rm_command(command)
         return not any(cmd in self.disallowed_commands for cmd in command_parts)
+
+    @patch('os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('click.confirm')
+    def test_perform_file_operation_create(self, mock_confirm, mock_file, mock_exists):
+        mock_exists.return_value = False
+        mock_confirm.return_value = True
+        result = self.executor.perform_file_operation(
+            'CREATE', 'test.txt', 'content')
+        self.assertTrue(result)
+        mock_file.assert_called_with(os.path.join(
+            self.executor.current_dir, 'test.txt'), 'w')
+        mock_file().write.assert_called_with('content')
+        mock_confirm.assert_called_once()
+
+    @patch('os.path.exists')
+    @patch('os.path.isfile')
+    @patch('os.remove')
+    @patch('click.confirm')
+    def test_perform_file_operation_delete(self, mock_confirm, mock_remove, mock_isfile, mock_exists):
+        mock_exists.return_value = True
+        mock_isfile.return_value = True
+        mock_confirm.return_value = True
+        result = self.executor.perform_file_operation('DELETE', 'test.txt')
+        self.assertTrue(result)
+        mock_remove.assert_called_with(os.path.join(
+            self.executor.current_dir, 'test.txt'))
+        mock_confirm.assert_called_once()
+
+    @patch('click.confirm')
+    def test_perform_file_operation_user_cancel(self, mock_confirm):
+        mock_confirm.return_value = False
+        result = self.executor.perform_file_operation(
+            'UPDATE', 'test.txt', 'content')
+        self.assertFalse(result)
+
+    @patch('subprocess.Popen')
+    @patch('click.confirm')
+    def test_execute_shell_command(self, mock_confirm, mock_popen):
+        mock_confirm.return_value = True
+        mock_process = MagicMock()
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.stdout.readline.return_value = 'output line'
+        mock_process.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_process
+
+        result = self.executor.execute_shell_command('ls')
+        self.assertEqual(result, 'output line')
+        mock_confirm.assert_called_once()
+
+    @patch('click.confirm')
+    def test_execute_shell_command_user_cancel(self, mock_confirm):
+        mock_confirm.return_value = False
+        result = self.executor.execute_shell_command('ls')
+        mock_confirm.assert_called_once()
+
+    @patch('os.chdir')
+    @patch('os.path.abspath')
+    def test_handle_cd_command(self, mock_abspath, mock_chdir):
+        mock_abspath.return_value = '/fake/path/app'
+        result = self.executor._handle_cd_command('cd app')
+        self.assertEqual(result, "Changed directory to: /fake/path/app")
+        mock_chdir.assert_called_once_with('/fake/path/app')
+        self.assertEqual(self.executor.current_dir, '/fake/path/app')
+
+    @patch('subprocess.Popen')
+    def test_execute_single_command(self, mock_popen):
+        mock_process = MagicMock()
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.stdout.readline.return_value = 'output line'
+        mock_process.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_process
+
+        result = self.executor._execute_single_command('echo "Hello"', 300)
+        self.assertEqual(result, 'output line')
+        mock_popen.assert_called_once_with(
+            'echo "Hello"',
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=self.executor.env,
+            cwd=self.executor.current_dir
+        )
+
+    @patch('click.confirm')
+    @patch('os.chdir')
+    @patch('os.path.abspath')
+    def test_execute_shell_command_cd(self, mock_abspath, mock_chdir, mock_confirm):
+        mock_confirm.return_value = True
+        mock_abspath.return_value = '/fake/path/app'
+        result = self.executor.execute_shell_command('cd app')
+        self.assertEqual(result, "Changed directory to: /fake/path/app")
+        mock_chdir.assert_called_once_with('/fake/path/app')
+        self.assertEqual(self.executor.current_dir, '/fake/path/app')
+
+    @patch('click.confirm')
+    @patch('subprocess.Popen')
+    def test_execute_shell_command_echo(self, mock_popen, mock_confirm):
+        mock_confirm.return_value = True
+        mock_process = MagicMock()
+        mock_process.poll.side_effect = [None, 0]
+        mock_process.stdout.readline.return_value = 'Hello, World!'
+        mock_process.communicate.return_value = ('', '')
+        mock_popen.return_value = mock_process
+
+        result = self.executor.execute_shell_command('echo "Hello, World!"')
+        self.assertEqual(result, 'Hello, World!')
 
     def perform_file_operation(self, operation, filename, content=None, force=False):
         full_path = os.path.abspath(os.path.join(self.current_dir, filename))
@@ -163,7 +268,7 @@ class Executor:
         ignore_patterns, _ = get_ignore_patterns(self.current_dir)
         return get_folder_structure(self.current_dir, ignore_patterns)
 
-    def execute_shell_command(self, command, timeout=300):  # 5 minutes timeout
+    def execute_shell_command(self, command, timeout=300):
         if not self.is_safe_command(command):
             print_warning(f"Please verify the command once: {command}")
 
@@ -235,8 +340,7 @@ class Executor:
             raise Exception(error_message)
 
     def _handle_source_command(self, command):
-        # Extract the file path from the source command
-        _, file_path = command.split(None, 1)
+        file_path = command.split()[1]
         file_path = os.path.expandvars(os.path.expanduser(file_path))
 
         if not os.path.isfile(file_path):
@@ -244,7 +348,6 @@ class Executor:
             print_error(error_message)
             raise Exception(error_message)
 
-        # Execute the source command in a subshell and capture the environment changes
         try:
             result = subprocess.run(
                 f'source {file_path} && env',
@@ -255,7 +358,6 @@ class Executor:
                 executable='/bin/bash'
             )
 
-            # Update the environment with any changes
             for line in result.stdout.splitlines():
                 if '=' in line:
                     key, value = line.split('=', 1)
@@ -271,23 +373,17 @@ class Executor:
     def _update_env_from_command(self, command):
         if '=' in command:
             if command.startswith('export '):
-                # Handle export command
-                _, var_assignment = command.split(None, 1)
-                key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
+                key, value = command.split('=', 1)[1].strip().strip('"\'')
+                self.env[key] = value
             elif command.startswith('set '):
-                # Handle set command
-                _, var_assignment = command.split(None, 1)
-                key, value = var_assignment.split('=', 1)
-                self.env[key.strip()] = value.strip().strip('"\'')
+                key, value = command.split('=', 1)[1].strip().strip('"\'')
+                self.env[key] = value
             else:
-                # Handle simple assignment
                 key, value = command.split('=', 1)
                 self.env[key.strip()] = value.strip().strip('"\'')
 
     def _handle_cd_command(self, command):
-        _, path = command.split(None, 1)
-        new_dir = os.path.abspath(os.path.join(self.current_dir, path))
+        new_dir = os.path.abspath(os.path.join(self.current_dir, command.split()[1]))
         if self.is_safe_path(new_dir):
             os.chdir(new_dir)
             self.current_dir = new_dir
@@ -299,7 +395,5 @@ class Executor:
 
     def reset_directory(self):
         os.chdir(self.initial_dir)
-        project_dir = self.current_dir
         self.current_dir = self.initial_dir
-        print_info(
-            f"Resetting directory to: {self.current_dir} from project dir:{project_dir}")
+        print_info(f"Reset directory to: {self.current_dir}")
