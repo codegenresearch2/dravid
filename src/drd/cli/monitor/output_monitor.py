@@ -2,10 +2,9 @@ import re
 import threading
 import time
 import select
-from ...utils import print_info, print_error, print_prompt
+from ...utils import print_info, print_error
 
 MAX_RETRIES = 3
-
 
 class OutputMonitor:
     def __init__(self, monitor):
@@ -16,8 +15,7 @@ class OutputMonitor:
         self.retry_count = 0
 
     def start(self):
-        self.thread = threading.Thread(
-            target=self._monitor_output, daemon=True)
+        self.thread = threading.Thread(target=self._monitor_output, daemon=True)
         self.thread.start()
 
     def _check_for_errors(self, line, error_buffer):
@@ -37,21 +35,18 @@ class OutputMonitor:
 
             if self.monitor.process.poll() is not None and not self.monitor.processing_input.is_set():
                 if not self.monitor.restart_requested.is_set():
-                    print_info("Server process ended unexpectedly.")
+                    print_info("Server process ended unexpectedly. 🚫")
                     if self.retry_count < MAX_RETRIES:
-                        print_info(
-                            f"Restarting... (Attempt {self.retry_count + 1}/{MAX_RETRIES})")
+                        print_info(f"Restarting... (Attempt {self.retry_count + 1}/{MAX_RETRIES}) 🔄")
                         self.monitor.perform_restart()
                         self.retry_count += 1
                     else:
-                        print_error(
-                            f"Server failed to start after {MAX_RETRIES} attempts. Exiting.")
+                        print_error(f"Server failed to start after {MAX_RETRIES} attempts. Exiting. ❌")
                         self.monitor.stop()
                         break
                 continue
 
-            ready, _, _ = select.select(
-                [self.monitor.process.stdout], [], [], 0.1)
+            ready, _, _ = select.select([self.monitor.process.stdout], [], [], 0.1)
 
             if self.monitor.process.stdout in ready:
                 line = self.monitor.process.stdout.readline()
@@ -77,11 +72,8 @@ class OutputMonitor:
     def _check_idle_state(self):
         current_time = time.time()
         time_since_last_output = current_time - self.last_output_time
-        if (time_since_last_output > 5 and
-            not self.idle_prompt_shown and
-                not self.monitor.processing_input.is_set()):
-            print_prompt(
-                "\nNo more tasks to auto-process. What can I do next?")
+        if (time_since_last_output > 5 and not self.idle_prompt_shown and not self.monitor.processing_input.is_set()):
+            print_info("\nNo more tasks to auto-process. What can I do next? 🤔")
             self._show_options()
             self.idle_prompt_shown = True
 
