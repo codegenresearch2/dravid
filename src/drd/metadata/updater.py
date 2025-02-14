@@ -6,7 +6,6 @@ from ..utils import print_error, print_success, print_info, print_warning
 from .common_utils import get_ignore_patterns, get_folder_structure, find_file_with_dravid
 from ..prompts.metadata_update_prompts import get_files_to_update_prompt
 
-
 async def update_metadata_with_dravid_async(meta_description, current_dir):
     print_info("Updating metadata based on the provided description...")
     metadata_manager = ProjectMetadataManager(current_dir)
@@ -36,10 +35,8 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
             f"Files identified for processing: {', '.join([file.find('path').text.strip() for file in files_to_process if file.find('path') is not None])}")
 
         for file in files_to_process:
-            path = file.find('path').text.strip() if file.find(
-                'path') is not None else ""
-            action = file.find('action').text.strip() if file.find(
-                'action') is not None else "update"
+            path = file.find('path').text.strip() if file.find('path') is not None else ""
+            action = file.find('action').text.strip() if file.find('action') is not None else "update"
 
             if not path:
                 print_warning("Skipping file with empty path")
@@ -61,6 +58,12 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
                 file_info = await metadata_manager.analyze_file(found_filename)
 
                 if file_info:
+                    # Extract and manage external dependencies
+                    dependencies = file.find('metadata/external_dependencies')
+                    if dependencies is not None:
+                        for dep in dependencies.findall('dependency'):
+                            metadata_manager.add_external_dependency(dep.text)
+
                     metadata_manager.update_file_metadata(
                         file_info['path'],
                         file_info['type'],
@@ -70,15 +73,6 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
                     )
                     print_success(
                         f"Updated metadata for file: {found_filename}")
-
-                    # Handle external dependencies
-                    metadata = file.find('metadata')
-                    if metadata is not None:
-                        external_deps = metadata.find('external_dependencies')
-                        if external_deps is not None:
-                            for dep in external_deps.findall('dependency'):
-                                metadata_manager.add_external_dependency(
-                                    dep.text.strip())
                 else:
                     print_warning(f"Could not analyze file: {found_filename}")
 
@@ -89,7 +83,6 @@ async def update_metadata_with_dravid_async(meta_description, current_dir):
     except Exception as e:
         print_error(f"Error parsing dravid's response: {str(e)}")
         print_error(f"Raw response: {files_response}")
-
 
 def update_metadata_with_dravid(meta_description, current_dir):
     asyncio.run(update_metadata_with_dravid_async(
