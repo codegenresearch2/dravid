@@ -4,7 +4,6 @@ import requests
 
 from drd.cli.query.main import execute_dravid_command
 
-
 class TestExecuteDravidCommand(unittest.TestCase):
 
     def setUp(self):
@@ -32,22 +31,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
         self.metadata_manager.get_project_context.return_value = "Test project context"
         mock_get_files.return_value = ["file1.py", "file2.py"]
 
-        mock_stream_api.return_value = """
-        <response>
-            <steps>
-                <step>
-                    <type>shell</type>
-                    <command> echo "hello" </command>
-                </step>
-                <step>
-                    <type>file</type>
-                    <operation>CREATE</operation>
-                    <filename>text.txt</filename>
-                    <content>Test content</content>
-                </step>
-            </steps>
-        </response>
-        """
+        mock_stream_api.return_value = """\n        <response>\n            <steps>\n                <step>\n                    <type>shell</type>\n                    <command> echo "hello" </command>\n                </step>\n                <step>\n                    <type>file</type>\n                    <operation>CREATE</operation>\n                    <filename>text.txt</filename>\n                    <content>Test content</content>\n                </step>\n            </steps>\n        </response>\n        """
         mock_execute_commands.return_value = (
             True, 2, None, "All commands executed successfully")
         mock_run_with_loader.side_effect = lambda f, *args, **kwargs: f()
@@ -56,7 +40,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
                                self.debug, self.instruction_prompt)
 
         mock_print_debug.assert_has_calls([
-            call("Received 2 new command(s)")
+            call("Detected 2 new commands")
         ])
 
     @patch('drd.cli.query.main.Executor')
@@ -75,17 +59,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
         mock_metadata_manager.return_value = self.metadata_manager
         self.metadata_manager.get_project_context.return_value = "Test project context"
         mock_get_files.return_value = ["file1.py", "file2.py"]
-        mock_stream_api.return_value = """
-        <response>
-            <explanation>Test explanation</explanation>
-            <steps>
-                <step>
-                    <type>shell</type>
-                    <command> echo "hello" </command>
-                </step>
-            </steps>
-        </response>
-        """
+        mock_stream_api.return_value = """\n        <response>\n            <explanation>Test explanation</explanation>\n            <steps>\n                <step>\n                    <type>shell</type>\n                    <command> echo "hello" </command>\n                </step>\n            </steps>\n        </response>\n        """
         mock_execute_commands.return_value = (
             False, 1, "Command failed", "Error output")
         mock_handle_error.return_value = True
@@ -94,11 +68,11 @@ class TestExecuteDravidCommand(unittest.TestCase):
         execute_dravid_command(self.query, self.image_path,
                                self.debug, self.instruction_prompt)
 
-        mock_print_error.assert_any_call(
-            "Failed to execute command at step 1.")
+        mock_print_error.assert_called_with(
+            "Encountered an error while executing command at step 1. Attempting to resolve...")
         mock_handle_error.assert_called_once()
-        mock_print_info.assert_any_call(
-            "Fix applied successfully. Continuing with the remaining commands.", indent=2)
+        mock_print_info.assert_called_with(
+            "Successfully resolved the error. Proceeding with the remaining commands.")
 
     @patch('drd.cli.query.main.Executor')
     @patch('drd.cli.query.main.ProjectMetadataManager')
@@ -107,7 +81,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
     @patch('drd.cli.query.main.print_info')
     @patch('drd.cli.query.main.print_warning')
     @patch('drd.cli.query.main.run_with_loader')
-    @patch('drd.cli.query.main.get_files_to_modify')  # Add this line
+    @patch('drd.cli.query.main.get_files_to_modify')
     def test_execute_dravid_command_with_image(self, mock_get_files, mock_run_with_loader,
                                                mock_print_warning, mock_print_info,
                                                mock_execute_commands, mock_call_vision_api,
@@ -121,14 +95,13 @@ class TestExecuteDravidCommand(unittest.TestCase):
         mock_execute_commands.return_value = (
             True, 1, None, "Image command executed successfully")
         mock_run_with_loader.side_effect = lambda f, *args, **kwargs: f()
-        mock_get_files.return_value = []  # Add this line
+        mock_get_files.return_value = []
 
         execute_dravid_command(self.query, self.image_path,
                                self.debug, self.instruction_prompt)
 
         mock_call_vision_api.assert_called_once()
-        mock_print_info.assert_any_call(
-            f"Processing image: {self.image_path}", indent=4)
+        mock_print_info.assert_called_with(f"Processing provided image: {self.image_path}")
 
     @patch('drd.cli.query.main.Executor')
     @patch('drd.cli.query.main.ProjectMetadataManager')
@@ -148,8 +121,7 @@ class TestExecuteDravidCommand(unittest.TestCase):
                                self.debug, self.instruction_prompt)
 
         mock_print_error.assert_called_with(
-            "An unexpected error occurred: API connection error")
-
+            "Encountered an unexpected error: API connection error. Please check your internet connection and try again.")
 
 if __name__ == '__main__':
     unittest.main()
